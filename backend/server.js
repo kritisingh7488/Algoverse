@@ -2,6 +2,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const dotenv = require('dotenv');
+const authRoutes = require('./routes/authRoutes');
 
 dotenv.config();
 
@@ -18,6 +19,9 @@ app.use(express.json());
 app.get('/', (req, res) => {
     res.json({ message: 'AlgoVerse API is running' });
 });
+
+// Routes
+app.use('/api/v1/auth', authRoutes);
 
 // Database Connection
 const PORT = process.env.PORT || 5000;
