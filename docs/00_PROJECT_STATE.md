@@ -492,10 +492,6 @@ feature/authentication
 
 Working
 
-Broken
-
-Not Tested
-
 ---
 
 ## Last Successful Build
