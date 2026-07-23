@@ -533,6 +533,8 @@ frontend/src/layouts/AuthLayout.jsx
 frontend/src/pages/auth/Login.jsx
 frontend/src/pages/auth/Signup.jsx
 frontend/src/pages/auth/ForgotPassword.jsx
+frontend/src/pages/auth/ResetPassword.jsx
+frontend/src/pages/auth/VerifyEmail.jsx
 frontend/src/App.jsx
 
 ---

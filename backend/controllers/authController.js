@@ -100,8 +100,55 @@ const getUserProfile = async (req, res) => {
     }
 };
 
+// @desc    Forgot Password
+// @route   POST /api/v1/auth/forgot-password
+// @access  Public
+const forgotPassword = async (req, res) => {
+    try {
+        // Will implement actual email sending later when credentials exist
+        const { email } = req.body;
+        if (!email) {
+            return res.status(400).json({ success: false, message: 'Please provide an email' });
+        }
+        res.json({ success: true, message: 'If an account exists, a reset link was sent' });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Server error' });
+    }
+};
+
+// @desc    Reset Password
+// @route   PUT /api/v1/auth/reset-password/:token
+// @access  Public
+const resetPassword = async (req, res) => {
+    try {
+        const { password } = req.body;
+        if (!password) {
+            return res.status(400).json({ success: false, message: 'Please provide a new password' });
+        }
+        // Will implement token validation and actual password reset when DB is live
+        res.json({ success: true, message: 'Password reset successfully' });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Server error' });
+    }
+};
+
+// @desc    Verify Email
+// @route   GET /api/v1/auth/verify-email/:token
+// @access  Public
+const verifyEmail = async (req, res) => {
+    try {
+        // Will implement actual verification logic when DB is live
+        res.json({ success: true, message: 'Email verified successfully' });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Server error' });
+    }
+};
+
 module.exports = {
     registerUser,
     loginUser,
-    getUserProfile
+    getUserProfile,
+    forgotPassword,
+    resetPassword,
+    verifyEmail
 };

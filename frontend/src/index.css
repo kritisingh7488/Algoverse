@@ -7,6 +7,29 @@
     @apply bg-background text-textPrimary font-inter antialiased;
   }
   h1, h2, h3, h4, h5, h6 {
-    @apply font-poppins font-bold;
+    @apply font-poppins font-semibold tracking-tight;
+  }
+}
+
+@keyframes slideUp {
+  0% {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes float {
+  0% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+  100% {
+    transform: translateY(0px);
   }
 }

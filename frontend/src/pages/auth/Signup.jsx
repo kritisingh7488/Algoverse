@@ -25,7 +25,6 @@ const Signup = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // Basic validation
     if (formData.password !== formData.confirmPassword) {
       setValidationError('Passwords do not match');
       return;
@@ -44,85 +43,89 @@ const Signup = () => {
     });
 
     if (success) {
-      navigate('/dashboard'); // Will create later
+      navigate('/dashboard');
     }
   };
 
   return (
     <AuthLayout title="Create an Account" subtitle="Join AlgoVerse to master algorithms visually.">
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="mt-4">
         {(error || validationError) && (
-          <div className="p-3 bg-danger/10 border border-danger/20 rounded-lg text-danger text-sm text-center">
+          <div className="mb-5 p-3 bg-danger/5 border border-danger/20 rounded-xl text-danger text-[13px] text-center font-medium animate-[slideUp_0.3s_ease-out]">
             {error || validationError}
           </div>
         )}
         
-        <Input
-          label="Full Name"
-          id="fullName"
-          name="fullName"
-          placeholder="John Doe"
-          value={formData.fullName}
-          onChange={handleChange}
-          required
-        />
+        <div className="grid grid-cols-1 sm:grid-cols-2 sm:gap-x-4">
+          <Input
+            label="Full Name"
+            id="fullName"
+            name="fullName"
+            placeholder="John Doe"
+            value={formData.fullName}
+            onChange={handleChange}
+            required
+          />
 
-        <Input
-          label="Username"
-          id="username"
-          name="username"
-          placeholder="johndoe123"
-          value={formData.username}
-          onChange={handleChange}
-          required
-        />
+          <Input
+            label="Username"
+            id="username"
+            name="username"
+            placeholder="johndoe"
+            value={formData.username}
+            onChange={handleChange}
+            required
+          />
+        </div>
         
-        <Input
-          label="Email Address"
-          id="email"
-          name="email"
-          type="email"
-          placeholder="you@example.com"
-          value={formData.email}
-          onChange={handleChange}
-          required
-        />
-        
-        <Input
-          label="Password"
-          id="password"
-          name="password"
-          type="password"
-          placeholder="••••••••"
-          value={formData.password}
-          onChange={handleChange}
-          required
-        />
+        <div className="space-y-4 mt-2">
+          <Input
+            label="Email Address"
+            id="email"
+            name="email"
+            type="email"
+            placeholder="you@example.com"
+            value={formData.email}
+            onChange={handleChange}
+            required
+          />
+          
+          <Input
+            label="Password"
+            id="password"
+            name="password"
+            type="password"
+            placeholder="••••••••"
+            value={formData.password}
+            onChange={handleChange}
+            required
+          />
 
-        <Input
-          label="Confirm Password"
-          id="confirmPassword"
-          name="confirmPassword"
-          type="password"
-          placeholder="••••••••"
-          value={formData.confirmPassword}
-          onChange={handleChange}
-          required
-        />
+          <Input
+            label="Confirm Password"
+            id="confirmPassword"
+            name="confirmPassword"
+            type="password"
+            placeholder="••••••••"
+            value={formData.confirmPassword}
+            onChange={handleChange}
+            required
+          />
+        </div>
 
-        <div className="flex items-start mt-4 mb-6">
+        <div className="flex items-start mt-3 mb-8 group">
           <div className="flex items-center h-5">
             <input
               id="terms"
               name="terms"
               type="checkbox"
               required
-              className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
+              className="h-4 w-4 bg-white border-gray-300 text-primary focus:ring-primary rounded-[4px] mt-0.5 cursor-pointer transition-colors"
             />
           </div>
-          <div className="ml-2 text-sm">
-            <label htmlFor="terms" className="text-gray-600">
-              I agree to the <a href="#" className="font-medium text-primary hover:underline">Terms of Service</a> and <a href="#" className="font-medium text-primary hover:underline">Privacy Policy</a>.
+          <div className="ml-2.5 text-[12px] leading-relaxed text-gray-500">
+            <label htmlFor="terms" className="cursor-pointer group-hover:text-gray-900 transition-colors">
+              I agree to the <a href="#" className="font-medium text-gray-700 hover:text-primary transition-colors">Terms of Service</a> and <a href="#" className="font-medium text-gray-700 hover:text-primary transition-colors">Privacy Policy</a>.
             </label>
           </div>
         </div>
@@ -132,11 +135,10 @@ const Signup = () => {
         </Button>
       </form>
       
-      <p className="mt-8 text-center text-sm text-gray-600">
+      <p className="mt-8 text-center text-[13px] text-gray-500">
         Already have an account?{' '}
-        <Link to="/login" className="font-medium text-primary hover:text-secondary relative group">
-          Sign In
-          <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-secondary transition-all group-hover:w-full"></span>
+        <Link to="/login" className="font-medium text-gray-900 hover:text-primary transition-colors">
+          Sign In &rarr;
         </Link>
       </p>
     </AuthLayout>
