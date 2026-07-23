@@ -390,83 +390,43 @@ Every AI session MUST update it.
 
 ## Current Phase
 
-Planning / Development / Testing / Deployment
+Phase 0
 
 ---
 
 ## Current Sprint
 
-Sprint Number
+Sprint 1
 
 ---
 
 ## Current Module
 
-Example
-
-Authentication
-
-Dashboard
-
-Sorting Lab
-
-Community
-
-Deployment
+Project Setup
 
 ---
 
 ## Current Feature
 
-Describe the exact feature currently being implemented.
-
-Example
-
-JWT Login
-
-Merge Sort Playback
-
-Leaderboard API
+Project Initialization
 
 ---
 
 ## Current Folder
 
-Example
-
-frontend/src/pages
-
-backend/controllers
-
-cpp-engine/
-
-docs/
+d:\AlgoVerse
 
 ---
 
 ## Current File
 
-Write the EXACT filename currently being edited.
-
-Only ONE file should appear here.
-
-Example
-
-Navbar.jsx
-
-SortingVisualizer.jsx
-
-authController.js
+00_PROJECT_STATE.md
 
 ---
 
 ## Current Agent
 
 Main Agent
-
-or
-
-Sub-Agent Name
 
 ---
 
@@ -923,17 +883,9 @@ docs: update architecture
 
 ## Waiting For User
 
-Record every dependency that requires manual configuration.
-
-Examples
-
 - MongoDB Atlas URI
-- Google OAuth Credentials
 - Cloudinary Credentials
-- Vercel Project
-- Render Service
-- GitHub Repository
-- Domain Configuration
+- Google OAuth Credentials
 
 If this section is not empty, implementation depending on these services must pause until the user completes configuration.
 
@@ -941,17 +893,10 @@ If this section is not empty, implementation depending on these services must pa
 
 ## Pending Manual Steps
 
-Record every task that requires human interaction.
-
-Examples
-
 - Create MongoDB Atlas Cluster
 - Configure Google OAuth
 - Configure Cloudinary
-- Connect Vercel
-- Connect Render
-- Configure DNS
-- Configure Production Environment Variables
+- Add environment variables to `.env` based on `.env.example`
 
 ---
 
