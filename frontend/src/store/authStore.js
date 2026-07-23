@@ -11,18 +11,15 @@ const useAuthStore = create((set) => ({
   login: async (email, password) => {
     set({ isLoading: true, error: null });
     try {
-      // Mock API call for UI preview
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      const response = await api.post('/auth/login', { email, password });
+      const { user, token } = response.data;
       
-      const mockUser = { id: '1', fullName: 'Test User', email };
-      const mockToken = 'mock_token_123';
-      
-      localStorage.setItem('algoverse_token', mockToken);
-      set({ user: mockUser, token: mockToken, isAuthenticated: true, isLoading: false });
+      localStorage.setItem('algoverse_token', token);
+      set({ user, token, isAuthenticated: true, isLoading: false });
       return true;
     } catch (error) {
       set({ 
-        error: 'Login failed. Please try again.', 
+        error: error.response?.data?.message || 'Login failed. Please try again.', 
         isLoading: false 
       });
       return false;
@@ -32,18 +29,15 @@ const useAuthStore = create((set) => ({
   register: async (userData) => {
     set({ isLoading: true, error: null });
     try {
-      // Mock API call for UI preview
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      const response = await api.post('/auth/register', userData);
+      const { user, token } = response.data;
       
-      const mockUser = { id: '1', fullName: userData.fullName, email: userData.email };
-      const mockToken = 'mock_token_123';
-      
-      localStorage.setItem('algoverse_token', mockToken);
-      set({ user: mockUser, token: mockToken, isAuthenticated: true, isLoading: false });
+      localStorage.setItem('algoverse_token', token);
+      set({ user, token, isAuthenticated: true, isLoading: false });
       return true;
     } catch (error) {
       set({ 
-        error: 'Registration failed. Please try again.', 
+        error: error.response?.data?.message || 'Registration failed. Please try again.', 
         isLoading: false 
       });
       return false;
