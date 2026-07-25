@@ -12,7 +12,9 @@ import {
   Sparkles, 
   Layers, 
   Zap,
-  Grid
+  Grid,
+  Lightbulb,
+  AlertTriangle
 } from 'lucide-react';
 import AppLayout from '../../layouts/AppLayout';
 import Button from '../../components/common/Button';
@@ -29,7 +31,10 @@ const DP_PROBLEMS = {
       'for i = 2 to n:',
       '  dp[i] = dp[i-1] + dp[i-2]',
       'return dp[n]'
-    ]
+    ],
+    intuition: 'Computes each term as the sum of the preceding two terms. Tabulation avoids $O(2^N)$ exponential recursive recalculations.',
+    mistakes: 'Forgetting to handle base cases $N=0$ or $N=1$ properly.',
+    interviewTip: 'Space can be optimized to $O(1)$ by keeping only two variables (`prev1`, `prev2`) instead of full array.'
   },
   climbing: {
     name: 'Climbing Stairs',
@@ -42,7 +47,10 @@ const DP_PROBLEMS = {
       'for i = 3 to n:',
       '  dp[i] = dp[i-1] + dp[i-2]',
       'return dp[n]'
-    ]
+    ],
+    intuition: 'To reach step $i$, you can either step from $i-1$ (1 step) or from $i-2$ (2 steps). Total ways is sum of both.',
+    mistakes: 'Confusing 0-indexed base cases with 1-indexed stair count.',
+    interviewTip: 'Isomorphic to Fibonacci sequence: $dp[N] = fib(N+1)$.'
   },
   knapsack: {
     name: '0/1 Knapsack Problem',
@@ -56,14 +64,18 @@ const DP_PROBLEMS = {
       '    if wt[i-1] <= w:',
       '      dp[i][w] = max(val[i-1] + dp[i-1][w-wt[i-1]], dp[i-1][w])',
       '    else: dp[i][w] = dp[i-1][w]'
-    ]
+    ],
+    intuition: 'At each item, choose whether to include it or exclude it to maximize total value without exceeding capacity $W$.',
+    mistakes: 'Confusing 0/1 Knapsack (items non-divisible) with Fractional Knapsack (solvable greedily).',
+    interviewTip: '0/1 Knapsack space complexity can be reduced to 1D array $O(W)$ by processing weights backwards.'
   }
 };
 
 const DPStudio = () => {
   const [problemKey, setProblemKey] = useState('fibonacci');
-  const [approach, setApproach] = useState('tabulation'); // memoization, tabulation, space
+  const [approach, setApproach] = useState('tabulation');
   const [inputValue, setInputValue] = useState(6);
+  
   const [dpTable, setDpTable] = useState([0, 1, 1, 2, 3, 5, 8]);
   const [activeCell, setActiveCell] = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -72,10 +84,11 @@ const DPStudio = () => {
   const [events, setEvents] = useState([]);
   const [activeCodeLine, setActiveCodeLine] = useState(0);
   const [stats, setStats] = useState({ calls: 0, memoHits: 0, updates: 0 });
+  const [desc, setDesc] = useState('');
 
   const currentProblem = DP_PROBLEMS[problemKey];
 
-  // Generate Tabulation Events for Fibonacci
+  // Step Generators
   const generateFibEvents = (n) => {
     let steps = [];
     let table = Array(n + 1).fill(null);
@@ -104,8 +117,65 @@ const DPStudio = () => {
     return steps;
   };
 
+  const generateClimbEvents = (n) => {
+    let steps = [];
+    let table = Array(n + 1).fill(null);
+    table[1] = 1;
+    table[2] = 2;
+    let updates = 2;
+
+    steps.push({
+      table: [...table], active: 1, line: 0, updates: 1,
+      desc: 'Base case initialized: 1 way to reach step 1'
+    });
+    steps.push({
+      table: [...table], active: 2, line: 0, updates: 2,
+      desc: 'Base case initialized: 2 ways to reach step 2'
+    });
+
+    for (let i = 3; i <= n; i++) {
+      table[i] = table[i - 1] + table[i - 2];
+      updates++;
+      steps.push({
+        table: [...table], active: i, line: 2, updates,
+        desc: `Computing dp[${i}] = dp[${i-1}] (${table[i-1]}) + dp[${i-2}] (${table[i-2]}) = ${table[i]}`
+      });
+    }
+
+    return steps;
+  };
+
+  const generateKnapsackEvents = (capacity) => {
+    let steps = [];
+    let weights = [2, 3, 4];
+    let values = [3, 4, 5];
+    let table = Array(capacity + 1).fill(0);
+    let updates = 0;
+
+    for (let w = 1; w <= capacity; w++) {
+      let maxVal = table[w - 1];
+      for (let i = 0; i < weights.length; i++) {
+        if (weights[i] <= w) {
+          maxVal = Math.max(maxVal, values[i] + table[w - weights[i]]);
+        }
+      }
+      table[w] = maxVal;
+      updates++;
+      steps.push({
+        table: [...table], active: w, line: 3, updates,
+        desc: `Knapsack capacity ${w}: Max value computed = ${maxVal}`
+      });
+    }
+
+    return steps;
+  };
+
   useEffect(() => {
-    const steps = generateFibEvents(inputValue);
+    let steps = [];
+    if (problemKey === 'fibonacci') steps = generateFibEvents(inputValue);
+    else if (problemKey === 'climbing') steps = generateClimbEvents(inputValue);
+    else steps = generateKnapsackEvents(inputValue);
+
     setEvents(steps);
     setStepIndex(0);
     setIsPlaying(false);
@@ -128,10 +198,11 @@ const DPStudio = () => {
 
   const applyStep = (step) => {
     if (!step) return;
-    setDpTable(step.table);
+    setDpTable(step.table || []);
     setActiveCell(step.active);
-    setActiveCodeLine(step.line);
+    setActiveCodeLine(step.line || 0);
     setStats({ calls: step.updates * 2, memoHits: Math.floor(step.updates / 2), updates: step.updates });
+    setDesc(step.desc || '');
   };
 
   return (
@@ -171,7 +242,7 @@ const DPStudio = () => {
         {/* Main Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
 
-          {/* Left Column: Problem Selector */}
+          {/* Left Column: Problem Selector & Inputs */}
           <div className="lg:col-span-3 bg-white p-5 rounded-3xl border border-gray-100 shadow-xs space-y-4">
             <h3 className="text-xs font-bold font-poppins text-gray-400 uppercase tracking-wider">Select DP Problem</h3>
             <div className="space-y-2">
@@ -195,6 +266,22 @@ const DPStudio = () => {
                   </button>
                 );
               })}
+            </div>
+
+            {/* Input Slider */}
+            <div className="pt-4 border-t border-gray-100 space-y-2">
+              <div className="flex justify-between text-xs font-semibold font-poppins">
+                <span className="text-gray-500">Target N Value</span>
+                <span className="text-primary font-mono">{inputValue}</span>
+              </div>
+              <input
+                type="range"
+                min="3"
+                max="10"
+                value={inputValue}
+                onChange={(e) => setInputValue(parseInt(e.target.value))}
+                className="w-full accent-primary cursor-pointer"
+              />
             </div>
           </div>
 
@@ -233,7 +320,7 @@ const DPStudio = () => {
               {/* Event Description */}
               <div className="text-center pt-2 border-t border-gray-50">
                 <p className="text-xs font-mono text-gray-600 truncate">
-                  {events[stepIndex]?.desc || 'Initializing DP Table...'}
+                  {desc || 'Initializing DP Table...'}
                 </p>
               </div>
             </div>
@@ -309,27 +396,25 @@ const DPStudio = () => {
               </div>
             </div>
 
+            {/* Intuition & Educational Notes */}
             <div className="bg-white p-5 rounded-3xl border border-gray-100 shadow-xs space-y-3">
-              <h3 className="text-xs font-bold font-poppins text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
-                <Activity className="w-3.5 h-3.5 text-accent" /> DP Efficiency
+              <h3 className="text-xs font-bold font-poppins text-gray-400 uppercase tracking-wider flex items-center gap-1.5 text-amber-500">
+                <Lightbulb className="w-3.5 h-3.5" /> Conceptual Intuition
               </h3>
-              <div className="space-y-2 text-xs font-mono">
-                <div className="flex justify-between py-1 border-b border-gray-100">
-                  <span className="text-gray-400">Time:</span>
-                  <span className="font-bold text-primary">{currentProblem.time}</span>
-                </div>
-                <div className="flex justify-between py-1 border-b border-gray-100">
-                  <span className="text-gray-400">Space:</span>
-                  <span className="font-bold text-emerald-600">{currentProblem.space}</span>
-                </div>
-                <div className="flex justify-between py-1 border-b border-gray-100">
-                  <span className="text-gray-400">Table Updates:</span>
-                  <span className="font-bold text-accent">{stats.updates}</span>
-                </div>
-                <div className="flex justify-between py-1">
-                  <span className="text-gray-400">Memo Hits:</span>
-                  <span className="font-bold text-amber-500">{stats.memoHits}</span>
-                </div>
+              <p className="text-xs text-gray-600 font-inter leading-relaxed">{currentProblem.intuition}</p>
+              
+              <div className="pt-2 border-t border-gray-100 space-y-1">
+                <span className="text-[10px] font-bold font-poppins text-red-500 uppercase flex items-center gap-1">
+                  <AlertTriangle className="w-3 h-3" /> Common Mistake
+                </span>
+                <p className="text-[11px] text-gray-500 font-inter leading-tight">{currentProblem.mistakes}</p>
+              </div>
+
+              <div className="pt-2 border-t border-gray-100 space-y-1">
+                <span className="text-[10px] font-bold font-poppins text-emerald-600 uppercase flex items-center gap-1">
+                  <Sparkles className="w-3 h-3" /> Interview Tip
+                </span>
+                <p className="text-[11px] text-gray-500 font-inter leading-tight">{currentProblem.interviewTip}</p>
               </div>
             </div>
 

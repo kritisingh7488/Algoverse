@@ -13,7 +13,10 @@ import {
   Info, 
   CheckCircle2, 
   XCircle,
-  Target
+  Target,
+  Lightbulb,
+  AlertTriangle,
+  Sparkles
 } from 'lucide-react';
 import AppLayout from '../../layouts/AppLayout';
 import Button from '../../components/common/Button';
@@ -32,7 +35,10 @@ const SEARCH_ALGORITHMS = {
       '  if array[i] == target:',
       '    return i',
       'return -1'
-    ]
+    ],
+    intuition: 'Scans elements sequentially one by one from start to end until target is found or end of array is reached.',
+    mistakes: 'Using linear search on large sorted arrays where O(log N) Binary Search could be drastically faster.',
+    interviewTip: 'Linear search requires no preprocessing (no sorting needed) and works on unsorted streams or linked lists.'
   },
   binary: {
     name: 'Binary Search',
@@ -50,7 +56,10 @@ const SEARCH_ALGORITHMS = {
       '  else if array[mid] < target: low = mid + 1',
       '  else: high = mid - 1',
       'return -1'
-    ]
+    ],
+    intuition: 'Repeatedly divides a sorted search interval in half by comparing the middle element to the target.',
+    mistakes: 'Integer overflow in mid calculation `(low + high) / 2`; use `low + (high - low) / 2` instead.',
+    interviewTip: 'Binary search can be applied to any monotonic function, not just explicit arrays (e.g. search in answer space).'
   },
   interpolation: {
     name: 'Interpolation Search',
@@ -68,7 +77,10 @@ const SEARCH_ALGORITHMS = {
       '  if arr[pos] < target: low = pos + 1',
       '  else: high = pos - 1',
       'return -1'
-    ]
+    ],
+    intuition: 'Estimates target position based on key value distribution, similar to looking up a word in a phone book.',
+    mistakes: 'Applying on non-uniformly distributed data, which degrades performance to linear O(N).',
+    interviewTip: 'Interpolation search achieves sub-logarithmic O(log log N) time on uniformly distributed sorted numerical data.'
   }
 };
 
@@ -76,12 +88,14 @@ const SearchingLab = () => {
   const [algoKey, setAlgoKey] = useState('binary');
   const [array, setArray] = useState([12, 24, 36, 48, 60, 72, 84, 96, 108, 120]);
   const [target, setTarget] = useState(72);
+  const [customInput, setCustomInput] = useState('');
+  
   const [isPlaying, setIsPlaying] = useState(false);
   const [speed, setSpeed] = useState(1);
   const [stepIndex, setStepIndex] = useState(0);
   const [events, setEvents] = useState([]);
   
-  // Active step rendering states
+  // Active step states
   const [lowIdx, setLowIdx] = useState(null);
   const [highIdx, setHighIdx] = useState(null);
   const [midIdx, setMidIdx] = useState(null);
@@ -92,7 +106,37 @@ const SearchingLab = () => {
 
   const currentAlgo = SEARCH_ALGORITHMS[algoKey];
 
-  // Pre-generate steps for Binary Search
+  // --- Step Generators ---
+  const generateLinearSteps = (arr, targetVal) => {
+    let steps = [];
+    let comparisons = 0;
+    let visitedArr = [];
+
+    for (let i = 0; i < arr.length; i++) {
+      comparisons++;
+      visitedArr.push(i);
+
+      steps.push({
+        low: null, high: null, mid: i, visited: [...visitedArr], found: null, line: 1, comparisons,
+        desc: `Comparing element at index ${i} (${arr[i]}) with target ${targetVal}.`
+      });
+
+      if (arr[i] === targetVal) {
+        steps.push({
+          low: null, high: null, mid: i, visited: [...visitedArr], found: i, line: 2, comparisons,
+          desc: `Target ${targetVal} found at index ${i}!`
+        });
+        return steps;
+      }
+    }
+
+    steps.push({
+      low: null, high: null, mid: null, visited: [...visitedArr], found: null, line: 3, comparisons,
+      desc: `Target ${targetVal} not found in array.`
+    });
+    return steps;
+  };
+
   const generateBinarySteps = (arr, targetVal) => {
     let steps = [];
     let low = 0;
@@ -143,32 +187,61 @@ const SearchingLab = () => {
     return steps;
   };
 
-  // Pre-generate steps for Linear Search
-  const generateLinearSteps = (arr, targetVal) => {
+  const generateInterpolationSteps = (arr, targetVal) => {
     let steps = [];
+    let low = 0;
+    let high = arr.length - 1;
     let comparisons = 0;
     let visitedArr = [];
 
-    for (let i = 0; i < arr.length; i++) {
+    steps.push({
+      low, high, mid: null, visited: [], found: null, line: 0, comparisons: 0,
+      desc: `Initialized Interpolation Search. Range: [0 ... ${high}]`
+    });
+
+    while (low <= high && targetVal >= arr[low] && targetVal <= arr[high]) {
+      if (arr[high] === arr[low]) {
+        if (arr[low] === targetVal) {
+          steps.push({ low, high, mid: low, visited: [low], found: low, line: 3, comparisons: comparisons + 1, desc: `Target found!` });
+        }
+        break;
+      }
+
+      let pos = low + Math.floor(((targetVal - arr[low]) * (high - low)) / (arr[high] - arr[low]));
+      pos = Math.max(low, Math.min(high, pos));
       comparisons++;
-      visitedArr.push(i);
+      visitedArr.push(pos);
 
       steps.push({
-        low: null, high: null, mid: i, visited: [...visitedArr], found: null, line: 1, comparisons,
-        desc: `Comparing element at index ${i} (${arr[i]}) with target ${targetVal}.`
+        low, high, mid: pos, visited: [...visitedArr], found: null, line: 2, comparisons,
+        desc: `Estimated position index pos = ${pos} (value: ${arr[pos]}).`
       });
 
-      if (arr[i] === targetVal) {
+      if (arr[pos] === targetVal) {
         steps.push({
-          low: null, high: null, mid: i, visited: [...visitedArr], found: i, line: 2, comparisons,
-          desc: `Target ${targetVal} found at index ${i}!`
+          low, high, mid: pos, visited: [...visitedArr], found: pos, line: 3, comparisons,
+          desc: `Target ${targetVal} found at estimated position index ${pos}!`
         });
         return steps;
+      }
+
+      if (arr[pos] < targetVal) {
+        steps.push({
+          low: pos + 1, high, mid: pos, visited: [...visitedArr], found: null, line: 4, comparisons,
+          desc: `${arr[pos]} < ${targetVal}. Adjusting low to ${pos + 1}.`
+        });
+        low = pos + 1;
+      } else {
+        steps.push({
+          low, high: pos - 1, mid: pos, visited: [...visitedArr], found: null, line: 5, comparisons,
+          desc: `${arr[pos]} > ${targetVal}. Adjusting high to ${pos - 1}.`
+        });
+        high = pos - 1;
       }
     }
 
     steps.push({
-      low: null, high: null, mid: null, visited: [...visitedArr], found: null, line: 3, comparisons,
+      low, high, mid: null, visited: [...visitedArr], found: null, line: 6, comparisons,
       desc: `Target ${targetVal} not found in array.`
     });
     return steps;
@@ -176,10 +249,14 @@ const SearchingLab = () => {
 
   useEffect(() => {
     let steps = [];
-    if (algoKey === 'binary' || algoKey === 'interpolation') {
+    if (algoKey === 'binary') {
       const sorted = [...array].sort((a, b) => a - b);
       setArray(sorted);
       steps = generateBinarySteps(sorted, target);
+    } else if (algoKey === 'interpolation') {
+      const sorted = [...array].sort((a, b) => a - b);
+      setArray(sorted);
+      steps = generateInterpolationSteps(sorted, target);
     } else {
       steps = generateLinearSteps(array, target);
     }
@@ -187,7 +264,7 @@ const SearchingLab = () => {
     setStepIndex(0);
     setIsPlaying(false);
     if (steps.length > 0) applyStep(steps[0]);
-  }, [algoKey, target]);
+  }, [algoKey, target, array]);
 
   useEffect(() => {
     let timer;
@@ -208,10 +285,19 @@ const SearchingLab = () => {
     setLowIdx(step.low);
     setHighIdx(step.high);
     setMidIdx(step.mid);
-    setVisited(step.visited);
+    setVisited(step.visited || []);
     setFoundIdx(step.found);
-    setActiveCodeLine(step.line);
-    setStats({ comparisons: step.comparisons });
+    setActiveCodeLine(step.line || 0);
+    setStats({ comparisons: step.comparisons || 0 });
+  };
+
+  const handleCustomImport = () => {
+    if (!customInput.trim()) return;
+    const parsed = customInput.split(',').map(x => parseInt(x.trim())).filter(x => !isNaN(x));
+    if (parsed.length > 0) {
+      setArray(parsed);
+      setCustomInput('');
+    }
   };
 
   const handleRandomize = () => {
@@ -248,7 +334,7 @@ const SearchingLab = () => {
                 type="number"
                 value={target}
                 onChange={(e) => setTarget(parseInt(e.target.value) || 0)}
-                className="w-14 bg-white border border-gray-200 rounded-lg px-2 py-0.5 font-bold text-gray-900 focus:outline-none focus:border-primary"
+                className="w-16 bg-white border border-gray-200 rounded-lg px-2 py-0.5 font-bold text-gray-900 focus:outline-none focus:border-primary"
               />
             </div>
           </div>
@@ -257,7 +343,7 @@ const SearchingLab = () => {
         {/* Main Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
 
-          {/* Left Column: Selector */}
+          {/* Left Column: Selector & Custom Inputs */}
           <div className="lg:col-span-3 bg-white p-5 rounded-3xl border border-gray-100 shadow-xs space-y-4">
             <h3 className="text-xs font-bold font-poppins text-gray-400 uppercase tracking-wider">Select Search Algorithm</h3>
             <div className="space-y-2">
@@ -281,6 +367,23 @@ const SearchingLab = () => {
                   </button>
                 );
               })}
+            </div>
+
+            {/* Custom Input Box */}
+            <div className="pt-4 border-t border-gray-100 space-y-2">
+              <label className="text-xs font-bold font-poppins text-gray-400 uppercase tracking-wider">Custom Array Input</label>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  placeholder="e.g. 10, 20, 30, 40"
+                  value={customInput}
+                  onChange={(e) => setCustomInput(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl bg-gray-50 border border-gray-200 text-xs font-mono focus:outline-none focus:border-primary"
+                />
+                <Button onClick={handleCustomImport} variant="outline" className="py-1.5 text-xs px-3">
+                  Import
+                </Button>
+              </div>
             </div>
           </div>
 
@@ -415,32 +518,25 @@ const SearchingLab = () => {
               </div>
             </div>
 
-            {/* Complexity Specs */}
+            {/* Intuition & Educational Notes */}
             <div className="bg-white p-5 rounded-3xl border border-gray-100 shadow-xs space-y-3">
-              <h3 className="text-xs font-bold font-poppins text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
-                <Activity className="w-3.5 h-3.5 text-accent" /> Complexity Specs
+              <h3 className="text-xs font-bold font-poppins text-gray-400 uppercase tracking-wider flex items-center gap-1.5 text-amber-500">
+                <Lightbulb className="w-3.5 h-3.5" /> Conceptual Intuition
               </h3>
-              <div className="space-y-2 text-xs font-mono">
-                <div className="flex justify-between py-1 border-b border-gray-100">
-                  <span className="text-gray-400">Best Case:</span>
-                  <span className="font-bold text-emerald-600">{currentAlgo.best}</span>
-                </div>
-                <div className="flex justify-between py-1 border-b border-gray-100">
-                  <span className="text-gray-400">Average:</span>
-                  <span className="font-bold text-primary">{currentAlgo.avg}</span>
-                </div>
-                <div className="flex justify-between py-1 border-b border-gray-100">
-                  <span className="text-gray-400">Worst Case:</span>
-                  <span className="font-bold text-danger">{currentAlgo.worst}</span>
-                </div>
-                <div className="flex justify-between py-1 border-b border-gray-100">
-                  <span className="text-gray-400">Requires Sorted:</span>
-                  <span className="font-bold text-gray-700">{currentAlgo.requiresSorted ? 'Yes' : 'No'}</span>
-                </div>
-                <div className="flex justify-between py-1">
-                  <span className="text-gray-400">Comparisons:</span>
-                  <span className="font-bold text-primary">{stats.comparisons}</span>
-                </div>
+              <p className="text-xs text-gray-600 font-inter leading-relaxed">{currentAlgo.intuition}</p>
+              
+              <div className="pt-2 border-t border-gray-100 space-y-1">
+                <span className="text-[10px] font-bold font-poppins text-red-500 uppercase flex items-center gap-1">
+                  <AlertTriangle className="w-3 h-3" /> Common Mistake
+                </span>
+                <p className="text-[11px] text-gray-500 font-inter leading-tight">{currentAlgo.mistakes}</p>
+              </div>
+
+              <div className="pt-2 border-t border-gray-100 space-y-1">
+                <span className="text-[10px] font-bold font-poppins text-emerald-600 uppercase flex items-center gap-1">
+                  <Sparkles className="w-3 h-3" /> Interview Tip
+                </span>
+                <p className="text-[11px] text-gray-500 font-inter leading-tight">{currentAlgo.interviewTip}</p>
               </div>
             </div>
 

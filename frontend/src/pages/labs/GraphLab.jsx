@@ -14,7 +14,9 @@ import {
   Activity, 
   Layers, 
   Sparkles,
-  ArrowRight
+  ArrowRight,
+  Lightbulb,
+  AlertTriangle
 } from 'lucide-react';
 import AppLayout from '../../layouts/AppLayout';
 import Button from '../../components/common/Button';
@@ -34,7 +36,10 @@ const GRAPH_ALGORITHMS = {
       '    if not visited[neighbor]:',
       '      visited[neighbor] = true',
       '      queue.push(neighbor)'
-    ]
+    ],
+    intuition: 'Explores graph level-by-level using a FIFO queue. Guarantees shortest path in unweighted graphs.',
+    mistakes: 'Forgetting to mark nodes as visited when pushing to the queue, causing infinite loops in cyclic graphs.',
+    interviewTip: 'BFS is ideal for finding shortest path in unweighted graphs and minimum knight moves on a chessboard.'
   },
   dfs: {
     name: 'Depth First Search (DFS)',
@@ -47,7 +52,10 @@ const GRAPH_ALGORITHMS = {
       '  for neighbor of node:',
       '    if not visited[neighbor]:',
       '      dfs(neighbor)'
-    ]
+    ],
+    intuition: 'Explores as far as possible along each branch before backtracking using a call stack or explicit stack.',
+    mistakes: 'Exceeding recursion stack limits on deep linear graphs; use iterative stack for high depth.',
+    interviewTip: 'DFS is used for topological sorting, connected components, cycle detection, and maze pathfinding.'
   },
   dijkstra: {
     name: 'Dijkstra Shortest Path',
@@ -63,7 +71,10 @@ const GRAPH_ALGORITHMS = {
       '    if dist[u] + weight < dist[v]:',
       '      dist[v] = dist[u] + weight',
       '      pq.push((dist[v], v))'
-    ]
+    ],
+    intuition: 'Greedily selects the unvisited node with smallest tentative distance and relaxes outgoing edges.',
+    mistakes: 'Fails on graphs with negative edge weights; use Bellman-Ford algorithm instead.',
+    interviewTip: 'Using a min-priority queue (binary heap) reduces distance lookup and relaxation time to O((V + E) log V).'
   }
 };
 
@@ -85,6 +96,10 @@ const GraphLab = () => {
     { from: 'D', to: 'E', weight: 3 }
   ]);
 
+  const [newFrom, setNewFrom] = useState('A');
+  const [newTo, setNewTo] = useState('E');
+  const [newWeight, setNewWeight] = useState(2);
+
   const [isPlaying, setIsPlaying] = useState(false);
   const [speed, setSpeed] = useState(1);
   const [stepIndex, setStepIndex] = useState(0);
@@ -97,50 +112,53 @@ const GraphLab = () => {
   const [queueState, setQueueState] = useState([]);
   const [distTable, setDistTable] = useState({});
   const [activeCodeLine, setActiveCodeLine] = useState(0);
+  const [desc, setDesc] = useState('');
 
   const currentSpec = GRAPH_ALGORITHMS[algoKey];
 
-  // Pre-generate BFS events
+  // Adjacency Builder
+  const getAdj = () => {
+    let adj = {};
+    nodes.forEach(n => adj[n.id] = []);
+    edges.forEach(e => {
+      if (!adj[e.from]) adj[e.from] = [];
+      adj[e.from].push({ node: e.to, weight: e.weight });
+    });
+    return adj;
+  };
+
+  // Step Generators
   const generateBFSEvents = () => {
     let steps = [];
     let visited = new Set(['A']);
     let queue = ['A'];
-    let dist = { A: 0, B: '∞', C: '∞', D: '∞', E: '∞' };
+    let adj = getAdj();
 
     steps.push({
-      curr: 'A', visited: ['A'], queue: ['A'], activeEdge: null, dist: { ...dist }, line: 0,
-      desc: 'Initialized BFS from source Node A into queue.'
+      curr: 'A', visited: ['A'], queue: ['A'], activeEdge: null, line: 0,
+      desc: 'Initialized BFS from source Node A into FIFO queue.'
     });
-
-    // Adjacency map
-    const adj = {
-      A: ['B', 'C'],
-      B: ['D'],
-      C: ['D'],
-      D: ['E'],
-      E: []
-    };
 
     while (queue.length > 0) {
       const u = queue.shift();
       steps.push({
-        curr: u, visited: Array.from(visited), queue: [...queue], activeEdge: null, dist: { ...dist }, line: 3,
+        curr: u, visited: Array.from(visited), queue: [...queue], activeEdge: null, line: 3,
         desc: `Popped Node ${u} from queue for exploration.`
       });
 
-      for (const v of adj[u] || []) {
+      const neighbors = adj[u] || [];
+      for (const edge of neighbors) {
+        const v = edge.node;
         steps.push({
-          curr: u, visited: Array.from(visited), queue: [...queue], activeEdge: `${u}-${v}`, dist: { ...dist }, line: 4,
-          desc: `Inspecting edge ${u} -> ${v}.`
+          curr: u, visited: Array.from(visited), queue: [...queue], activeEdge: `${u}-${v}`, line: 4,
+          desc: `Inspecting edge ${u} -> ${v} (weight ${edge.weight}).`
         });
 
         if (!visited.has(v)) {
           visited.add(v);
           queue.push(v);
-          if (dist[u] !== '∞') dist[v] = dist[u] + 1;
-
           steps.push({
-            curr: v, visited: Array.from(visited), queue: [...queue], activeEdge: `${u}-${v}`, dist: { ...dist }, line: 7,
+            curr: v, visited: Array.from(visited), queue: [...queue], activeEdge: `${u}-${v}`, line: 7,
             desc: `Node ${v} marked as visited and pushed to queue.`
           });
         }
@@ -148,20 +166,120 @@ const GraphLab = () => {
     }
 
     steps.push({
-      curr: null, visited: Array.from(visited), queue: [], activeEdge: null, dist: { ...dist }, line: 0,
+      curr: null, visited: Array.from(visited), queue: [], activeEdge: null, line: 0,
       desc: 'BFS Traversal Completed!'
     });
+    return steps;
+  };
 
+  const generateDFSEvents = () => {
+    let steps = [];
+    let visited = new Set();
+    let stack = ['A'];
+    let adj = getAdj();
+
+    steps.push({
+      curr: 'A', visited: [], queue: ['A'], activeEdge: null, line: 0,
+      desc: 'Initialized DFS with call stack starting at Node A.'
+    });
+
+    const dfs = (u) => {
+      visited.add(u);
+      steps.push({
+        curr: u, visited: Array.from(visited), queue: Array.from(visited), activeEdge: null, line: 1,
+        desc: `Visited Node ${u}. Pushed to call stack.`
+      });
+
+      const neighbors = adj[u] || [];
+      for (const edge of neighbors) {
+        const v = edge.node;
+        if (!visited.has(v)) {
+          steps.push({
+            curr: u, visited: Array.from(visited), queue: Array.from(visited), activeEdge: `${u}-${v}`, line: 3,
+            desc: `Traversing edge ${u} -> ${v}.`
+          });
+          dfs(v);
+        }
+      }
+    };
+
+    dfs('A');
+    steps.push({
+      curr: null, visited: Array.from(visited), queue: [], activeEdge: null, line: 0,
+      desc: 'DFS Traversal Completed!'
+    });
+    return steps;
+  };
+
+  const generateDijkstraEvents = () => {
+    let steps = [];
+    let dist = {};
+    nodes.forEach(n => dist[n.id] = Infinity);
+    dist['A'] = 0;
+    let visited = new Set();
+    let adj = getAdj();
+
+    steps.push({
+      curr: 'A', visited: [], queue: ['A'], dist: { ...dist }, activeEdge: null, line: 0,
+      desc: 'Dijkstra initialized: dist[A] = 0, all other distances = ∞'
+    });
+
+    while (visited.size < nodes.length) {
+      let u = null;
+      let minD = Infinity;
+      nodes.forEach(n => {
+        if (!visited.has(n.id) && dist[n.id] < minD) {
+          minD = dist[n.id];
+          u = n.id;
+        }
+      });
+
+      if (!u || minD === Infinity) break;
+      visited.add(u);
+
+      steps.push({
+        curr: u, visited: Array.from(visited), queue: Array.from(visited), dist: { ...dist }, activeEdge: null, line: 2,
+        desc: `Selected unvisited node ${u} with minimum tentative distance (${dist[u]}).`
+      });
+
+      const neighbors = adj[u] || [];
+      for (const edge of neighbors) {
+        const v = edge.node;
+        const weight = edge.weight;
+
+        steps.push({
+          curr: u, visited: Array.from(visited), queue: Array.from(visited), dist: { ...dist }, activeEdge: `${u}-${v}`, line: 4,
+          desc: `Checking edge ${u} -> ${v} (weight ${weight}).`
+        });
+
+        if (dist[u] + weight < dist[v]) {
+          dist[v] = dist[u] + weight;
+          steps.push({
+            curr: v, visited: Array.from(visited), queue: Array.from(visited), dist: { ...dist }, activeEdge: `${u}-${v}`, line: 5,
+            desc: `Relaxed edge! Updated shortest distance to ${v}: dist[${v}] = ${dist[v]}`
+          });
+        }
+      }
+    }
+
+    steps.push({
+      curr: null, visited: Array.from(visited), queue: [], dist: { ...dist }, activeEdge: null, line: 0,
+      desc: 'Dijkstra Shortest Path Completed!'
+    });
     return steps;
   };
 
   useEffect(() => {
-    const steps = generateBFSEvents();
+    let steps = [];
+    if (algoKey === 'bfs') steps = generateBFSEvents();
+    else if (algoKey === 'dfs') steps = generateDFSEvents();
+    else steps = generateDijkstraEvents();
+
     setEvents(steps);
     setStepIndex(0);
     setIsPlaying(false);
     if (steps.length > 0) applyStep(steps[0]);
-  }, [algoKey]);
+  }, [algoKey, nodes, edges]);
 
   useEffect(() => {
     let timer;
@@ -180,17 +298,41 @@ const GraphLab = () => {
   const applyStep = (step) => {
     if (!step) return;
     setCurrNode(step.curr);
-    setVisitedNodes(step.visited);
+    setVisitedNodes(step.visited || []);
     setActiveEdge(step.activeEdge);
-    setQueueState(step.queue);
-    setDistTable(step.dist);
-    setActiveCodeLine(step.line);
+    setQueueState(step.queue || []);
+    setDistTable(step.dist || {});
+    setActiveCodeLine(step.line || 0);
+    setDesc(step.desc || '');
+  };
+
+  const handleAddEdge = () => {
+    if (newFrom === newTo) return;
+    const exists = edges.some(e => e.from === newFrom && e.to === newTo);
+    if (!exists) {
+      setEdges([...edges, { from: newFrom, to: newTo, weight: parseInt(newWeight) || 1 }]);
+    }
+  };
+
+  const handleAddNode = () => {
+    const nextChar = String.fromCharCode(65 + nodes.length);
+    if (nodes.length < 8) {
+      const newNode = {
+        id: nextChar,
+        x: 100 + (nodes.length * 60) % 360,
+        y: 100 + Math.floor(nodes.length / 3) * 80
+      };
+      setNodes([...nodes, newNode]);
+    }
   };
 
   const handleRandomize = () => {
     setIsPlaying(false);
     setStepIndex(0);
-    const steps = generateBFSEvents();
+    let steps = [];
+    if (algoKey === 'bfs') steps = generateBFSEvents();
+    else if (algoKey === 'dfs') steps = generateDFSEvents();
+    else steps = generateDijkstraEvents();
     setEvents(steps);
     if (steps.length > 0) applyStep(steps[0]);
   };
@@ -229,7 +371,7 @@ const GraphLab = () => {
         {/* Main Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
 
-          {/* Selector */}
+          {/* Selector & Graph Builder */}
           <div className="lg:col-span-3 bg-white p-5 rounded-3xl border border-gray-100 shadow-xs space-y-4">
             <h3 className="text-xs font-bold font-poppins text-gray-400 uppercase tracking-wider">Graph Algorithm</h3>
             <div className="space-y-2">
@@ -253,6 +395,27 @@ const GraphLab = () => {
                   </button>
                 );
               })}
+            </div>
+
+            {/* Connect Edge Builder */}
+            <div className="pt-4 border-t border-gray-100 space-y-3">
+              <div className="flex justify-between items-center">
+                <label className="text-xs font-bold font-poppins text-gray-400 uppercase tracking-wider">Edge Builder</label>
+                <button onClick={handleAddNode} className="text-[11px] font-bold text-primary hover:underline">+ Add Node</button>
+              </div>
+
+              <div className="grid grid-cols-3 gap-2">
+                <select value={newFrom} onChange={e => setNewFrom(e.target.value)} className="px-2 py-1.5 rounded-xl bg-gray-50 border border-gray-200 text-xs font-mono">
+                  {nodes.map(n => <option key={n.id} value={n.id}>{n.id}</option>)}
+                </select>
+                <select value={newTo} onChange={e => setNewTo(e.target.value)} className="px-2 py-1.5 rounded-xl bg-gray-50 border border-gray-200 text-xs font-mono">
+                  {nodes.map(n => <option key={n.id} value={n.id}>{n.id}</option>)}
+                </select>
+                <input type="number" value={newWeight} onChange={e => setNewWeight(e.target.value)} placeholder="W" className="px-2 py-1.5 rounded-xl bg-gray-50 border border-gray-200 text-xs font-mono w-full" />
+              </div>
+              <Button onClick={handleAddEdge} variant="outline" className="w-full py-1.5 text-xs">
+                Connect Edge
+              </Button>
             </div>
           </div>
 
@@ -329,7 +492,7 @@ const GraphLab = () => {
               {/* Event Description */}
               <div className="text-center pt-2 border-t border-gray-50">
                 <p className="text-xs font-mono text-gray-600 truncate">
-                  {events[stepIndex]?.desc || 'Ready to run graph algorithm.'}
+                  {desc || 'Ready to run graph algorithm.'}
                 </p>
               </div>
             </div>
@@ -412,23 +575,25 @@ const GraphLab = () => {
               </div>
             </div>
 
+            {/* Intuition & Educational Notes */}
             <div className="bg-white p-5 rounded-3xl border border-gray-100 shadow-xs space-y-3">
-              <h3 className="text-xs font-bold font-poppins text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
-                <Activity className="w-3.5 h-3.5 text-accent" /> Complexity Specs
+              <h3 className="text-xs font-bold font-poppins text-gray-400 uppercase tracking-wider flex items-center gap-1.5 text-amber-500">
+                <Lightbulb className="w-3.5 h-3.5" /> Conceptual Intuition
               </h3>
-              <div className="space-y-2 text-xs font-mono">
-                <div className="flex justify-between py-1 border-b border-gray-100">
-                  <span className="text-gray-400">Time Complexity:</span>
-                  <span className="font-bold text-primary">{currentSpec.best}</span>
-                </div>
-                <div className="flex justify-between py-1 border-b border-gray-100">
-                  <span className="text-gray-400">Space Complexity:</span>
-                  <span className="font-bold text-emerald-600">{currentSpec.space}</span>
-                </div>
-                <div className="flex justify-between py-1">
-                  <span className="text-gray-400">Visited Nodes:</span>
-                  <span className="font-bold text-accent">{visitedNodes.length} / {nodes.length}</span>
-                </div>
+              <p className="text-xs text-gray-600 font-inter leading-relaxed">{currentSpec.intuition}</p>
+              
+              <div className="pt-2 border-t border-gray-100 space-y-1">
+                <span className="text-[10px] font-bold font-poppins text-red-500 uppercase flex items-center gap-1">
+                  <AlertTriangle className="w-3 h-3" /> Common Mistake
+                </span>
+                <p className="text-[11px] text-gray-500 font-inter leading-tight">{currentSpec.mistakes}</p>
+              </div>
+
+              <div className="pt-2 border-t border-gray-100 space-y-1">
+                <span className="text-[10px] font-bold font-poppins text-emerald-600 uppercase flex items-center gap-1">
+                  <Sparkles className="w-3 h-3" /> Interview Tip
+                </span>
+                <p className="text-[11px] text-gray-500 font-inter leading-tight">{currentSpec.interviewTip}</p>
               </div>
             </div>
 
