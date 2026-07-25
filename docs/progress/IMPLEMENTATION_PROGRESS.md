@@ -86,6 +86,16 @@
 - [x] Animated Bar Visualization Canvas (Compare, Swap, Sorted color states)
 - [x] Live Pseudocode Line Highlighting & Complexity Metrics Panel
 
+### Phase 6: Searching Laboratory
+- [x] Algorithm Selector (Linear Search, Binary Search, Interpolation Search)
+- [x] Interactive Target Pointer Visualizer & Range Bounds Highlighting
+- [x] Search Execution Step Engine & Live Pseudocode Synchronizer
+
+### Phase 7: Tree Laboratory
+- [x] Tree Type Selector (Binary Search Tree, AVL Tree)
+- [x] Dynamic Node Insert / Delete SVG Canvas & Edge Connectors
+- [x] Tree Traversal Engine (In-Order, Pre-Order, Post-Order) with animated sequence highlight
+
 ## Phase 1: Authentication
 
 **Module:** Authentication  

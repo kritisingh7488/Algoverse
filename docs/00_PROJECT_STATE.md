@@ -390,7 +390,7 @@ Every AI session MUST update it.
 
 ## Current Phase
 
-Phase 6 (Searching Lab)
+Phase 8 (Graph Laboratory)
 
 ---
 
@@ -402,7 +402,7 @@ Frontend
 
 ## Current Feature
 
-Searching Laboratory Visualization Engine
+Graph Laboratory & Traversal Visualizers
 
 ---
 
@@ -533,6 +533,8 @@ frontend/src/pages/LandingPage.jsx
 frontend/src/pages/Dashboard.jsx
 frontend/src/pages/Playground.jsx
 frontend/src/pages/labs/SortingLab.jsx
+frontend/src/pages/labs/SearchingLab.jsx
+frontend/src/pages/labs/TreeLab.jsx
 frontend/src/App.jsx
 
 ---

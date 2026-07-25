@@ -9,6 +9,8 @@ import LandingPage from './pages/LandingPage';
 import Dashboard from './pages/Dashboard';
 import Playground from './pages/Playground';
 import SortingLab from './pages/labs/SortingLab';
+import SearchingLab from './pages/labs/SearchingLab';
+import TreeLab from './pages/labs/TreeLab';
 import NotFound from './pages/NotFound';
 import useAuthStore from './store/authStore';
 
@@ -66,6 +68,22 @@ function App() {
           element={
             <ProtectedRoute>
               <SortingLab />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/labs/searching" 
+          element={
+            <ProtectedRoute>
+              <SearchingLab />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/labs/tree" 
+          element={
+            <ProtectedRoute>
+              <TreeLab />
             </ProtectedRoute>
           } 
         />
