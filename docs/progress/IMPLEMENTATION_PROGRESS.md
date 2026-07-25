@@ -117,6 +117,14 @@
 - [x] Dark-theme Code Editor Window & Execution Console
 - [x] Simulation Engine with compile output, execution time metrics, and reset options
 
+### Phase 12: Community & Contests
+- [x] Community Feed & Discussion Board (`Community.jsx`) with markdown post creation, tags & reactions
+- [x] Weekly Algorithm Contests (`Contests.jsx`) with countdown timer, standings & participant registration
+
+### Phase 13: Profile & Settings
+- [x] User Public Profile (`Profile.jsx`) with XP stats, rank badges & unlocked achievements
+- [x] Settings Page (`Settings.jsx`) with profile editing & security preferences
+
 ## Phase 1: Authentication
 
 **Module:** Authentication  

@@ -10,6 +10,10 @@ import Dashboard from './pages/Dashboard';
 import Playground from './pages/Playground';
 import BenchmarkCenter from './pages/BenchmarkCenter';
 import CodePlayground from './pages/CodePlayground';
+import Community from './pages/Community';
+import Contests from './pages/Contests';
+import Profile from './pages/Profile';
+import Settings from './pages/Settings';
 import SortingLab from './pages/labs/SortingLab';
 import SearchingLab from './pages/labs/SearchingLab';
 import TreeLab from './pages/labs/TreeLab';
@@ -80,6 +84,38 @@ function App() {
           element={
             <ProtectedRoute>
               <CodePlayground />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/community" 
+          element={
+            <ProtectedRoute>
+              <Community />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/contests" 
+          element={
+            <ProtectedRoute>
+              <Contests />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/profile" 
+          element={
+            <ProtectedRoute>
+              <Profile />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/settings" 
+          element={
+            <ProtectedRoute>
+              <Settings />
             </ProtectedRoute>
           } 
         />
