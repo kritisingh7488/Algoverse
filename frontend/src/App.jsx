@@ -14,6 +14,8 @@ import Community from './pages/Community';
 import Contests from './pages/Contests';
 import Profile from './pages/Profile';
 import Settings from './pages/Settings';
+import Admin from './pages/Admin';
+import Roadmap from './pages/Roadmap';
 import SortingLab from './pages/labs/SortingLab';
 import SearchingLab from './pages/labs/SearchingLab';
 import TreeLab from './pages/labs/TreeLab';
@@ -116,6 +118,22 @@ function App() {
           element={
             <ProtectedRoute>
               <Settings />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/admin" 
+          element={
+            <ProtectedRoute>
+              <Admin />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/roadmap" 
+          element={
+            <ProtectedRoute>
+              <Roadmap />
             </ProtectedRoute>
           } 
         />
