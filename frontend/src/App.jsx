@@ -21,6 +21,8 @@ import SearchingLab from './pages/labs/SearchingLab';
 import TreeLab from './pages/labs/TreeLab';
 import GraphLab from './pages/labs/GraphLab';
 import DPStudio from './pages/labs/DPStudio';
+import StringLab from './pages/labs/StringLab';
+import BacktrackingLab from './pages/labs/BacktrackingLab';
 import NotFound from './pages/NotFound';
 import useAuthStore from './store/authStore';
 
@@ -174,6 +176,22 @@ function App() {
           element={
             <ProtectedRoute>
               <DPStudio />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/labs/string" 
+          element={
+            <ProtectedRoute>
+              <StringLab />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/labs/backtracking" 
+          element={
+            <ProtectedRoute>
+              <BacktrackingLab />
             </ProtectedRoute>
           } 
         />

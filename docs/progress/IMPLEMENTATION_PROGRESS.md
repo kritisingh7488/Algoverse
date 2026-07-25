@@ -129,6 +129,10 @@
 - [x] Admin Panel (`Admin.jsx`) with system metrics, user role management & suspension toggles
 - [x] Curated Learning Roadmap (`Roadmap.jsx`) with linear, sorting, tree, graph & DP progress tracking
 
+### Extended Laboratories
+- [x] String Algorithms Laboratory (`StringLab.jsx`) with KMP & LPS table visualizer
+- [x] Backtracking Studio (`BacktrackingLab.jsx`) with 4x4 N-Queens chessboard solver & backtrack counter
+
 ---
 
 ## 🚀 PROJECT COMPLETION STATUS: 100% DONE

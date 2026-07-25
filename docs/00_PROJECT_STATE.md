@@ -545,6 +545,8 @@ frontend/src/pages/labs/SearchingLab.jsx
 frontend/src/pages/labs/TreeLab.jsx
 frontend/src/pages/labs/GraphLab.jsx
 frontend/src/pages/labs/DPStudio.jsx
+frontend/src/pages/labs/StringLab.jsx
+frontend/src/pages/labs/BacktrackingLab.jsx
 frontend/src/App.jsx
 
 ---
