@@ -390,7 +390,7 @@ Every AI session MUST update it.
 
 ## Current Phase
 
-Phase 8 (Graph Laboratory)
+Phase 10 (Benchmark Center & Code Playground)
 
 ---
 
@@ -402,7 +402,7 @@ Frontend
 
 ## Current Feature
 
-Graph Laboratory & Traversal Visualizers
+Benchmark Center Charts & Code Playground Editor
 
 ---
 
@@ -535,6 +535,8 @@ frontend/src/pages/Playground.jsx
 frontend/src/pages/labs/SortingLab.jsx
 frontend/src/pages/labs/SearchingLab.jsx
 frontend/src/pages/labs/TreeLab.jsx
+frontend/src/pages/labs/GraphLab.jsx
+frontend/src/pages/labs/DPStudio.jsx
 frontend/src/App.jsx
 
 ---

@@ -96,6 +96,16 @@
 - [x] Dynamic Node Insert / Delete SVG Canvas & Edge Connectors
 - [x] Tree Traversal Engine (In-Order, Pre-Order, Post-Order) with animated sequence highlight
 
+### Phase 8: Graph Laboratory
+- [x] Graph Algorithm Selector (BFS, DFS, Dijkstra Shortest Path)
+- [x] SVG Graph Visualizer with edge weights, node position canvas & queue/stack state
+- [x] Interactive Traversal Engine & Synchronized Pseudocode Panel
+
+### Phase 9: Dynamic Programming Studio
+- [x] DP Problem & Approach Selector (Fibonacci, Climbing Stairs, 0/1 Knapsack / Memoization, Tabulation)
+- [x] Interactive 2D/1D DP State Table with active cell computation glow
+- [x] Efficiency Analytics (Time, Space, Table updates, Memo hits) & Recurrence Synchronizer
+
 ## Phase 1: Authentication
 
 **Module:** Authentication  

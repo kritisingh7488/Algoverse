@@ -11,6 +11,8 @@ import Playground from './pages/Playground';
 import SortingLab from './pages/labs/SortingLab';
 import SearchingLab from './pages/labs/SearchingLab';
 import TreeLab from './pages/labs/TreeLab';
+import GraphLab from './pages/labs/GraphLab';
+import DPStudio from './pages/labs/DPStudio';
 import NotFound from './pages/NotFound';
 import useAuthStore from './store/authStore';
 
@@ -84,6 +86,22 @@ function App() {
           element={
             <ProtectedRoute>
               <TreeLab />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/labs/graph" 
+          element={
+            <ProtectedRoute>
+              <GraphLab />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/labs/dp" 
+          element={
+            <ProtectedRoute>
+              <DPStudio />
             </ProtectedRoute>
           } 
         />
