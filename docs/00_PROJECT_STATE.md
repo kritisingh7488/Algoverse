@@ -390,7 +390,7 @@ Every AI session MUST update it.
 
 ## Current Phase
 
-Phase 3 (Home & Dashboard)
+Phase 6 (Searching Lab)
 
 ---
 
@@ -402,7 +402,7 @@ Frontend
 
 ## Current Feature
 
-Landing Page & Dashboard UI
+Searching Laboratory Visualization Engine
 
 ---
 
@@ -529,6 +529,10 @@ frontend/src/components/layout/Footer.jsx
 frontend/src/layouts/AppLayout.jsx
 frontend/src/components/common/LoadingScreen.jsx
 frontend/src/pages/NotFound.jsx
+frontend/src/pages/LandingPage.jsx
+frontend/src/pages/Dashboard.jsx
+frontend/src/pages/Playground.jsx
+frontend/src/pages/labs/SortingLab.jsx
 frontend/src/App.jsx
 
 ---
