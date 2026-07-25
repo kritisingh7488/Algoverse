@@ -7,8 +7,6 @@ import {
   Plus, 
   Trash2, 
   Search, 
-  Clock, 
-  Cpu, 
   Undo, 
   Redo, 
   Sparkles, 
@@ -22,8 +20,11 @@ import {
   Code,
   Lightbulb,
   AlertTriangle,
-  HelpCircle,
-  FileText
+  RotateCw,
+  Eye,
+  Zap,
+  ArrowLeftRight,
+  Maximize2
 } from 'lucide-react';
 import AppLayout from '../layouts/AppLayout';
 import Button from '../components/common/Button';
@@ -32,9 +33,9 @@ const STRUCTURE_SPECS = {
   array: {
     name: 'Array / Dynamic Array',
     category: 'Linear',
-    description: 'Contiguous memory block allowing O(1) random index access but requiring O(N) shifts for insertions and deletions.',
+    description: 'Contiguous memory block allowing O(1) random index access but requiring O(N) shifts for non-tail insertions and deletions.',
     bestTime: 'O(1) Access',
-    worstTime: 'O(N) Search/Insert',
+    worstTime: 'O(N) Search/Shift',
     space: 'O(N)',
     pseudocode: [
       '// Insert at index idx',
@@ -56,19 +57,19 @@ const STRUCTURE_SPECS = {
     space: 'O(N)',
     pseudocode: [
       'function push(val):',
+      '  if size == capacity: raise StackOverflow',
       '  top++',
       '  stack[top] = val',
       'function pop():',
-      '  val = stack[top]',
-      '  top--',
-      '  return val'
+      '  if top == -1: raise StackUnderflow',
+      '  val = stack[top]; top--; return val'
     ],
     intuition: 'Think of a stack of plates. You place new plates on top and remove from the top. The last plate placed is the first one removed.',
-    mistakes: 'Attempting to pop from an empty stack (Stack Underflow) or exceeding allocated stack depth (Stack Overflow).',
+    mistakes: 'Attempting to pop from an empty stack (Stack Underflow) or exceeding allocated capacity (Stack Overflow).',
     interviewTip: 'Stacks are perfect for expression evaluation (RPN), balancing parentheses, depth-first search, and tracking recursion.'
   },
   queue: {
-    name: 'Queue (FIFO)',
+    name: 'Queue (FIFO & Circular)',
     category: 'Linear',
     description: 'First-In, First-Out structure where items enter at the rear and exit from the front.',
     bestTime: 'O(1) Enqueue/Dequeue',
@@ -76,15 +77,14 @@ const STRUCTURE_SPECS = {
     space: 'O(N)',
     pseudocode: [
       'function enqueue(val):',
-      '  rear++',
+      '  rear = (rear + 1) % Capacity',
       '  queue[rear] = val',
       'function dequeue():',
       '  val = queue[front]',
-      '  front++',
-      '  return val'
+      '  front = (front + 1) % Capacity'
     ],
     intuition: 'Think of a line at a ticket counter. First person to join the queue is the first person served.',
-    mistakes: 'Confusing Front and Rear pointers, leading to unintentional LIFO behavior.',
+    mistakes: 'Confusing Front and Rear pointers in linear arrays without circular wrapping.',
     interviewTip: 'Queues are indispensable for Breadth-First Search (BFS), task scheduling queues, and buffering asynchronous data streams.'
   },
   linkedlist: {
@@ -95,15 +95,16 @@ const STRUCTURE_SPECS = {
     worstTime: 'O(N) Search/Access',
     space: 'O(N)',
     pseudocode: [
-      'newNode = Node(val)',
-      'if head == null:',
-      '  head = newNode',
-      'else:',
-      '  newNode.next = head',
-      '  head = newNode'
+      'function reverseList(head):',
+      '  prev = null, curr = head',
+      '  while curr != null:',
+      '    nextTemp = curr.next',
+      '    curr.next = prev',
+      '    prev = curr; curr = nextTemp',
+      '  return prev'
     ],
     intuition: 'Nodes act as a scavenger hunt: each element tells you where to find the next element via pointer references.',
-    mistakes: 'Losing the reference to the head node, causing memory leaks or dangling pointers.',
+    mistakes: 'Losing the reference to the head node or creating infinite loops during pointer manipulation.',
     interviewTip: 'Master fast and slow pointer techniques (Floyd Cycle Detection) to find midpoints or loops in a single pass.'
   }
 };
@@ -115,6 +116,13 @@ const Playground = () => {
   const [targetIndex, setTargetIndex] = useState('');
   const [bulkInput, setBulkInput] = useState('');
   
+  // Specific Structure Configs
+  const [stackCapacity, setStackCapacity] = useState(8);
+  const [queueCapacity, setQueueCapacity] = useState(8);
+  const [frontPtr, setFrontPtr] = useState(0);
+  const [rearPtr, setRearPtr] = useState(3);
+  const [pointers, setPointers] = useState({}); // { slow: idx, fast: idx, prev: idx, curr: idx }
+
   // Animation / Stepper State
   const [isPlaying, setIsPlaying] = useState(false);
   const [speed, setSpeed] = useState(1);
@@ -143,10 +151,19 @@ const Playground = () => {
     setStepIndex(0);
     setEvents([]);
     setActiveHighlight(null);
-    if (structureKey === 'array') setItems([12, 34, 56, 78, 90, 23]);
-    else if (structureKey === 'stack') setItems([45, 67, 89]);
-    else if (structureKey === 'queue') setItems([10, 20, 30, 40]);
-    else if (structureKey === 'linkedlist') setItems([5, 15, 25, 35]);
+    setPointers({});
+
+    if (structureKey === 'array') {
+      setItems([12, 34, 56, 78, 90, 23]);
+    } else if (structureKey === 'stack') {
+      setItems([45, 67, 89]);
+    } else if (structureKey === 'queue') {
+      setItems([10, 20, 30, 40]);
+      setFrontPtr(0);
+      setRearPtr(3);
+    } else if (structureKey === 'linkedlist') {
+      setItems([5, 15, 25, 35]);
+    }
   }, [structureKey]);
 
   // Stepper Effect
@@ -166,7 +183,10 @@ const Playground = () => {
 
   const applyStep = (step) => {
     if (!step) return;
-    if (step.items) setItems(step.items);
+    if (step.items !== undefined) setItems(step.items);
+    if (step.front !== undefined) setFrontPtr(step.front);
+    if (step.rear !== undefined) setRearPtr(step.rear);
+    if (step.pointers !== undefined) setPointers(step.pointers);
     setActiveHighlight(step.highlight);
     setActiveCodeLine(step.line || 0);
     setExplanation({
@@ -178,151 +198,346 @@ const Playground = () => {
   };
 
   const saveHistory = () => {
-    setHistory([...history, { items: [...items], explanation }]);
+    setHistory([...history, { items: [...items], explanation, frontPtr, rearPtr }]);
     setRedoStack([]);
   };
 
-  // --- Operations ---
-  const handleInsert = () => {
+  // ================= ARRAY OPERATIONS =================
+  const handleArrayInsert = () => {
     const val = parseInt(inputValue) || Math.floor(Math.random() * 90) + 10;
+    const idx = targetIndex !== '' ? Math.max(0, Math.min(items.length, parseInt(targetIndex))) : items.length;
     saveHistory();
 
-    if (structureKey === 'array') {
-      const idx = targetIndex !== '' ? Math.max(0, Math.min(items.length, parseInt(targetIndex))) : items.length;
-      let steps = [];
-      
-      // Step 1: Highlighting insertion point
-      steps.push({
-        items: [...items], highlight: idx, line: 1, op: `Target Index [${idx}]`,
-        desc: `Preparing to insert value ${val} at index ${idx}.`, time: 'O(N)', space: 'O(1)'
-      });
+    let steps = [];
+    steps.push({
+      items: [...items], highlight: idx, line: 1, op: `Target Index [${idx}]`,
+      desc: `Preparing to insert value ${val} at index ${idx}.`, time: 'O(N)', space: 'O(1)'
+    });
 
-      const next = [...items];
-      next.splice(idx, 0, val);
+    const next = [...items];
+    next.splice(idx, 0, val);
 
-      // Step 2: Completed shift and insertion
-      steps.push({
-        items: next, highlight: idx, line: 3, op: `Inserted ${val}`,
-        desc: `Shifted elements right and inserted ${val} at index ${idx}.`, time: idx === items.length ? 'O(1)' : 'O(N)', space: 'O(1)'
-      });
+    steps.push({
+      items: next, highlight: idx, line: 3, op: `Inserted ${val}`,
+      desc: `Shifted elements right and inserted ${val} at index ${idx}.`, time: idx === items.length ? 'O(1)' : 'O(N)', space: 'O(1)'
+    });
 
-      setEvents(steps);
-      setStepIndex(0);
-      applyStep(steps[0]);
-    } 
-    else if (structureKey === 'stack') {
-      // Push to top
-      const next = [...items, val];
-      let steps = [
-        {
-          items: next, highlight: next.length - 1, line: 2, op: `Push ${val}`,
-          desc: `Pushed element ${val} onto top of stack (Index ${next.length - 1}).`, time: 'O(1)', space: 'O(1)'
-        }
-      ];
-      setEvents(steps);
-      setStepIndex(0);
-      applyStep(steps[0]);
-    } 
-    else if (structureKey === 'queue') {
-      // Enqueue to rear
-      const next = [...items, val];
-      let steps = [
-        {
-          items: next, highlight: next.length - 1, line: 2, op: `Enqueue ${val}`,
-          desc: `Enqueued ${val} at the rear of queue (Position ${next.length - 1}).`, time: 'O(1)', space: 'O(1)'
-        }
-      ];
-      setEvents(steps);
-      setStepIndex(0);
-      applyStep(steps[0]);
-    } 
-    else if (structureKey === 'linkedlist') {
-      // Insert Head
-      const next = [val, ...items];
-      let steps = [
-        {
-          items: next, highlight: 0, line: 4, op: `Insert Head ${val}`,
-          desc: `Created new node with value ${val} and updated Head pointer.`, time: 'O(1)', space: 'O(1)'
-        }
-      ];
-      setEvents(steps);
-      setStepIndex(0);
-      applyStep(steps[0]);
-    }
-
+    setEvents(steps);
+    setStepIndex(0);
+    applyStep(steps[0]);
     setInputValue('');
     setTargetIndex('');
   };
 
-  const handleDelete = () => {
+  const handleArrayDelete = () => {
     if (items.length === 0) return;
+    const idx = targetIndex !== '' ? Math.max(0, Math.min(items.length - 1, parseInt(targetIndex))) : items.length - 1;
+    const removedVal = items[idx];
     saveHistory();
 
-    if (structureKey === 'array') {
-      const idx = targetIndex !== '' ? Math.max(0, Math.min(items.length - 1, parseInt(targetIndex))) : items.length - 1;
-      const removedVal = items[idx];
-      const next = items.filter((_, i) => i !== idx);
-
-      let steps = [
-        {
-          items: [...items], highlight: idx, line: 1, op: `Deleting Index [${idx}]`,
-          desc: `Locating element ${removedVal} at index ${idx} to remove.`, time: 'O(N)', space: 'O(1)'
-        },
-        {
-          items: next, highlight: null, line: 3, op: `Deleted ${removedVal}`,
-          desc: `Removed ${removedVal} and shifted remaining elements left to fill the gap.`, time: idx === items.length - 1 ? 'O(1)' : 'O(N)', space: 'O(1)'
-        }
-      ];
-      setEvents(steps);
-      setStepIndex(0);
-      applyStep(steps[0]);
-    } 
-    else if (structureKey === 'stack') {
-      // Pop from top
-      const removedVal = items[items.length - 1];
-      const next = items.slice(0, -1);
-      let steps = [
-        {
-          items: next, highlight: null, line: 5, op: `Pop ${removedVal}`,
-          desc: `Popped top element ${removedVal} from stack.`, time: 'O(1)', space: 'O(1)'
-        }
-      ];
-      setEvents(steps);
-      setStepIndex(0);
-      applyStep(steps[0]);
-    } 
-    else if (structureKey === 'queue') {
-      // Dequeue from front
-      const removedVal = items[0];
-      const next = items.slice(1);
-      let steps = [
-        {
-          items: next, highlight: 0, line: 5, op: `Dequeue ${removedVal}`,
-          desc: `Dequeued front element ${removedVal} from queue.`, time: 'O(1)', space: 'O(1)'
-        }
-      ];
-      setEvents(steps);
-      setStepIndex(0);
-      applyStep(steps[0]);
-    } 
-    else if (structureKey === 'linkedlist') {
-      // Delete Head
-      const removedVal = items[0];
-      const next = items.slice(1);
-      let steps = [
-        {
-          items: next, highlight: 0, line: 2, op: `Delete Head ${removedVal}`,
-          desc: `Removed head node ${removedVal} and advanced Head pointer to next node.`, time: 'O(1)', space: 'O(1)'
-        }
-      ];
-      setEvents(steps);
-      setStepIndex(0);
-      applyStep(steps[0]);
-    }
-
+    const next = items.filter((_, i) => i !== idx);
+    let steps = [
+      {
+        items: [...items], highlight: idx, line: 1, op: `Locating Index [${idx}]`,
+        desc: `Targeting element ${removedVal} at index ${idx} for removal.`, time: 'O(N)', space: 'O(1)'
+      },
+      {
+        items: next, highlight: null, line: 3, op: `Deleted ${removedVal}`,
+        desc: `Removed ${removedVal} and shifted left elements to close gap.`, time: idx === items.length - 1 ? 'O(1)' : 'O(N)', space: 'O(1)'
+      }
+    ];
+    setEvents(steps);
+    setStepIndex(0);
+    applyStep(steps[0]);
     setTargetIndex('');
   };
 
+  const handleArrayUpdate = () => {
+    const val = parseInt(inputValue);
+    const idx = parseInt(targetIndex);
+    if (isNaN(val) || isNaN(idx) || idx < 0 || idx >= items.length) return;
+    saveHistory();
+
+    const next = [...items];
+    const oldVal = next[idx];
+    next[idx] = val;
+
+    let steps = [
+      {
+        items: next, highlight: idx, line: 3, op: `Updated Index [${idx}]`,
+        desc: `Updated arr[${idx}] from ${oldVal} to ${val}.`, time: 'O(1)', space: 'O(1)'
+      }
+    ];
+    setEvents(steps);
+    setStepIndex(0);
+    applyStep(steps[0]);
+    setInputValue('');
+    setTargetIndex('');
+  };
+
+  const handleArrayReverse = () => {
+    if (items.length === 0) return;
+    saveHistory();
+
+    let arr = [...items];
+    let steps = [];
+    let l = 0, r = arr.length - 1;
+
+    steps.push({
+      items: [...arr], highlight: null, pointers: { left: l, right: r }, line: 0, op: 'Reverse Array Start',
+      desc: 'Initialized two pointers: Left at 0, Right at end.', time: 'O(N)', space: 'O(1)'
+    });
+
+    while (l < r) {
+      let temp = arr[l];
+      arr[l] = arr[r];
+      arr[r] = temp;
+
+      steps.push({
+        items: [...arr], highlight: null, pointers: { left: l, right: r }, line: 2, op: `Swapped [${l}] & [${r}]`,
+        desc: `Swapped elements at index ${l} and ${r}. Advancing pointers.`, time: 'O(N)', space: 'O(1)'
+      });
+      l++;
+      r--;
+    }
+
+    steps.push({
+      items: [...arr], highlight: null, pointers: {}, line: 3, op: 'Reverse Complete',
+      desc: 'Array fully reversed.', time: 'O(N)', space: 'O(1)'
+    });
+
+    setEvents(steps);
+    setStepIndex(0);
+    applyStep(steps[0]);
+    setIsPlaying(true);
+  };
+
+  const handleArrayRotate = (dir) => {
+    if (items.length === 0) return;
+    saveHistory();
+
+    let next = [...items];
+    if (dir === 'left') {
+      const first = next.shift();
+      next.push(first);
+    } else {
+      const last = next.pop();
+      next.unshift(last);
+    }
+
+    let steps = [
+      {
+        items: next, highlight: dir === 'left' ? next.length - 1 : 0, line: 1, op: `Rotate ${dir.toUpperCase()}`,
+        desc: `Rotated array 1 position to the ${dir}.`, time: 'O(N)', space: 'O(1)'
+      }
+    ];
+    setEvents(steps);
+    setStepIndex(0);
+    applyStep(steps[0]);
+  };
+
+  // ================= STACK OPERATIONS =================
+  const handleStackPush = () => {
+    const val = parseInt(inputValue) || Math.floor(Math.random() * 90) + 10;
+    if (items.length >= stackCapacity) {
+      setExplanation({
+        op: 'STACK OVERFLOW EXCEPTION',
+        desc: `Cannot push ${val}. Stack is full at capacity ${stackCapacity}!`,
+        time: 'O(1)',
+        space: 'O(1)'
+      });
+      return;
+    }
+    saveHistory();
+    const next = [...items, val];
+    let steps = [
+      {
+        items: next, highlight: next.length - 1, line: 2, op: `Push ${val}`,
+        desc: `Pushed value ${val} onto top of stack (Top index ${next.length - 1}).`, time: 'O(1)', space: 'O(1)'
+      }
+    ];
+    setEvents(steps);
+    setStepIndex(0);
+    applyStep(steps[0]);
+    setInputValue('');
+  };
+
+  const handleStackPop = () => {
+    if (items.length === 0) {
+      setExplanation({
+        op: 'STACK UNDERFLOW EXCEPTION',
+        desc: 'Cannot pop. Stack is empty!',
+        time: 'O(1)',
+        space: 'O(1)'
+      });
+      return;
+    }
+    saveHistory();
+    const removed = items[items.length - 1];
+    const next = items.slice(0, -1);
+    let steps = [
+      {
+        items: next, highlight: next.length > 0 ? next.length - 1 : null, line: 5, op: `Pop ${removed}`,
+        desc: `Popped top element ${removed} from stack. New top is ${next.length > 0 ? next[next.length - 1] : 'NONE'}.`,
+        time: 'O(1)', space: 'O(1)'
+      }
+    ];
+    setEvents(steps);
+    setStepIndex(0);
+    applyStep(steps[0]);
+  };
+
+  const handleStackPeek = () => {
+    if (items.length === 0) return;
+    const topVal = items[items.length - 1];
+    setActiveHighlight(items.length - 1);
+    setExplanation({
+      op: `Peek Top: ${topVal}`,
+      desc: `Examined top element ${topVal} at index ${items.length - 1} without removing it.`,
+      time: 'O(1)',
+      space: 'O(1)'
+    });
+  };
+
+  // ================= QUEUE OPERATIONS =================
+  const handleQueueEnqueue = () => {
+    const val = parseInt(inputValue) || Math.floor(Math.random() * 90) + 10;
+    if (items.length >= queueCapacity) {
+      setExplanation({
+        op: 'QUEUE OVERFLOW EXCEPTION',
+        desc: `Cannot enqueue ${val}. Queue capacity ${queueCapacity} reached!`,
+        time: 'O(1)',
+        space: 'O(1)'
+      });
+      return;
+    }
+    saveHistory();
+    const next = [...items, val];
+    const newRear = (rearPtr + 1) % queueCapacity;
+    let steps = [
+      {
+        items: next, highlight: next.length - 1, rear: newRear, line: 2, op: `Enqueue ${val}`,
+        desc: `Enqueued ${val} at rear (Position ${newRear}).`, time: 'O(1)', space: 'O(1)'
+      }
+    ];
+    setEvents(steps);
+    setStepIndex(0);
+    applyStep(steps[0]);
+    setInputValue('');
+  };
+
+  const handleQueueDequeue = () => {
+    if (items.length === 0) {
+      setExplanation({
+        op: 'QUEUE UNDERFLOW EXCEPTION',
+        desc: 'Cannot dequeue. Queue is empty!',
+        time: 'O(1)',
+        space: 'O(1)'
+      });
+      return;
+    }
+    saveHistory();
+    const removed = items[0];
+    const next = items.slice(1);
+    const newFront = (frontPtr + 1) % queueCapacity;
+    let steps = [
+      {
+        items: next, highlight: 0, front: newFront, line: 5, op: `Dequeue ${removed}`,
+        desc: `Dequeued front element ${removed}. Front pointer advanced to ${newFront}.`, time: 'O(1)', space: 'O(1)'
+      }
+    ];
+    setEvents(steps);
+    setStepIndex(0);
+    applyStep(steps[0]);
+  };
+
+  // ================= LINKED LIST OPERATIONS =================
+  const handleLinkedListInsertHead = () => {
+    const val = parseInt(inputValue) || Math.floor(Math.random() * 90) + 10;
+    saveHistory();
+    const next = [val, ...items];
+    let steps = [
+      {
+        items: next, highlight: 0, line: 4, op: `Insert Head ${val}`,
+        desc: `Created new node (${val}) and pointed its .next to former head node.`, time: 'O(1)', space: 'O(1)'
+      }
+    ];
+    setEvents(steps);
+    setStepIndex(0);
+    applyStep(steps[0]);
+    setInputValue('');
+  };
+
+  const handleLinkedListInsertTail = () => {
+    const val = parseInt(inputValue) || Math.floor(Math.random() * 90) + 10;
+    saveHistory();
+    const next = [...items, val];
+    let steps = [
+      {
+        items: next, highlight: next.length - 1, line: 4, op: `Insert Tail ${val}`,
+        desc: `Traversed to last node and appended new node (${val}).`, time: 'O(N)', space: 'O(1)'
+      }
+    ];
+    setEvents(steps);
+    setStepIndex(0);
+    applyStep(steps[0]);
+    setInputValue('');
+  };
+
+  const handleLinkedListReverse = () => {
+    if (items.length === 0) return;
+    saveHistory();
+
+    let arr = [...items];
+    let reversed = [];
+    let steps = [];
+
+    for (let i = arr.length - 1; i >= 0; i--) {
+      reversed.push(arr[i]);
+      steps.push({
+        items: [...reversed, ...arr.slice(0, i)], highlight: 0, pointers: { curr: i, prev: i + 1 }, line: 4, op: `Reversing Node ${arr[i]}`,
+        desc: `Flipped pointer direction for node ${arr[i]}.`, time: 'O(N)', space: 'O(1)'
+      });
+    }
+
+    steps.push({
+      items: reversed, highlight: 0, pointers: {}, line: 6, op: `Reverse Completed`,
+      desc: `Singly Linked List reversed. New head is ${reversed[0]}.`, time: 'O(N)', space: 'O(1)'
+    });
+
+    setEvents(steps);
+    setStepIndex(0);
+    applyStep(steps[0]);
+    setIsPlaying(true);
+  };
+
+  const handleLinkedListMiddle = () => {
+    if (items.length === 0) return;
+    let steps = [];
+    let slow = 0, fast = 0;
+
+    while (fast < items.length && fast + 1 < items.length) {
+      steps.push({
+        items: [...items], highlight: slow, pointers: { slow, fast }, line: 1, op: 'Floyd Pointer Step',
+        desc: `Slow pointer at [${slow}] (${items[slow]}), Fast pointer at [${fast}] (${items[fast]}).`, time: 'O(N)', space: 'O(1)'
+      });
+      slow += 1;
+      fast += 2;
+    }
+
+    const midVal = items[slow];
+    steps.push({
+      items: [...items], highlight: slow, pointers: { slow }, line: 2, op: `Found Middle Node: ${midVal}`,
+      desc: `Slow pointer reached middle node ${midVal} at index ${slow}.`, time: 'O(N)', space: 'O(1)'
+    });
+
+    setEvents(steps);
+    setStepIndex(0);
+    applyStep(steps[0]);
+    setIsPlaying(true);
+  };
+
+  // General Search
   const handleSearch = () => {
     const val = parseInt(inputValue);
     if (isNaN(val)) return;
@@ -378,6 +593,7 @@ const Playground = () => {
     saveHistory();
     setItems([]);
     setActiveHighlight(null);
+    setPointers({});
     setExplanation({
       op: 'Cleared Structure',
       desc: 'All elements removed from structure.',
@@ -391,6 +607,7 @@ const Playground = () => {
     const newItems = Array.from({ length: 6 }, () => Math.floor(Math.random() * 90) + 10);
     setItems(newItems);
     setActiveHighlight(null);
+    setPointers({});
     setExplanation({
       op: 'Randomized Structure',
       desc: 'Generated 6 new random element values.',
@@ -500,6 +717,24 @@ const Playground = () => {
               })}
             </div>
 
+            {/* Custom Capacity Controls for Stack/Queue */}
+            {structureKey === 'stack' && (
+              <div className="pt-4 border-t border-gray-100 space-y-2">
+                <div className="flex justify-between text-xs font-semibold font-poppins">
+                  <span className="text-gray-500">Max Stack Capacity</span>
+                  <span className="text-primary font-mono">{stackCapacity}</span>
+                </div>
+                <input
+                  type="range"
+                  min="3"
+                  max="12"
+                  value={stackCapacity}
+                  onChange={e => setStackCapacity(parseInt(e.target.value))}
+                  className="w-full accent-primary cursor-pointer"
+                />
+              </div>
+            )}
+
             {/* Custom CSV Input Box */}
             <div className="pt-4 border-t border-gray-100 space-y-2">
               <label className="text-xs font-bold font-poppins text-gray-400 uppercase tracking-wider">Custom CSV Input</label>
@@ -537,6 +772,8 @@ const Playground = () => {
                     const isRear = structureKey === 'queue' && idx === items.length - 1;
                     const isHead = structureKey === 'linkedlist' && idx === 0;
                     const isHighlighted = activeHighlight === idx;
+                    const isSlow = pointers.slow === idx;
+                    const isFast = pointers.fast === idx;
 
                     return (
                       <motion.div
@@ -555,6 +792,8 @@ const Playground = () => {
                           {isFront && <span className="text-[10px] font-mono font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full mb-1">FRONT</span>}
                           {isRear && !isFront && <span className="text-[10px] font-mono font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full mb-1">REAR</span>}
                           {isHead && <span className="text-[10px] font-mono font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full mb-1">HEAD</span>}
+                          {isSlow && <span className="text-[10px] font-mono font-bold text-purple-600 bg-purple-50 px-2 py-0.5 rounded-full mb-1">SLOW</span>}
+                          {isFast && <span className="text-[10px] font-mono font-bold text-pink-600 bg-pink-50 px-2 py-0.5 rounded-full mb-1">FAST</span>}
 
                           {/* Element Node */}
                           <div className={`rounded-2xl flex items-center justify-center font-mono font-bold text-sm transition-all duration-300 shadow-sm ${
@@ -597,36 +836,102 @@ const Playground = () => {
                 )}
               </div>
 
-              {/* Controls Form Bar */}
-              <div className="pt-4 border-t border-gray-100 flex flex-col sm:flex-row items-center gap-3">
-                <input 
-                  type="number"
-                  placeholder="Value"
-                  value={inputValue}
-                  onChange={(e) => setInputValue(e.target.value)}
-                  className="w-full sm:w-28 px-3.5 py-2 rounded-xl bg-gray-50 border border-gray-200 text-xs font-mono focus:outline-none focus:border-primary"
-                />
-                {structureKey === 'array' && (
+              {/* Specific Structure Toolbar */}
+              <div className="pt-4 border-t border-gray-100 space-y-3">
+                
+                {/* Inputs & Standard Buttons */}
+                <div className="flex flex-wrap items-center gap-2">
                   <input 
                     type="number"
-                    placeholder="Index (opt)"
-                    value={targetIndex}
-                    onChange={(e) => setTargetIndex(e.target.value)}
-                    className="w-full sm:w-28 px-3.5 py-2 rounded-xl bg-gray-50 border border-gray-200 text-xs font-mono focus:outline-none focus:border-primary"
+                    placeholder="Val"
+                    value={inputValue}
+                    onChange={(e) => setInputValue(e.target.value)}
+                    className="w-20 px-3 py-2 rounded-xl bg-gray-50 border border-gray-200 text-xs font-mono focus:outline-none focus:border-primary"
                   />
-                )}
+                  {structureKey === 'array' && (
+                    <input 
+                      type="number"
+                      placeholder="Index"
+                      value={targetIndex}
+                      onChange={(e) => setTargetIndex(e.target.value)}
+                      className="w-20 px-3 py-2 rounded-xl bg-gray-50 border border-gray-200 text-xs font-mono focus:outline-none focus:border-primary"
+                    />
+                  )}
 
-                <div className="flex items-center gap-2 w-full sm:w-auto">
-                  <Button onClick={handleInsert} variant="primary" className="py-2 text-xs flex-1 sm:flex-none">
-                    <Plus className="w-3.5 h-3.5 mr-1" /> {structureKey === 'stack' ? 'Push' : structureKey === 'queue' ? 'Enqueue' : 'Insert'}
-                  </Button>
-                  <Button onClick={handleDelete} variant="outline" className="py-2 text-xs flex-1 sm:flex-none">
-                    <Trash2 className="w-3.5 h-3.5 mr-1 text-danger" /> {structureKey === 'stack' ? 'Pop' : structureKey === 'queue' ? 'Dequeue' : 'Delete'}
-                  </Button>
-                  <Button onClick={handleSearch} variant="outline" className="py-2 text-xs flex-1 sm:flex-none">
+                  {/* Array Specific Action Buttons */}
+                  {structureKey === 'array' && (
+                    <>
+                      <Button onClick={handleArrayInsert} variant="primary" className="py-2 text-xs">
+                        <Plus className="w-3.5 h-3.5 mr-1" /> Insert
+                      </Button>
+                      <Button onClick={handleArrayDelete} variant="outline" className="py-2 text-xs">
+                        <Trash2 className="w-3.5 h-3.5 mr-1 text-danger" /> Delete
+                      </Button>
+                      <Button onClick={handleArrayUpdate} variant="outline" className="py-2 text-xs">
+                        Update
+                      </Button>
+                      <Button onClick={handleArrayReverse} variant="outline" className="py-2 text-xs">
+                        Reverse
+                      </Button>
+                      <button onClick={() => handleArrayRotate('left')} className="p-2 rounded-xl border border-gray-200 hover:bg-gray-50 text-xs font-mono" title="Rotate Left">
+                        ← Rot
+                      </button>
+                      <button onClick={() => handleArrayRotate('right')} className="p-2 rounded-xl border border-gray-200 hover:bg-gray-50 text-xs font-mono" title="Rotate Right">
+                        Rot →
+                      </button>
+                    </>
+                  )}
+
+                  {/* Stack Specific Action Buttons */}
+                  {structureKey === 'stack' && (
+                    <>
+                      <Button onClick={handleStackPush} variant="primary" className="py-2 text-xs">
+                        <Plus className="w-3.5 h-3.5 mr-1" /> Push
+                      </Button>
+                      <Button onClick={handleStackPop} variant="outline" className="py-2 text-xs">
+                        <Trash2 className="w-3.5 h-3.5 mr-1 text-danger" /> Pop
+                      </Button>
+                      <Button onClick={handleStackPeek} variant="outline" className="py-2 text-xs">
+                        <Eye className="w-3.5 h-3.5 mr-1" /> Peek Top
+                      </Button>
+                    </>
+                  )}
+
+                  {/* Queue Specific Action Buttons */}
+                  {structureKey === 'queue' && (
+                    <>
+                      <Button onClick={handleQueueEnqueue} variant="primary" className="py-2 text-xs">
+                        <Plus className="w-3.5 h-3.5 mr-1" /> Enqueue
+                      </Button>
+                      <Button onClick={handleQueueDequeue} variant="outline" className="py-2 text-xs">
+                        <Trash2 className="w-3.5 h-3.5 mr-1 text-danger" /> Dequeue
+                      </Button>
+                    </>
+                  )}
+
+                  {/* Linked List Specific Action Buttons */}
+                  {structureKey === 'linkedlist' && (
+                    <>
+                      <Button onClick={handleLinkedListInsertHead} variant="primary" className="py-2 text-xs">
+                        + Head
+                      </Button>
+                      <Button onClick={handleLinkedListInsertTail} variant="outline" className="py-2 text-xs">
+                        + Tail
+                      </Button>
+                      <Button onClick={handleLinkedListReverse} variant="outline" className="py-2 text-xs">
+                        <ArrowLeftRight className="w-3.5 h-3.5 mr-1" /> Reverse
+                      </Button>
+                      <Button onClick={handleLinkedListMiddle} variant="outline" className="py-2 text-xs">
+                        Find Mid
+                      </Button>
+                    </>
+                  )}
+
+                  <Button onClick={handleSearch} variant="outline" className="py-2 text-xs">
                     <Search className="w-3.5 h-3.5 mr-1" /> Search
                   </Button>
                 </div>
+
               </div>
             </div>
 

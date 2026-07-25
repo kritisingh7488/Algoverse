@@ -504,6 +504,69 @@ Tasks
 
 ---
 
+# Phase 21
+
+## Repository Audit & Feature Completion
+
+The goal of this phase is **not** to create new pages.
+
+The goal is to ensure every existing feature is fully implemented, interactive, educational, and production-ready.
+
+For every module:
+
+- Audit every documented feature.
+- Verify every algorithm implementation.
+- Verify every dropdown option performs its documented function.
+- Verify every button and control works correctly.
+- Verify every visualization responds correctly to user interaction.
+- Remove all placeholders.
+- Remove all mock implementations.
+- Remove all hardcoded demonstrations where user interaction is expected.
+- Replace demonstrations with fully interactive experiences.
+- Ensure every lab supports user-created data.
+- Run build and lint after every audited module.
+- Update project documentation and project state.
+- Create a Git commit after completing each audited module.
+
+A module is **not complete** simply because the page exists.
+It is complete only when every documented feature works correctly.
+
+---
+
+# Interactive Laboratory Standard
+
+A laboratory is considered complete only if users can:
+
+- Enter custom input.
+- Modify existing input.
+- Delete input.
+- Generate random input.
+- Reset input.
+- Load sample input.
+- Change animation speed.
+- Play animations.
+- Pause animations.
+- Resume animations.
+- Step forwards.
+- Step backwards.
+- Replay visualizations.
+
+Algorithms must work on **user-provided input**, not only predefined examples.
+
+Visualizations must explain:
+
+- Current step.
+- Previous step.
+- Next step.
+- Current variables.
+- Algorithm decisions.
+- Time complexity.
+- Space complexity.
+- Pseudocode with the current line highlighted.
+
+Every listed algorithm must be fully implemented.
+Every visible option must work.
+
 # Development Checklist
 
 For every feature verify

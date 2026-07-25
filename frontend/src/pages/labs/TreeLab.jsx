@@ -16,7 +16,8 @@ import {
   Search,
   Shuffle,
   Lightbulb,
-  AlertTriangle
+  AlertTriangle,
+  RefreshCw
 } from 'lucide-react';
 import AppLayout from '../../layouts/AppLayout';
 import Button from '../../components/common/Button';
@@ -41,7 +42,7 @@ const TREE_TYPES = {
     interviewTip: 'An In-Order traversal of a Binary Search Tree ALWAYS yields elements in sorted ascending order!'
   },
   avl: {
-    name: 'AVL Tree',
+    name: 'AVL Tree (Self-Balancing)',
     category: 'Self-Balancing',
     search: 'O(log N)',
     insert: 'O(log N)',
@@ -65,12 +66,12 @@ const TreeLab = () => {
   const [treeType, setTreeType] = useState('bst');
   const [nodes, setNodes] = useState([
     { id: 1, val: 50, x: 250, y: 50, parent: null },
-    { id: 2, val: 30, x: 150, y: 130, parent: 1 },
-    { id: 3, val: 70, x: 350, y: 130, parent: 1 },
-    { id: 4, val: 20, x: 100, y: 210, parent: 2 },
-    { id: 5, val: 40, x: 200, y: 210, parent: 2 },
-    { id: 6, val: 60, x: 300, y: 210, parent: 3 },
-    { id: 7, val: 80, x: 400, y: 210, parent: 3 }
+    { id: 2, val: 30, x: 150, y: 120, parent: 1 },
+    { id: 3, val: 70, x: 350, y: 120, parent: 1 },
+    { id: 4, val: 20, x: 100, y: 190, parent: 2 },
+    { id: 5, val: 40, x: 200, y: 190, parent: 2 },
+    { id: 6, val: 60, x: 300, y: 190, parent: 3 },
+    { id: 7, val: 80, x: 400, y: 190, parent: 3 }
   ]);
 
   const [inputVal, setInputVal] = useState('');
@@ -86,49 +87,94 @@ const TreeLab = () => {
 
   const currentSpec = TREE_TYPES[treeType];
 
-  // Build BST Helper
-  const insertBSTNode = (currentNodes, val) => {
-    if (currentNodes.length === 0) {
-      return [{ id: Date.now(), val, x: 250, y: 50, parent: null }];
+  // Helper: Layout node coordinates dynamically
+  const layoutTreeNodes = (rawNodes) => {
+    if (rawNodes.length === 0) return [];
+    
+    // Find root
+    let root = rawNodes.find(n => n.parent === null);
+    if (!root) return rawNodes;
+
+    let updated = [...rawNodes];
+    
+    const assignCoords = (currId, x, y, level) => {
+      const idx = updated.findIndex(n => n.id === currId);
+      if (idx === -1) return;
+      
+      updated[idx].x = x;
+      updated[idx].y = y;
+
+      const currVal = updated[idx].val;
+      const leftChild = updated.find(n => n.parent === currId && n.val < currVal);
+      const rightChild = updated.find(n => n.parent === currId && n.val >= currVal);
+
+      const offset = Math.max(25, 120 / Math.pow(1.6, level));
+      if (leftChild) assignCoords(leftChild.id, x - offset, y + 65, level + 1);
+      if (rightChild) assignCoords(rightChild.id, x + offset, y + 65, level + 1);
+    };
+
+    assignCoords(root.id, 250, 50, 1);
+    return updated;
+  };
+
+  // Insertion Logic with Step-by-Step Compare Events
+  const handleInsert = () => {
+    const val = parseInt(inputVal);
+    if (isNaN(val)) return;
+
+    let steps = [];
+    let currentTree = [...nodes];
+
+    if (currentTree.length === 0) {
+      const rootNode = { id: Date.now(), val, x: 250, y: 50, parent: null };
+      setNodes([rootNode]);
+      setDesc(`Inserted root node ${val}.`);
+      setInputVal('');
+      return;
     }
 
-    let updated = [...currentNodes];
-    let curr = updated.find(n => n.parent === null);
+    // Step-by-step traversal comparison
+    let curr = currentTree.find(n => n.parent === null);
     let level = 1;
 
     while (curr) {
+      steps.push({
+        highlight: curr.id,
+        line: val < curr.val ? 2 : 3,
+        desc: `Comparing ${val} with node ${curr.val}: ${val < curr.val ? `${val} < ${curr.val} → Go Left` : `${val} >= ${curr.val} → Go Right`}`
+      });
+
       const isLeft = val < curr.val;
-      const child = updated.find(n => n.parent === curr.id && (isLeft ? n.val < curr.val : n.val >= curr.val));
+      const child = currentTree.find(n => n.parent === curr.id && (isLeft ? n.val < curr.val : n.val >= curr.val));
 
       if (child) {
         curr = child;
         level++;
       } else {
-        const offset = Math.max(20, 100 / Math.pow(2, level - 1));
+        const offset = Math.max(25, 120 / Math.pow(1.6, level));
         const newNode = {
           id: Date.now(),
           val,
           x: isLeft ? curr.x - offset : curr.x + offset,
-          y: curr.y + 70,
+          y: curr.y + 65,
           parent: curr.id
         };
-        updated.push(newNode);
+        const nextNodes = layoutTreeNodes([...currentTree, newNode]);
+
+        steps.push({
+          highlight: newNode.id,
+          nextNodes,
+          line: 1,
+          desc: `Inserted new node ${val} under parent ${curr.val}.`
+        });
         break;
       }
     }
-    return updated;
-  };
 
-  const handleInsert = () => {
-    const val = parseInt(inputVal);
-    if (isNaN(val)) return;
-
-    const nextNodes = insertBSTNode(nodes, val);
-    const addedNode = nextNodes[nextNodes.length - 1];
-
-    setNodes(nextNodes);
-    setActiveHighlight(addedNode.id);
-    setDesc(`Inserted node ${val} into ${currentSpec.name}.`);
+    setEvents(steps);
+    setStepIndex(0);
+    setIsPlaying(true);
+    if (steps.length > 0) applyStep(steps[0]);
     setInputVal('');
   };
 
@@ -138,7 +184,7 @@ const TreeLab = () => {
 
     const targetNode = nodes.find(n => n.val === val);
     if (targetNode) {
-      const nextNodes = nodes.filter(n => n.id !== targetNode.id && n.parent !== targetNode.id);
+      const nextNodes = layoutTreeNodes(nodes.filter(n => n.id !== targetNode.id && n.parent !== targetNode.id));
       setNodes(nextNodes);
       setActiveHighlight(null);
       setDesc(`Deleted node ${val} from tree.`);
@@ -152,39 +198,50 @@ const TreeLab = () => {
     let steps = [];
     let sequence = [];
     
-    // Sort nodes for In-Order simulation
     let sorted = [...nodes].sort((a, b) => a.val - b.val);
 
     if (type === 'inorder') {
-      sorted.forEach((node, i) => {
+      sorted.forEach((node) => {
         sequence.push(node.val);
         steps.push({
           highlight: node.id,
           sequence: [...sequence],
           line: 2,
-          desc: `In-Order: Visited left subtree node ${node.val}`
+          desc: `In-Order Traversal: Visited left-subtree element ${node.val}`
         });
       });
     } else if (type === 'preorder') {
       let rootFirst = [nodes[0], ...nodes.slice(1)];
-      rootFirst.forEach((node, i) => {
+      rootFirst.forEach((node) => {
         sequence.push(node.val);
         steps.push({
           highlight: node.id,
           sequence: [...sequence],
           line: 1,
-          desc: `Pre-Order: Visited root/node ${node.val}`
+          desc: `Pre-Order Traversal: Visited root element ${node.val}`
         });
       });
-    } else {
+    } else if (type === 'postorder') {
       let postOrder = [...nodes].reverse();
-      postOrder.forEach((node, i) => {
+      postOrder.forEach((node) => {
         sequence.push(node.val);
         steps.push({
           highlight: node.id,
           sequence: [...sequence],
           line: 3,
-          desc: `Post-Order: Processed node ${node.val}`
+          desc: `Post-Order Traversal: Processed child subtree ${node.val}`
+        });
+      });
+    } else if (type === 'levelorder') {
+      // BFS Level Order
+      let levelNodes = [...nodes].sort((a, b) => a.y - b.y || a.x - b.x);
+      levelNodes.forEach((node) => {
+        sequence.push(node.val);
+        steps.push({
+          highlight: node.id,
+          sequence: [...sequence],
+          line: 0,
+          desc: `Level-Order BFS: Popped node ${node.val} from level queue`
         });
       });
     }
@@ -216,6 +273,7 @@ const TreeLab = () => {
 
   const applyStep = (step) => {
     if (!step) return;
+    if (step.nextNodes) setNodes(step.nextNodes);
     setActiveHighlight(step.highlight);
     setTraversalSequence(step.sequence || []);
     setActiveCodeLine(step.line || 0);
@@ -226,13 +284,19 @@ const TreeLab = () => {
     setIsPlaying(false);
     let sampleValues = [50, 25, 75, 15, 35, 65, 85];
     let newNodes = [];
-    sampleValues.forEach(v => {
-      newNodes = insertBSTNode(newNodes, v);
-    });
+    let root = { id: 1, val: 50, x: 250, y: 50, parent: null };
+    newNodes.push(root);
+    newNodes.push({ id: 2, val: 25, x: 150, y: 120, parent: 1 });
+    newNodes.push({ id: 3, val: 75, x: 350, y: 120, parent: 1 });
+    newNodes.push({ id: 4, val: 15, x: 100, y: 190, parent: 2 });
+    newNodes.push({ id: 5, val: 35, x: 200, y: 190, parent: 2 });
+    newNodes.push({ id: 6, val: 65, x: 300, y: 190, parent: 3 });
+    newNodes.push({ id: 7, val: 85, x: 400, y: 190, parent: 3 });
+
     setNodes(newNodes);
     setActiveHighlight(null);
     setTraversalSequence([]);
-    setDesc('Generated new random BST.');
+    setDesc('Generated balanced binary search tree.');
   };
 
   const handleClear = () => {
@@ -257,11 +321,11 @@ const TreeLab = () => {
               <h1 className="text-2xl font-bold font-poppins text-gray-900">Tree Laboratory</h1>
             </div>
             <p className="text-sm text-gray-500 font-inter mt-1">
-              Visualize hierarchical structures, balance rotations, and tree traversals in real-time.
+              Visualize hierarchical structures, balance rotations, and step-by-step tree traversals.
             </p>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <Button onClick={() => handleTraverse('inorder')} variant="outline" className="text-xs py-2">
               In-Order
             </Button>
@@ -270,6 +334,9 @@ const TreeLab = () => {
             </Button>
             <Button onClick={() => handleTraverse('postorder')} variant="outline" className="text-xs py-2">
               Post-Order
+            </Button>
+            <Button onClick={() => handleTraverse('levelorder')} variant="outline" className="text-xs py-2">
+              Level-Order
             </Button>
             <button 
               onClick={handleRandomize} 
@@ -368,9 +435,9 @@ const TreeLab = () => {
                 ))}
               </div>
 
-              {/* Traversal Output Sequence */}
-              <div className="pt-3 border-t border-gray-100 flex items-center justify-between text-xs font-mono">
-                <div className="flex items-center gap-2 overflow-x-auto">
+              {/* Traversal Output Sequence & Desc */}
+              <div className="pt-3 border-t border-gray-100 space-y-1">
+                <div className="flex items-center gap-2 overflow-x-auto text-xs font-mono">
                   <span className="text-gray-400">Sequence:</span>
                   {traversalSequence.map((v, i) => (
                     <span key={i} className="px-2 py-0.5 rounded bg-primary/10 text-primary font-bold">
@@ -379,6 +446,7 @@ const TreeLab = () => {
                   ))}
                   {traversalSequence.length === 0 && <span className="text-gray-300 italic">Click a traversal above</span>}
                 </div>
+                <p className="text-[11px] font-mono text-gray-500 truncate">{desc}</p>
               </div>
             </div>
 
