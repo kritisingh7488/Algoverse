@@ -14,11 +14,11 @@
 11. **Phase 12 (Community & Contests)**: Built `Community.jsx` and `Contests.jsx`.
 12. **Phase 13 (Profile & Settings)**: Built `Profile.jsx` and `Settings.jsx`.
 13. **Phase 14 (Admin Control Panel & Learning Roadmap)**: Built `Admin.jsx` and `Roadmap.jsx`.
-14. **Extended Laboratories**: Built `StringLab.jsx` (KMP pattern matching & LPS table generator) and `BacktrackingLab.jsx` (N-Queens 4x4 chessboard solver with backtrack counter).
+14. **Extended Laboratories & Quiz Center**: Built `StringLab.jsx`, `BacktrackingLab.jsx`, and `QuizCenter.jsx` (Interactive topic quizzes, explanations, instant feedback, scoring).
 15. **Build & Quality Check**: Verified production build (`npm run build`) with 100% clean compilation.
 
 ## Next Steps
-- ALL PHASES AND EXTENDED LABORATORIES ARE 100% COMPLETED AND VERIFIED PRODUCTION-READY!
+- ALL PHASES AND EXTENDED MODULES ARE 100% COMPLETED AND VERIFIED PRODUCTION-READY!
 
 ## Outstanding Issues
 - None. Build is 100% clean and fully operational.

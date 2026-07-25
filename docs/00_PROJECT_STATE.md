@@ -540,6 +540,7 @@ frontend/src/pages/Profile.jsx
 frontend/src/pages/Settings.jsx
 frontend/src/pages/Admin.jsx
 frontend/src/pages/Roadmap.jsx
+frontend/src/pages/QuizCenter.jsx
 frontend/src/pages/labs/SortingLab.jsx
 frontend/src/pages/labs/SearchingLab.jsx
 frontend/src/pages/labs/TreeLab.jsx

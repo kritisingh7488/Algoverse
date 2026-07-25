@@ -16,6 +16,7 @@ import Profile from './pages/Profile';
 import Settings from './pages/Settings';
 import Admin from './pages/Admin';
 import Roadmap from './pages/Roadmap';
+import QuizCenter from './pages/QuizCenter';
 import SortingLab from './pages/labs/SortingLab';
 import SearchingLab from './pages/labs/SearchingLab';
 import TreeLab from './pages/labs/TreeLab';
@@ -136,6 +137,14 @@ function App() {
           element={
             <ProtectedRoute>
               <Roadmap />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/quizzes" 
+          element={
+            <ProtectedRoute>
+              <QuizCenter />
             </ProtectedRoute>
           } 
         />
