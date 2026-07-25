@@ -8,6 +8,8 @@ import VerifyEmail from './pages/auth/VerifyEmail';
 import LandingPage from './pages/LandingPage';
 import Dashboard from './pages/Dashboard';
 import Playground from './pages/Playground';
+import BenchmarkCenter from './pages/BenchmarkCenter';
+import CodePlayground from './pages/CodePlayground';
 import SortingLab from './pages/labs/SortingLab';
 import SearchingLab from './pages/labs/SearchingLab';
 import TreeLab from './pages/labs/TreeLab';
@@ -62,6 +64,22 @@ function App() {
           element={
             <ProtectedRoute>
               <Playground />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/benchmarks" 
+          element={
+            <ProtectedRoute>
+              <BenchmarkCenter />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/code-playground" 
+          element={
+            <ProtectedRoute>
+              <CodePlayground />
             </ProtectedRoute>
           } 
         />

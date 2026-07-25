@@ -390,7 +390,7 @@ Every AI session MUST update it.
 
 ## Current Phase
 
-Phase 10 (Benchmark Center & Code Playground)
+Phase 12 (Community & Contests)
 
 ---
 
@@ -402,7 +402,7 @@ Frontend
 
 ## Current Feature
 
-Benchmark Center Charts & Code Playground Editor
+Community Discussion Board & Weekly Contests UI
 
 ---
 
@@ -532,6 +532,8 @@ frontend/src/pages/NotFound.jsx
 frontend/src/pages/LandingPage.jsx
 frontend/src/pages/Dashboard.jsx
 frontend/src/pages/Playground.jsx
+frontend/src/pages/BenchmarkCenter.jsx
+frontend/src/pages/CodePlayground.jsx
 frontend/src/pages/labs/SortingLab.jsx
 frontend/src/pages/labs/SearchingLab.jsx
 frontend/src/pages/labs/TreeLab.jsx
