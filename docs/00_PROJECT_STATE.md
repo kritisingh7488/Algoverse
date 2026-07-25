@@ -390,31 +390,19 @@ Every AI session MUST update it.
 
 ## Current Phase
 
-Phase 1
-
----
-
-## Current Sprint
-
-Sprint 1
+Phase 3 (Home & Dashboard)
 
 ---
 
 ## Current Module
 
-Authentication
+Frontend
 
 ---
 
 ## Current Feature
 
-Auth Controllers & Frontend Pages
-
----
-
-## Current Folder
-
-d:\AlgoVerse
+Landing Page & Dashboard UI
 
 ---
 
@@ -535,6 +523,12 @@ frontend/src/pages/auth/Signup.jsx
 frontend/src/pages/auth/ForgotPassword.jsx
 frontend/src/pages/auth/ResetPassword.jsx
 frontend/src/pages/auth/VerifyEmail.jsx
+frontend/src/components/layout/Navbar.jsx
+frontend/src/components/layout/Sidebar.jsx
+frontend/src/components/layout/Footer.jsx
+frontend/src/layouts/AppLayout.jsx
+frontend/src/components/common/LoadingScreen.jsx
+frontend/src/pages/NotFound.jsx
 frontend/src/App.jsx
 
 ---
