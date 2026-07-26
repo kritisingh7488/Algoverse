@@ -36,7 +36,7 @@ const startServer = () => {
 };
 
 if (MONGODB_URI && MONGODB_URI !== 'your_mongodb_atlas_connection_string') {
-    mongoose.connect(MONGODB_URI)
+    mongoose.connect(MONGODB_URI, { serverSelectionTimeoutMS: 2000 })
         .then(() => {
             console.log('Connected to MongoDB');
             startServer();

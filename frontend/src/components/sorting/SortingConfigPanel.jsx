@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Sliders, BarChart2, Upload, Layers, CheckSquare, Square, Play } from 'lucide-react';
+import { Sliders, BarChart2, Upload, Layers, CheckSquare, Square, Play, Sparkles } from 'lucide-react';
 import Button from '../common/Button';
 
 export const SortingConfigPanel = ({
@@ -49,7 +49,7 @@ export const SortingConfigPanel = ({
   return (
     <div className="bg-card rounded-card border-2 border-borderTheme p-5 shadow-soft space-y-6 font-body">
       
-      {/* Mode Switcher Banner */}
+      {/* Visualizer Mode Switcher Tabs */}
       <div className="flex bg-surface p-1 rounded-2xl border-2 border-borderTheme">
         <button
           onClick={() => setIsComparisonMode(false)}
@@ -110,7 +110,7 @@ export const SortingConfigPanel = ({
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <h3 className="text-xs font-heading font-bold text-textSecondary uppercase tracking-wider flex items-center gap-1.5">
-              <Layers className="w-4 h-4 text-secondary" /> Pick 2–4 Algorithms
+              <Layers className="w-4 h-4 text-secondary" /> Select 2–4 Algorithms
             </h3>
             <span className="text-[10px] font-mono font-bold text-primary px-2 py-0.5 bg-surface rounded-full border border-borderTheme">
               {selectedCompareAlgos.length}/4 Selected
@@ -127,7 +127,7 @@ export const SortingConfigPanel = ({
                   onClick={() => toggleCompareAlgo(key)}
                   className={`w-full text-left px-3 py-2 rounded-2xl text-xs font-heading font-bold transition-all flex items-center justify-between border ${
                     isChecked
-                      ? 'bg-secondary/15 border-secondary text-textPrimary'
+                      ? 'bg-secondary/15 border-secondary text-textPrimary shadow-xs'
                       : 'bg-surface border-borderTheme text-textSecondary hover:bg-card'
                   }`}
                 >
@@ -140,15 +140,6 @@ export const SortingConfigPanel = ({
               );
             })}
           </div>
-
-          <Button
-            variant="secondary"
-            size="md"
-            className="w-full mt-2"
-            onClick={onRunComparison}
-          >
-            <Play className="w-4 h-4 mr-1" /> Run Multi-Sort Comparison
-          </Button>
         </div>
       )}
 
@@ -174,25 +165,25 @@ export const SortingConfigPanel = ({
         </div>
       )}
 
-      {/* Dataset Config & Size */}
+      {/* Dataset Size & Filters for Both Modes */}
       <div className="space-y-3 pt-4 border-t-2 border-borderTheme">
         <h3 className="text-xs font-heading font-bold text-textSecondary uppercase tracking-wider flex items-center gap-1.5">
-          <Sliders className="w-4 h-4 text-secondary" /> Dataset Config & Size
+          <Sliders className="w-4 h-4 text-secondary" /> Dataset Size & Pattern Filters
         </h3>
 
-        {/* Dataset Size Slider */}
+        {/* Dataset Size Buttons */}
         <div className="space-y-1.5">
           <div className="flex justify-between text-xs font-heading font-bold text-textPrimary">
-            <span>Array Size</span>
+            <span>Array Size for Comparison</span>
             <span className="text-primary font-mono">{datasetSize} Elements</span>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
             {[10, 20, 50, 100, 250].map((size) => (
               <button
                 key={size}
                 onClick={() => { setDatasetSize(size); onGenerateDataset('random', size); }}
                 className={`flex-1 py-1 rounded-xl text-[11px] font-mono font-bold border transition-all ${
-                  datasetSize === size ? 'bg-primary text-white border-primary' : 'bg-surface text-textPrimary border-borderTheme'
+                  datasetSize === size ? 'bg-primary text-white border-primary shadow-xs' : 'bg-surface text-textPrimary border-borderTheme'
                 }`}
               >
                 {size}
@@ -201,9 +192,9 @@ export const SortingConfigPanel = ({
           </div>
         </div>
 
-        {/* Dataset Type Generator Buttons */}
+        {/* Dataset Generator Pattern Filters */}
         <div className="space-y-1.5 pt-2">
-          <span className="text-[11px] font-heading font-bold text-textSecondary uppercase">Generator Presets</span>
+          <span className="text-[11px] font-heading font-bold text-textSecondary uppercase">Input Patterns</span>
           <div className="grid grid-cols-2 gap-2 text-xs">
             <Button variant="outline" size="sm" onClick={() => onGenerateDataset('random')}>
               Random
@@ -221,7 +212,7 @@ export const SortingConfigPanel = ({
         </div>
       </div>
 
-      {/* View Mode */}
+      {/* Visualizer View Mode (Single Mode Only) */}
       {!isComparisonMode && (
         <div className="space-y-3 pt-4 border-t-2 border-borderTheme">
           <label className="text-xs font-heading font-bold text-textSecondary uppercase tracking-wider block">Visualizer View Mode</label>
@@ -246,7 +237,21 @@ export const SortingConfigPanel = ({
         </div>
       )}
 
-      {/* Custom CSV Input */}
+      {/* Run Multi-Sort Comparison Trigger */}
+      {isComparisonMode && (
+        <div className="pt-2">
+          <Button
+            variant="secondary"
+            size="md"
+            className="w-full shadow-soft"
+            onClick={onRunComparison}
+          >
+            <Play className="w-4 h-4 mr-1.5" /> Execute Multi-Sort Comparison
+          </Button>
+        </div>
+      )}
+
+      {/* Custom CSV Import */}
       <div className="space-y-2 pt-4 border-t-2 border-borderTheme">
         <label className="text-xs font-heading font-bold text-textSecondary uppercase tracking-wider flex items-center gap-1.5">
           <Upload className="w-3.5 h-3.5 text-primary" /> Import Custom CSV
