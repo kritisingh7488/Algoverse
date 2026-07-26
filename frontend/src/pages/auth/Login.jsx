@@ -26,7 +26,7 @@ const Login = () => {
     <AuthLayout title="Welcome Back" subtitle="Log in to continue your learning journey.">
       <form onSubmit={handleSubmit} className="mt-4 space-y-5">
         {error && (
-          <div className="p-3 bg-danger/5 border border-danger/20 rounded-xl text-danger text-[13px] text-center font-medium animate-[slideUp_0.3s_ease-out]">
+          <div className="p-3 bg-danger/10 border border-danger/30 rounded-xl text-danger text-[13px] text-center font-bold font-body animate-[slideUp_0.3s_ease-out]">
             {error}
           </div>
         )}
@@ -45,7 +45,7 @@ const Login = () => {
           
           <div className="relative">
             <div className="absolute right-0 top-0 mt-0.5">
-              <Link to="/forgot-password" className="text-[12px] font-medium text-gray-500 hover:text-primary transition-colors focus:outline-none focus:underline">
+              <Link to="/forgot-password" className="text-[12px] font-bold text-textSecondary hover:text-primary transition-colors focus:outline-none focus:underline font-body">
                 Forgot password?
               </Link>
             </div>
@@ -67,27 +67,27 @@ const Login = () => {
             id="remember-me"
             name="remember-me"
             type="checkbox"
-            className="h-4 w-4 bg-white border-gray-300 text-primary focus:ring-primary rounded-[4px] cursor-pointer transition-colors"
+            className="h-4 w-4 bg-card border-borderTheme text-primary focus:ring-primary rounded-[4px] cursor-pointer transition-colors"
           />
-          <label htmlFor="remember-me" className="ml-2.5 block text-[13px] text-gray-600 cursor-pointer group-hover:text-gray-900 transition-colors">
+          <label htmlFor="remember-me" className="ml-2.5 block text-[13px] text-textSecondary cursor-pointer group-hover:text-textPrimary transition-colors font-body">
             Remember me
           </label>
         </div>
 
-        <Button type="submit" isLoading={isLoading}>
+        <Button type="submit" isLoading={isLoading} className="w-full">
           Sign In
         </Button>
 
         <div className="relative my-6 flex items-center justify-center">
           <div className="absolute inset-0 flex items-center" aria-hidden="true">
-            <div className="w-full border-t border-gray-100" />
+            <div className="w-full border-t border-borderTheme" />
           </div>
-          <div className="relative flex justify-center text-[11px] font-medium tracking-wider">
-            <span className="px-3 bg-card text-gray-400">OR CONTINUE WITH</span>
+          <div className="relative flex justify-center text-[11px] font-heading font-bold tracking-wider">
+            <span className="px-3 bg-card text-textSecondary uppercase">OR CONTINUE WITH</span>
           </div>
         </div>
 
-        <Button variant="google" type="button" onClick={() => {}} className="flex items-center justify-center">
+        <Button variant="google" type="button" onClick={() => {}} className="w-full flex items-center justify-center">
           <div className="flex items-center gap-3">
             <svg className="w-[18px] h-[18px]" viewBox="0 0 24 24">
               <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
@@ -95,14 +95,14 @@ const Login = () => {
               <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
               <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
             </svg>
-            <span className="text-gray-600 font-medium text-[14px]">Google</span>
+            <span className="text-textPrimary font-heading font-bold text-[14px]">Google</span>
           </div>
         </Button>
       </form>
       
-      <p className="mt-8 text-center text-[13px] text-gray-500">
+      <p className="mt-8 text-center text-[13px] text-textSecondary font-body">
         Don't have an account?{' '}
-        <Link to="/signup" className="font-medium text-gray-900 hover:text-primary transition-colors">
+        <Link to="/signup" className="font-heading font-bold text-textPrimary hover:text-primary transition-colors">
           Sign Up &rarr;
         </Link>
       </p>

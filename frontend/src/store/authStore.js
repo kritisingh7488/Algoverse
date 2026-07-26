@@ -12,14 +12,19 @@ const useAuthStore = create((set) => ({
     set({ isLoading: true, error: null });
     try {
       const response = await api.post('/auth/login', { email, password });
-      const { user, token } = response.data;
+      const payload = response.data.data || response.data;
+      const { user, token } = payload;
+      
+      if (!token) {
+        throw new Error('Invalid authentication response from server.');
+      }
       
       localStorage.setItem('algoverse_token', token);
       set({ user, token, isAuthenticated: true, isLoading: false });
       return true;
     } catch (error) {
       set({ 
-        error: error.response?.data?.message || 'Login failed. Please try again.', 
+        error: error.response?.data?.message || error.message || 'Login failed. Please try again.', 
         isLoading: false 
       });
       return false;
@@ -30,14 +35,19 @@ const useAuthStore = create((set) => ({
     set({ isLoading: true, error: null });
     try {
       const response = await api.post('/auth/register', userData);
-      const { user, token } = response.data;
+      const payload = response.data.data || response.data;
+      const { user, token } = payload;
+      
+      if (!token) {
+        throw new Error('Invalid registration response from server.');
+      }
       
       localStorage.setItem('algoverse_token', token);
       set({ user, token, isAuthenticated: true, isLoading: false });
       return true;
     } catch (error) {
       set({ 
-        error: error.response?.data?.message || 'Registration failed. Please try again.', 
+        error: error.response?.data?.message || error.message || 'Registration failed. Please try again.', 
         isLoading: false 
       });
       return false;
@@ -53,7 +63,8 @@ const useAuthStore = create((set) => ({
     set({ isLoading: true, error: null });
     try {
       const response = await api.get('/auth/me');
-      const { user } = response.data.data;
+      const payload = response.data.data || response.data;
+      const user = payload.user || payload;
       set({ user, isAuthenticated: true, isLoading: false });
     } catch (error) {
       localStorage.removeItem('algoverse_token');

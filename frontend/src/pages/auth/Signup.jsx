@@ -51,7 +51,7 @@ const Signup = () => {
     <AuthLayout title="Create an Account" subtitle="Join AlgoVerse to master algorithms visually.">
       <form onSubmit={handleSubmit} className="mt-4">
         {(error || validationError) && (
-          <div className="mb-5 p-3 bg-danger/5 border border-danger/20 rounded-xl text-danger text-[13px] text-center font-medium animate-[slideUp_0.3s_ease-out]">
+          <div className="mb-5 p-3 bg-danger/10 border border-danger/30 rounded-xl text-danger text-[13px] text-center font-bold font-body animate-[slideUp_0.3s_ease-out]">
             {error || validationError}
           </div>
         )}
@@ -120,24 +120,24 @@ const Signup = () => {
               name="terms"
               type="checkbox"
               required
-              className="h-4 w-4 bg-white border-gray-300 text-primary focus:ring-primary rounded-[4px] mt-0.5 cursor-pointer transition-colors"
+              className="h-4 w-4 bg-card border-borderTheme text-primary focus:ring-primary rounded-[4px] mt-0.5 cursor-pointer transition-colors"
             />
           </div>
-          <div className="ml-2.5 text-[12px] leading-relaxed text-gray-500">
-            <label htmlFor="terms" className="cursor-pointer group-hover:text-gray-900 transition-colors">
-              I agree to the <a href="#" className="font-medium text-gray-700 hover:text-primary transition-colors">Terms of Service</a> and <a href="#" className="font-medium text-gray-700 hover:text-primary transition-colors">Privacy Policy</a>.
+          <div className="ml-2.5 text-[12px] leading-relaxed text-textSecondary font-body">
+            <label htmlFor="terms" className="cursor-pointer group-hover:text-textPrimary transition-colors">
+              I agree to the <a href="#" className="font-bold text-textPrimary hover:text-primary transition-colors">Terms of Service</a> and <a href="#" className="font-bold text-textPrimary hover:text-primary transition-colors">Privacy Policy</a>.
             </label>
           </div>
         </div>
 
-        <Button type="submit" isLoading={isLoading}>
+        <Button type="submit" isLoading={isLoading} className="w-full">
           Create Account
         </Button>
       </form>
       
-      <p className="mt-8 text-center text-[13px] text-gray-500">
+      <p className="mt-8 text-center text-[13px] text-textSecondary font-body">
         Already have an account?{' '}
-        <Link to="/login" className="font-medium text-gray-900 hover:text-primary transition-colors">
+        <Link to="/login" className="font-heading font-bold text-textPrimary hover:text-primary transition-colors">
           Sign In &rarr;
         </Link>
       </p>

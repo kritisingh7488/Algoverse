@@ -53,7 +53,7 @@ const ResetPassword = () => {
       {!isSuccess ? (
         <form onSubmit={handleSubmit} className="mt-4">
           {error && (
-            <div className="mb-5 p-3 bg-danger/5 border border-danger/20 rounded-xl text-danger text-[13px] text-center font-medium animate-[slideUp_0.3s_ease-out]">
+            <div className="mb-5 p-3 bg-danger/10 border border-danger/30 rounded-xl text-danger text-[13px] text-center font-bold font-body animate-[slideUp_0.3s_ease-out]">
               {error}
             </div>
           )}
@@ -82,20 +82,20 @@ const ResetPassword = () => {
             />
           </div>
 
-          <Button type="submit" isLoading={isLoading} className="mt-8 mb-4">
+          <Button type="submit" isLoading={isLoading} className="w-full mt-6 mb-4">
             Reset Password
           </Button>
         </form>
       ) : (
         <div className="text-center space-y-6 py-6 animate-[slideUp_0.4s_ease-out]">
-          <div className="mx-auto w-16 h-16 bg-success/10 text-success rounded-full flex items-center justify-center shadow-[0_0_30px_rgba(74,222,128,0.2)]">
+          <div className="mx-auto w-16 h-16 bg-success/20 text-success rounded-full flex items-center justify-center border border-success/30">
             <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" />
             </svg>
           </div>
           <div>
-            <h3 className="text-[20px] font-semibold text-gray-900 mb-2 tracking-tight font-poppins">Password Reset!</h3>
-            <p className="text-[14px] text-gray-500 leading-relaxed font-inter">
+            <h3 className="text-[20px] font-heading font-bold text-textPrimary mb-2 tracking-tight">Password Reset!</h3>
+            <p className="text-[14px] text-textSecondary leading-relaxed font-body">
               Your password has been successfully reset. Redirecting to login...
             </p>
           </div>

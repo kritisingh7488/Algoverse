@@ -26,7 +26,7 @@ const ForgotPassword = () => {
       subtitle="Enter your email to receive a password reset link."
     >
       {!isSubmitted ? (
-        <form onSubmit={handleSubmit} className="mt-4">
+        <form onSubmit={handleSubmit} className="mt-4 space-y-4">
           <Input
             label="Email Address"
             id="email"
@@ -38,32 +38,32 @@ const ForgotPassword = () => {
             required
           />
 
-          <Button type="submit" isLoading={isLoading} className="mt-8">
+          <Button type="submit" isLoading={isLoading} className="w-full mt-6">
             Send Reset Link
           </Button>
           
-          <div className="mt-8 text-center">
-            <Link to="/login" className="text-[13px] font-medium text-gray-500 hover:text-gray-900 transition-colors focus:outline-none focus:underline">
+          <div className="mt-6 text-center">
+            <Link to="/login" className="text-[13px] font-heading font-bold text-textSecondary hover:text-textPrimary transition-colors focus:outline-none focus:underline">
               &larr; Back to Login
             </Link>
           </div>
         </form>
       ) : (
         <div className="text-center space-y-6 py-6 animate-[slideUp_0.4s_ease-out]">
-          <div className="mx-auto w-16 h-16 bg-success/10 text-success rounded-full flex items-center justify-center shadow-[0_0_30px_rgba(74,222,128,0.2)]">
+          <div className="mx-auto w-16 h-16 bg-success/20 text-success rounded-full flex items-center justify-center border border-success/30">
             <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" />
             </svg>
           </div>
           <div>
-            <h3 className="text-[20px] font-semibold text-gray-900 mb-2 tracking-tight font-poppins">Check your email</h3>
-            <p className="text-[14px] text-gray-500 leading-relaxed max-w-[280px] mx-auto font-inter">
+            <h3 className="text-[20px] font-heading font-bold text-textPrimary mb-2 tracking-tight">Check your email</h3>
+            <p className="text-[14px] text-textSecondary leading-relaxed max-w-[280px] mx-auto font-body">
               If an account exists with that email, we've sent a password reset link.
             </p>
           </div>
-          <div className="pt-8 mt-6 border-t border-gray-100">
-            <p className="text-[13px] text-gray-500 mb-4">Didn't receive the email?</p>
-            <Button variant="outline" onClick={() => setIsSubmitted(false)}>
+          <div className="pt-6 mt-6 border-t border-borderTheme">
+            <p className="text-[13px] text-textSecondary mb-4 font-body">Didn't receive the email?</p>
+            <Button variant="outline" className="w-full" onClick={() => setIsSubmitted(false)}>
               Try Again
             </Button>
           </div>
