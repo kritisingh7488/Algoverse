@@ -23,24 +23,28 @@ app.get('/', (req, res) => {
 // Routes
 app.use('/api/v1/auth', authRoutes);
 
-// Database Connection
+// Database Connection & Server Listener
 const PORT = process.env.PORT || 5000;
 const MONGODB_URI = process.env.MONGODB_URI;
+
+const startServer = () => {
+    app.listen(PORT, () => {
+        console.log(`Server running on port ${PORT}`);
+    });
+};
 
 if (MONGODB_URI && MONGODB_URI !== 'your_mongodb_atlas_connection_string') {
     mongoose.connect(MONGODB_URI)
         .then(() => {
             console.log('Connected to MongoDB');
-            app.listen(PORT, () => {
-                console.log(`Server running on port ${PORT}`);
-            });
+            startServer();
         })
         .catch((error) => {
-            console.error('MongoDB connection error:', error);
+            console.error('MongoDB connection error:', error.message);
+            console.log('Starting server in fallback mode without active DB...');
+            startServer();
         });
 } else {
     console.log('MongoDB URI not configured. Server starting without database connection for development.');
-    app.listen(PORT, () => {
-        console.log(`Server running on port ${PORT}`);
-    });
+    startServer();
 }
