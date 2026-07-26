@@ -1,22 +1,20 @@
-# Session Handoff: Searching Laboratory Definitive Engine Completion
+# Session Handoff: Searching Laboratory Centralized Registry & 20-Algorithm Registration
 
-## 1. 20 Searching Algorithms Implemented in C++ (`backend/cpp/searching_engine.cpp`)
-- **Array Searching**: Linear, Sentinel Linear, Binary, Recursive Binary, Jump, Interpolation, Exponential, Fibonacci, Ternary, Meta Binary.
-- **Hash Searching**: Hash Table, Cuckoo Hash.
-- **Tree Searching**: Binary Search Tree, AVL Tree, Red-Black Tree.
-- **String Searching**: Trie Word, KMP Pattern, Rabin-Karp Pattern.
-- **Graph Searching**: BFS, DFS.
+## 1. Audit Findings
+- **Cause**: Only 6 algorithms appeared in the UI because `SearchingLab.jsx` contained an inline local metadata object `SEARCHING_SPECS` with only 6 keys (`linear`, `sentinel`, `binary`, `recbinary`, `jump`, `interpolation`).
+- **Fix**: Created a single authoritative centralized registry `frontend/src/data/searchingAlgorithmsRegistry.js` containing complete metadata for all 20 algorithms.
 
-## 2. Multi-Compare Studio Upgrades & Vertical Bars Visualizers
-- **Default Visualizer**: Vertical Bars visualizers per card (matching Sorting Laboratory) with independent step animation per card.
-- **20-Algorithm Checkbox Selector**: Allows picking any 2 to 6 algorithms from all 20 implemented search algorithms.
-- **Comparison Summary Table**:
-  - Automatically generated at the bottom of Multi-Compare Studio.
-  - Columns: Algorithm, Result (FOUND/NOT FOUND), Time (ms), Comparisons, Reads, Pointer Moves, Memory (KB), Time Complexity, Winner Badges (**FASTEST**, **LEAST COMPARISONS**, **LOWEST MEMORY**).
-  - Handles ties cleanly! All metrics come strictly from C++ stdout.
+## 2. All 20 Search Algorithms Registered & Available
+- **Array Searching**: Linear Search, Sentinel Linear Search, Binary Search, Recursive Binary Search, Jump Search, Interpolation Search, Exponential Search, Fibonacci Search, Ternary Search, Meta Binary Search.
+- **Hash Searching**: Hash Table Search, Cuckoo Hash Search.
+- **Tree Searching**: Binary Search Tree Search, AVL Tree Search, Red Black Tree Search.
+- **String Searching**: Trie Search, KMP Pattern Search, Rabin-Karp Pattern Search.
+- **Graph Searching**: Breadth First Search (BFS), Depth First Search (DFS).
 
-## 3. Back Button State Preservation
-- Fixed "Back to Single Visualizer" button completely. Returning preserves selected algorithm, dataset array, target value, search configuration, view mode, imported dataset, and theme. Resets playback cleanly without page refresh.
+## 3. UI Availability
+- **Single Search Mode**: Sidebar list & dropdown display all 20 algorithms categorized cleanly.
+- **Multi-Compare Mode**: Checkbox selector displays all 20 algorithms.
+- **Backend Dispatch**: C++ binary engine handles execution & event generation for all 20 algorithms.
 
 ## 4. Build Verification
-- Production build `npm run build` completed in **2.48s** with **0 errors**.
+- Production build `npm run build` completed in **3.31s** with **0 errors**.

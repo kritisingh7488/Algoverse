@@ -6,6 +6,8 @@ import Button from '../../components/common/Button';
 import MascotRole from '../../components/mascots/MascotRole';
 import api from '../../api/axios';
 
+import { SEARCHING_ALGORITHMS_REGISTRY } from '../../data/searchingAlgorithmsRegistry';
+
 import SearchingConfigPanel from '../../components/searching/SearchingConfigPanel';
 import SearchingCanvas from '../../components/searching/SearchingCanvas';
 import SearchingPlaybackBar from '../../components/searching/SearchingPlaybackBar';
@@ -13,124 +15,12 @@ import SearchingStatsPanel from '../../components/searching/SearchingStatsPanel'
 import SearchingConceptPanel from '../../components/searching/SearchingConceptPanel';
 import SearchingComparisonView from '../../components/searching/SearchingComparisonView';
 
-const SEARCHING_SPECS = {
-  linear: {
-    name: 'Linear Search',
-    category: 'Sequential',
-    requiresSorted: false,
-    best: 'O(1)',
-    avg: 'O(N)',
-    worst: 'O(N)',
-    space: 'O(1)',
-    pseudocode: [
-      'for i = 0 to n - 1:',
-      '  if arr[i] == target: return i',
-      'return -1'
-    ],
-    intuition: 'Scans elements sequentially from start to end until target is found or end of array reached.',
-    mistakes: 'Using linear search on large sorted arrays where Binary Search is O(log N).',
-    interviewTip: 'Requires no preprocessing (unsorted streams or linked lists OK).'
-  },
-  sentinel: {
-    name: 'Sentinel Search',
-    category: 'Sequential',
-    requiresSorted: false,
-    best: 'O(1)',
-    avg: 'O(N)',
-    worst: 'O(N)',
-    space: 'O(1)',
-    pseudocode: [
-      'last = arr[n - 1], arr[n - 1] = target',
-      'while arr[i] != target: i++',
-      'arr[n - 1] = last',
-      'if i < n - 1 or arr[n - 1] == target: return i'
-    ],
-    intuition: 'Optimized linear search that places sentinel target at last position to eliminate loop boundary check on every iteration.',
-    mistakes: 'Forgetting to restore original array value at last index.',
-    interviewTip: 'Saves 1 comparison per iteration, optimizing execution constants.'
-  },
-  binary: {
-    name: 'Binary Search',
-    category: 'Divide & Conquer',
-    requiresSorted: true,
-    best: 'O(1)',
-    avg: 'O(log N)',
-    worst: 'O(log N)',
-    space: 'O(1)',
-    pseudocode: [
-      'low = 0, high = n - 1',
-      'while low <= high:',
-      '  mid = low + (high - low) / 2',
-      '  if arr[mid] == target: return mid',
-      '  else if arr[mid] < target: low = mid + 1',
-      '  else: high = mid - 1'
-    ],
-    intuition: 'Repeatedly divides sorted search space in half by comparing middle element to target.',
-    mistakes: 'Integer overflow in mid calculation `(low + high) / 2`.',
-    interviewTip: 'Applies to any monotonic function search space, not just explicit arrays.'
-  },
-  recbinary: {
-    name: 'Recursive Binary Search',
-    category: 'Divide & Conquer',
-    requiresSorted: true,
-    best: 'O(1)',
-    avg: 'O(log N)',
-    worst: 'O(log N)',
-    space: 'O(log N)',
-    pseudocode: [
-      'function recBinary(arr, low, high, target):',
-      '  if low > high: return -1',
-      '  mid = low + (high - low) / 2',
-      '  if arr[mid] == target: return mid',
-      '  else if arr[mid] < target: recurse(mid + 1, high)',
-      '  else: recurse(low, mid - 1)'
-    ],
-    intuition: 'Recursive implementation of Binary Search dividing search interval.',
-    mistakes: 'Forgetting base case stack overflow guard.',
-    interviewTip: 'Consumes O(log N) call stack space due to recursion depth.'
-  },
-  jump: {
-    name: 'Jump Search',
-    category: 'Block Estimation',
-    requiresSorted: true,
-    best: 'O(1)',
-    avg: 'O(√N)',
-    worst: 'O(√N)',
-    space: 'O(1)',
-    pseudocode: [
-      'step = sqrt(n), prev = 0',
-      'while arr[min(step, n) - 1] < target:',
-      '  prev = step, step += sqrt(n)',
-      'linear search block from prev to step'
-    ],
-    intuition: 'Jumps ahead by fixed block size √N, then performs linear search within block.',
-    mistakes: 'Using non-optimal step size other than √N.',
-    interviewTip: 'Better than Binary Search when jumping back is costly (e.g. tape drives).'
-  },
-  interpolation: {
-    name: 'Interpolation Search',
-    category: 'Uniform Estimation',
-    requiresSorted: true,
-    best: 'O(1)',
-    avg: 'O(log log N)',
-    worst: 'O(N)',
-    space: 'O(1)',
-    pseudocode: [
-      'pos = low + ((target - arr[low]) * (high - low)) / (arr[high] - arr[low])',
-      'if arr[pos] == target: return pos'
-    ],
-    intuition: 'Estimates target position based on key value distribution like looking up a name in phonebook.',
-    mistakes: 'Using on exponentially distributed data causing quadratic degradation.',
-    interviewTip: 'Achieves sub-logarithmic O(log log N) time on uniformly distributed data.'
-  }
-};
-
 const SearchingLab = () => {
   const [algoKey, setAlgoKey] = useState('binary');
   const [array, setArray] = useState([12, 24, 36, 45, 60, 72, 84, 96, 108, 120]);
   const [target, setTarget] = useState(45);
   const [datasetSize, setDatasetSize] = useState(10);
-  const [viewMode, setViewMode] = useState('cells');
+  const [viewMode, setViewMode] = useState('bars_vertical');
   const [autoSort, setAutoSort] = useState(true);
   const [showMid, setShowMid] = useState(true);
   const [selectedCompareAlgos, setSelectedCompareAlgos] = useState(['linear', 'binary', 'jump', 'interpolation']);
@@ -144,22 +34,13 @@ const SearchingLab = () => {
   const [backendData, setBackendData] = useState({});
   const [error, setError] = useState(null);
 
-  const currentSpec = SEARCHING_SPECS[algoKey] || SEARCHING_SPECS.binary;
+  const currentSpec = SEARCHING_ALGORITHMS_REGISTRY[algoKey] || SEARCHING_ALGORITHMS_REGISTRY.binary;
 
   // Fetch execution steps from C++ Engine backend API
   const fetchCppSteps = async () => {
     try {
       setError(null);
-      const algoNameMap = {
-        linear: 'linear_search',
-        sentinel: 'sentinel_search',
-        binary: 'binary_search',
-        recbinary: 'recursive_binary_search',
-        jump: 'jump_search',
-        interpolation: 'interpolation_search'
-      };
-
-      const algoCode = algoNameMap[algoKey] || `${algoKey}_search`;
+      const algoCode = currentSpec.cppCode || `${algoKey}_search`;
       const response = await api.post('/searching/run', {
         algorithm: algoCode,
         target,
@@ -277,7 +158,7 @@ const SearchingLab = () => {
             setArray={setArray}
             target={target}
             setTarget={setTarget}
-            algorithms={SEARCHING_SPECS}
+            algorithms={SEARCHING_ALGORITHMS_REGISTRY}
             onBackToSingle={() => setIsComparisonMode(false)}
           />
         ) : (
@@ -299,7 +180,7 @@ const SearchingLab = () => {
                 <SearchingConfigPanel
                   algoKey={algoKey}
                   setAlgoKey={setAlgoKey}
-                  algorithms={SEARCHING_SPECS}
+                  algorithms={SEARCHING_ALGORITHMS_REGISTRY}
                   target={target}
                   setTarget={setTarget}
                   datasetSize={datasetSize}

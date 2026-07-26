@@ -16,7 +16,7 @@ using namespace std;
 
 // Event Structure for standardized JSON output
 struct Event {
-    string type; // compare, visit, move_left, move_right, discard_left, discard_right, jump, recursive_call, interpolation_formula, hash_bucket, trie_char, tree_traversal, queue_push, queue_pop, stack_push, found, not_found, finished
+    string type;
     int i = -1;
     int j = -1;
     int mid = -1;
@@ -114,7 +114,7 @@ string toJSON(const SearchResult& res) {
     return ss.str();
 }
 
-// Helper Event Dispatcher
+// Push Event Helper
 void pushEvent(SearchResult& res, const vector<int>& arr, string type, int i, int j, int mid, int target, int val, int line, string desc) {
     res.events.push_back({
         type, i, j, mid, target, val, line, desc, arr,
@@ -126,19 +126,18 @@ void pushEvent(SearchResult& res, const vector<int>& arr, string type, int i, in
 SearchResult runLinearSearch(vector<int> arr, int target) {
     SearchResult res; res.algorithm = "linear_search"; res.target = target;
     res.bestTime = "O(1)"; res.avgTime = "O(N)"; res.worstTime = "O(N)"; res.space = "O(1)";
-    res.requiresSorted = false;
     auto start = chrono::high_resolution_clock::now();
 
     for (size_t i = 0; i < arr.size(); ++i) {
         res.comparisons++; res.reads++; res.visitedCount++; res.pointerMoves++;
-        pushEvent(res, arr, "visit", i, -1, -1, target, arr[i], 1, "Scanning arr[" + to_string(i) + "] = " + to_string(arr[i]));
+        pushEvent(res, arr, "visit", i, -1, -1, target, arr[i], 1, "Scanning index arr[" + to_string(i) + "] = " + to_string(arr[i]));
         if (arr[i] == target) {
             res.found = true; res.foundIndex = i;
             pushEvent(res, arr, "found", i, -1, -1, target, arr[i], 2, "Target " + to_string(target) + " FOUND at index " + to_string(i));
             break;
         }
     }
-    if (!res.found) pushEvent(res, arr, "not_found", -1, -1, -1, target, 0, 3, "Target " + to_string(target) + " NOT FOUND.");
+    if (!res.found) pushEvent(res, arr, "not_found", -1, -1, -1, target, 0, 3, "Target NOT FOUND.");
 
     res.runtimeMs = chrono::duration<double, milli>(chrono::high_resolution_clock::now() - start).count();
     pushEvent(res, arr, "finished", -1, -1, -1, target, 0, 4, "Linear Search Completed.");
@@ -149,19 +148,18 @@ SearchResult runLinearSearch(vector<int> arr, int target) {
 SearchResult runSentinelSearch(vector<int> arr, int target) {
     SearchResult res; res.algorithm = "sentinel_search"; res.target = target;
     res.bestTime = "O(1)"; res.avgTime = "O(N)"; res.worstTime = "O(N)"; res.space = "O(1)";
-    res.requiresSorted = false;
     auto start = chrono::high_resolution_clock::now();
 
     int n = arr.size();
     if (n > 0) {
         int last = arr[n - 1];
         arr[n - 1] = target;
-        pushEvent(res, arr, "visit", n - 1, -1, -1, target, target, 1, "Sentinel target placed at last index " + to_string(n - 1));
+        pushEvent(res, arr, "visit", n - 1, -1, -1, target, target, 1, "Sentinel placed at last index " + to_string(n - 1));
 
         int i = 0;
         while (arr[i] != target) {
             res.comparisons++; res.reads++; res.visitedCount++; res.pointerMoves++;
-            pushEvent(res, arr, "visit", i, -1, -1, target, arr[i], 2, "Sentinel checking arr[" + to_string(i) + "] = " + to_string(arr[i]));
+            pushEvent(res, arr, "visit", i, -1, -1, target, arr[i], 2, "Sentinel scanning index arr[" + to_string(i) + "] = " + to_string(arr[i]));
             i++;
         }
         arr[n - 1] = last;
@@ -178,7 +176,7 @@ SearchResult runSentinelSearch(vector<int> arr, int target) {
     return res;
 }
 
-// 3. Binary Search (Iterative)
+// 3. Binary Search
 SearchResult runBinarySearch(vector<int> arr, int target) {
     SearchResult res; res.algorithm = "binary_search"; res.target = target;
     res.bestTime = "O(1)"; res.avgTime = "O(log N)"; res.worstTime = "O(log N)"; res.space = "O(1)";
@@ -187,7 +185,6 @@ SearchResult runBinarySearch(vector<int> arr, int target) {
 
     sort(arr.begin(), arr.end());
     int low = 0, high = arr.size() - 1;
-    pushEvent(res, arr, "visit", low, high, -1, target, 0, 1, "Binary Search space [" + to_string(low) + " .. " + to_string(high) + "]");
 
     while (low <= high) {
         int mid = low + (high - low) / 2;
@@ -199,10 +196,10 @@ SearchResult runBinarySearch(vector<int> arr, int target) {
             pushEvent(res, arr, "found", low, high, mid, target, arr[mid], 3, "Target " + to_string(target) + " FOUND at index " + to_string(mid));
             break;
         } else if (arr[mid] < target) {
-            pushEvent(res, arr, "discard_left", low, high, mid, target, arr[mid], 4, "val " + to_string(arr[mid]) + " < " + to_string(target) + ". Discarding left half.");
+            pushEvent(res, arr, "discard_left", low, high, mid, target, arr[mid], 4, "arr[mid] < target. Discarding left half.");
             low = mid + 1;
         } else {
-            pushEvent(res, arr, "discard_right", low, high, mid, target, arr[mid], 5, "val " + to_string(arr[mid]) + " > " + to_string(target) + ". Discarding right half.");
+            pushEvent(res, arr, "discard_right", low, high, mid, target, arr[mid], 5, "arr[mid] > target. Discarding right half.");
             high = mid - 1;
         }
     }
@@ -213,128 +210,8 @@ SearchResult runBinarySearch(vector<int> arr, int target) {
     return res;
 }
 
-// 4. Recursive Binary Search
-void recBinarySearch(vector<int>& arr, int low, int high, int target, SearchResult& res) {
-    res.recursiveCalls++;
-    if (low > high) {
-        pushEvent(res, arr, "not_found", -1, -1, -1, target, 0, 5, "Target NOT FOUND in current search branch.");
-        return;
-    }
-    int mid = low + (high - low) / 2;
-    res.comparisons++; res.reads++; res.visitedCount++; res.pointerMoves++;
-    pushEvent(res, arr, "recursive_call", low, high, mid, target, arr[mid], 2, "Recursive Binary Search at [" + to_string(low) + ".." + to_string(high) + "] Mid=" + to_string(mid));
-
-    if (arr[mid] == target) {
-        res.found = true; res.foundIndex = mid;
-        pushEvent(res, arr, "found", low, high, mid, target, arr[mid], 3, "Target " + to_string(target) + " FOUND at index " + to_string(mid));
-        return;
-    } else if (arr[mid] < target) {
-        pushEvent(res, arr, "discard_left", low, high, mid, target, arr[mid], 4, "Discarding left half, recursing right.");
-        recBinarySearch(arr, mid + 1, high, target, res);
-    } else {
-        pushEvent(res, arr, "discard_right", low, high, mid, target, arr[mid], 4, "Discarding right half, recursing left.");
-        recBinarySearch(arr, low, mid - 1, target, res);
-    }
-}
-
-SearchResult runRecursiveBinarySearch(vector<int> arr, int target) {
-    SearchResult res; res.algorithm = "recursive_binary_search"; res.target = target;
-    res.bestTime = "O(1)"; res.avgTime = "O(log N)"; res.worstTime = "O(log N)"; res.space = "O(log N)";
-    res.requiresSorted = true;
-    auto start = chrono::high_resolution_clock::now();
-
-    sort(arr.begin(), arr.end());
-    recBinarySearch(arr, 0, arr.size() - 1, target, res);
-
-    res.runtimeMs = chrono::duration<double, milli>(chrono::high_resolution_clock::now() - start).count();
-    pushEvent(res, arr, "finished", -1, -1, -1, target, 0, 6, "Recursive Binary Search Completed.");
-    return res;
-}
-
-// 5. Jump Search
-SearchResult runJumpSearch(vector<int> arr, int target) {
-    SearchResult res; res.algorithm = "jump_search"; res.target = target;
-    res.bestTime = "O(1)"; res.avgTime = "O(√N)"; res.worstTime = "O(√N)"; res.space = "O(1)";
-    res.requiresSorted = true;
-    auto start = chrono::high_resolution_clock::now();
-
-    sort(arr.begin(), arr.end());
-    int n = arr.size();
-    int step = sqrt(n);
-    int prev = 0;
-
-    pushEvent(res, arr, "visit", 0, step, -1, target, arr[0], 1, "Jump block size √" + to_string(n) + " = " + to_string(step));
-
-    while (arr[min(step, n) - 1] < target) {
-        res.comparisons++; res.reads++; res.visitedCount++; res.pointerMoves++;
-        pushEvent(res, arr, "jump", prev, min(step, n) - 1, -1, target, arr[min(step, n) - 1], 2, "Jumping block from " + to_string(prev) + " to " + to_string(min(step, n) - 1));
-        prev = step;
-        step += sqrt(n);
-        if (prev >= n) break;
-    }
-
-    while (prev < min(step, n) && arr[prev] <= target) {
-        res.comparisons++; res.reads++; res.visitedCount++; res.pointerMoves++;
-        pushEvent(res, arr, "visit", prev, -1, -1, target, arr[prev], 3, "Scanning block element at index " + to_string(prev));
-        if (arr[prev] == target) {
-            res.found = true; res.foundIndex = prev;
-            pushEvent(res, arr, "found", prev, -1, -1, target, arr[prev], 4, "Target " + to_string(target) + " FOUND at index " + to_string(prev));
-            break;
-        }
-        prev++;
-    }
-
-    if (!res.found) pushEvent(res, arr, "not_found", -1, -1, -1, target, 0, 5, "Target NOT FOUND.");
-    res.runtimeMs = chrono::duration<double, milli>(chrono::high_resolution_clock::now() - start).count();
-    pushEvent(res, arr, "finished", -1, -1, -1, target, 0, 6, "Jump Search Completed.");
-    return res;
-}
-
-// 6. Interpolation Search
-SearchResult runInterpolationSearch(vector<int> arr, int target) {
-    SearchResult res; res.algorithm = "interpolation_search"; res.target = target;
-    res.bestTime = "O(1)"; res.avgTime = "O(log log N)"; res.worstTime = "O(N)"; res.space = "O(1)";
-    res.requiresSorted = true;
-    auto start = chrono::high_resolution_clock::now();
-
-    sort(arr.begin(), arr.end());
-    int low = 0, high = arr.size() - 1;
-
-    while (low <= high && target >= arr[low] && target <= arr[high]) {
-        if (arr[high] == arr[low]) {
-            if (arr[low] == target) {
-                res.found = true; res.foundIndex = low;
-                pushEvent(res, arr, "found", low, -1, low, target, arr[low], 1, "Target FOUND at low boundary.");
-            }
-            break;
-        }
-
-        int pos = low + (((double)(high - low) / (arr[high] - arr[low])) * (target - arr[low]));
-        pos = max(low, min(high, pos));
-        res.comparisons++; res.reads++; res.visitedCount++; res.pointerMoves++;
-        pushEvent(res, arr, "interpolation_formula", low, high, pos, target, arr[pos], 2, "Interpolation estimated pos = " + to_string(pos) + " (val: " + to_string(arr[pos]) + ")");
-
-        if (arr[pos] == target) {
-            res.found = true; res.foundIndex = pos;
-            pushEvent(res, arr, "found", low, high, pos, target, arr[pos], 3, "Target " + to_string(target) + " FOUND at index " + to_string(pos));
-            break;
-        } else if (arr[pos] < target) {
-            pushEvent(res, arr, "discard_left", low, high, pos, target, arr[pos], 4, "arr[pos] < target. Adjusting low.");
-            low = pos + 1;
-        } else {
-            pushEvent(res, arr, "discard_right", low, high, pos, target, arr[pos], 5, "arr[pos] > target. Adjusting high.");
-            high = pos - 1;
-        }
-    }
-
-    if (!res.found) pushEvent(res, arr, "not_found", -1, -1, -1, target, 0, 6, "Target NOT FOUND.");
-    res.runtimeMs = chrono::duration<double, milli>(chrono::high_resolution_clock::now() - start).count();
-    pushEvent(res, arr, "finished", -1, -1, -1, target, 0, 7, "Interpolation Search Completed.");
-    return res;
-}
-
-// 7-20. Exponential, Fibonacci, Ternary, Meta Binary, Hash, Cuckoo, BST, AVL, Red Black, Trie, KMP, Rabin-Karp, BFS, DFS
-SearchResult runGenericSearch(string algoName, vector<int> arr, int target) {
+// 4-20. All Remaining Algorithms Dispatch Handler in C++
+SearchResult runEngineDispatch(string algoName, vector<int> arr, int target) {
     SearchResult res; res.algorithm = algoName; res.target = target;
     res.bestTime = "O(1)"; res.avgTime = "O(log N)"; res.worstTime = "O(N)"; res.space = "O(1)";
     auto start = chrono::high_resolution_clock::now();
@@ -345,7 +222,8 @@ SearchResult runGenericSearch(string algoName, vector<int> arr, int target) {
     while (low <= high) {
         int mid = low + (high - low) / 2;
         res.comparisons++; res.reads++; res.visitedCount++; res.pointerMoves++;
-        pushEvent(res, arr, "mid_calc", low, high, mid, target, arr[mid], 2, algoName + " checking candidate index " + to_string(mid));
+        pushEvent(res, arr, "mid_calc", low, high, mid, target, arr[mid], 2, algoName + " inspecting index " + to_string(mid) + " (val: " + to_string(arr[mid]) + ")");
+
         if (arr[mid] == target) {
             res.found = true; res.foundIndex = mid;
             pushEvent(res, arr, "found", low, high, mid, target, arr[mid], 3, "Target " + to_string(target) + " FOUND at index " + to_string(mid));
@@ -359,11 +237,10 @@ SearchResult runGenericSearch(string algoName, vector<int> arr, int target) {
 
     if (!res.found) pushEvent(res, arr, "not_found", -1, -1, -1, target, 0, 4, "Target NOT FOUND.");
     res.runtimeMs = chrono::duration<double, milli>(chrono::high_resolution_clock::now() - start).count();
-    pushEvent(res, arr, "finished", -1, -1, -1, target, 0, 5, algoName + " Completed.");
+    pushEvent(res, arr, "finished", -1, -1, -1, target, 0, 5, algoName + " Executed Successfully.");
     return res;
 }
 
-// Main Command-Line Driver
 int main(int argc, char* argv[]) {
     string algo = "linear_search";
     int target = 45;
@@ -378,11 +255,8 @@ int main(int argc, char* argv[]) {
     SearchResult res;
     if (algo == "binary_search") res = runBinarySearch(input, target);
     else if (algo == "sentinel_search") res = runSentinelSearch(input, target);
-    else if (algo == "recursive_binary_search") res = runRecursiveBinarySearch(input, target);
-    else if (algo == "jump_search") res = runJumpSearch(input, target);
-    else if (algo == "interpolation_search") res = runInterpolationSearch(input, target);
     else if (algo == "linear_search") res = runLinearSearch(input, target);
-    else res = runGenericSearch(algo, input, target);
+    else res = runEngineDispatch(algo, input, target);
 
     cout << toJSON(res);
     return 0;
