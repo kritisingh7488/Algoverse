@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Layers, BookOpen, Sparkles } from 'lucide-react';
+import { Layers, PanelLeftClose, PanelLeftOpen, BarChart2 } from 'lucide-react';
 import AppLayout from '../layouts/AppLayout';
 import Card from '../components/common/Card';
+import Button from '../components/common/Button';
 import MascotRole from '../components/mascots/MascotRole';
 
 import { STRUCTURE_SPECS, generateEngineSteps } from '../components/playground/DataStructureEngines';
@@ -10,16 +11,18 @@ import DsCanvas from '../components/playground/DsCanvas';
 import DsControls from '../components/playground/DsControls';
 import DsPlaybackBar from '../components/playground/DsPlaybackBar';
 import DsConceptPanel from '../components/playground/DsConceptPanel';
+import DsComparisonView from '../components/playground/DsComparisonView';
 
 const Playground = () => {
   const [structureKey, setStructureKey] = useState('array');
   const [items, setItems] = useState([12, 34, 56, 78, 90, 23]);
   const [config, setConfig] = useState({
-    stackCapacity: 8,
-    queueCapacity: 8,
-    dequeCapacity: 8,
+    capacity: 8,
     heapType: 'min'
   });
+
+  const [isComparisonMode, setIsComparisonMode] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
   // Playback & Stepper State
   const [isPlaying, setIsPlaying] = useState(false);
@@ -138,81 +141,125 @@ const Playground = () => {
 
         {/* Top Header Card with Mascot */}
         <Card className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="p-2 rounded-2xl bg-primary/15 text-primary border border-primary/30">
-                <Layers className="w-5 h-5" />
-              </span>
-              <h1 className="text-2xl font-heading font-bold text-textPrimary">Data Structure Laboratory</h1>
+          <div className="flex items-center gap-3">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+              title={isSidebarCollapsed ? 'Expand Engine Panel' : 'Collapse Engine Panel'}
+              className="shrink-0"
+            >
+              {isSidebarCollapsed ? <PanelLeftOpen className="w-4 h-4" /> : <PanelLeftClose className="w-4 h-4" />}
+            </Button>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="p-2 rounded-2xl bg-primary/15 text-primary border border-primary/30">
+                  <Layers className="w-5 h-5" />
+                </span>
+                <h1 className="text-2xl font-heading font-bold text-textPrimary">Data Structure Laboratory</h1>
+              </div>
+              <p className="text-sm font-body text-textSecondary mt-1">
+                Interactive memory layout inspector, pointer visualizer, step-by-step engine, and comparison studio for 11 data structures.
+              </p>
             </div>
-            <p className="text-sm font-body text-textSecondary mt-1">
-              Interactive memory layout inspector, pointer visualizer, and step-by-step engine for 12 data structures.
-            </p>
           </div>
-          <MascotRole role="teacher" activity="reading" dialogue={`Exploring ${currentSpec.name}!`} className="w-20 h-20" />
+          
+          <div className="flex items-center gap-3">
+            <Button
+              variant={isComparisonMode ? 'primary' : 'outline'}
+              size="sm"
+              onClick={() => setIsComparisonMode(!isComparisonMode)}
+            >
+              <BarChart2 className="w-4 h-4 mr-1.5" />
+              {isComparisonMode ? 'Single Visualizer' : 'Multi-DS Comparison Studio'}
+            </Button>
+            <MascotRole role="teacher" activity="reading" dialogue={`Exploring ${currentSpec.name}!`} className="w-20 h-20" />
+          </div>
         </Card>
 
-        {/* 4-Panel Laboratory Layout Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        {isComparisonMode ? (
+          <DsComparisonView
+            specs={STRUCTURE_SPECS}
+            onBackToSingle={() => setIsComparisonMode(false)}
+          />
+        ) : (
+          /* Collapsible Laboratory Grid Layout */
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 transition-all duration-300">
 
-          {/* LEFT PANEL: Configuration & Selectors */}
-          <div className="lg:col-span-3">
-            <DsConfigPanel
-              structureKey={structureKey}
-              setStructureKey={setStructureKey}
-              specs={STRUCTURE_SPECS}
-              config={config}
-              setConfig={setConfig}
-              onReset={handleReset}
-              onClear={handleClear}
-              onRandomize={handleRandomize}
-              onImportCSV={handleImportCSV}
-              onLoadPreset={handleLoadPreset}
-            />
+            {/* LEFT PANEL: Configuration & Selectors */}
+            {!isSidebarCollapsed && (
+              <div className="lg:col-span-3 transition-all duration-300">
+                <DsConfigPanel
+                  structureKey={structureKey}
+                  setStructureKey={setStructureKey}
+                  specs={STRUCTURE_SPECS}
+                  config={config}
+                  setConfig={setConfig}
+                  onReset={handleReset}
+                  onClear={handleClear}
+                  onRandomize={handleRandomize}
+                  onImportCSV={handleImportCSV}
+                  onLoadPreset={handleLoadPreset}
+                />
+              </div>
+            )}
+
+            {/* CENTER PANEL: Canvas, Operations, & Playback */}
+            <div className={`${isSidebarCollapsed ? 'lg:col-span-8' : 'lg:col-span-6'} space-y-4 transition-all duration-300`}>
+              
+              {/* Visualization Canvas */}
+              <DsCanvas
+                structureKey={structureKey}
+                setStructureKey={setStructureKey}
+                items={currentStep.items || items}
+                activeHighlight={currentStep.highlight}
+                pointers={currentStep.pointers}
+                spec={currentSpec}
+                specs={STRUCTURE_SPECS}
+                onLoadPreset={handleLoadPreset}
+                onImportCSV={handleImportCSV}
+                onClear={handleClear}
+                isPlaying={isPlaying}
+                setIsPlaying={setIsPlaying}
+                stepIndex={stepIndex}
+                totalSteps={events.length}
+                onStepChange={setStepIndex}
+                speed={speed}
+                setSpeed={setSpeed}
+                onRestart={() => setStepIndex(0)}
+              />
+
+              {/* Action Operations Control Bar */}
+              <DsControls
+                structureKey={structureKey}
+                onExecuteOp={handleExecuteOp}
+              />
+
+              {/* Bottom Playback & Scrubber Controls */}
+              <DsPlaybackBar
+                isPlaying={isPlaying}
+                setIsPlaying={setIsPlaying}
+                stepIndex={stepIndex}
+                totalSteps={events.length}
+                onStepChange={setStepIndex}
+                speed={speed}
+                setSpeed={setSpeed}
+                onRestart={() => setStepIndex(0)}
+              />
+
+            </div>
+
+            {/* RIGHT PANEL: Pseudocode, Variables, & Concept Intuition */}
+            <div className={`${isSidebarCollapsed ? 'lg:col-span-4' : 'lg:col-span-3'} transition-all duration-300`}>
+              <DsConceptPanel
+                spec={currentSpec}
+                stepData={currentStep}
+                currentOpName={currentOpName}
+              />
+            </div>
+
           </div>
-
-          {/* CENTER PANEL: Canvas, Operations, & Playback */}
-          <div className="lg:col-span-6 space-y-4">
-            
-            {/* Visualization Canvas */}
-            <DsCanvas
-              structureKey={structureKey}
-              items={currentStep.items || items}
-              activeHighlight={currentStep.highlight}
-              pointers={currentStep.pointers}
-              spec={currentSpec}
-            />
-
-            {/* Action Operations Control Bar */}
-            <DsControls
-              structureKey={structureKey}
-              onExecuteOp={handleExecuteOp}
-            />
-
-            {/* Bottom Playback & Scrubber Controls */}
-            <DsPlaybackBar
-              isPlaying={isPlaying}
-              setIsPlaying={setIsPlaying}
-              stepIndex={stepIndex}
-              totalSteps={events.length}
-              onStepChange={setStepIndex}
-              speed={speed}
-              setSpeed={setSpeed}
-              onRestart={() => setStepIndex(0)}
-            />
-
-          </div>
-
-          {/* RIGHT PANEL: Pseudocode, Variables, & Concept Intuition */}
-          <div className="lg:col-span-3">
-            <DsConceptPanel
-              spec={currentSpec}
-              stepData={currentStep}
-              currentOpName={currentOpName}
-            />
-          </div>
-
-        </div>
+        )}
 
       </div>
     </AppLayout>
