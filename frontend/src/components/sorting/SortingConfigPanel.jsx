@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Sliders, BarChart2, Upload, Shuffle, Play, Layers } from 'lucide-react';
+import { Sliders, BarChart2, Upload, Layers, CheckSquare, Square, Play } from 'lucide-react';
 import Button from '../common/Button';
 
 export const SortingConfigPanel = ({
@@ -12,8 +12,11 @@ export const SortingConfigPanel = ({
   setDatasetSize,
   viewMode,
   setViewMode,
+  selectedCompareAlgos = [],
+  setSelectedCompareAlgos,
   isComparisonMode,
   setIsComparisonMode,
+  onRunComparison,
   onGenerateDataset,
   onImportCSV
 }) => {
@@ -31,43 +34,126 @@ export const SortingConfigPanel = ({
     }
   };
 
+  const toggleCompareAlgo = (key) => {
+    if (selectedCompareAlgos.includes(key)) {
+      if (selectedCompareAlgos.length > 2) {
+        setSelectedCompareAlgos(selectedCompareAlgos.filter(k => k !== key));
+      }
+    } else {
+      if (selectedCompareAlgos.length < 4) {
+        setSelectedCompareAlgos([...selectedCompareAlgos, key]);
+      }
+    }
+  };
+
   return (
     <div className="bg-card rounded-card border-2 border-borderTheme p-5 shadow-soft space-y-6 font-body">
       
-      {/* Algorithm Selector */}
-      <div className="space-y-2">
-        <h3 className="text-xs font-heading font-bold text-textSecondary uppercase tracking-wider flex items-center gap-1.5">
-          <BarChart2 className="w-4 h-4 text-primary" /> C++ Sorting Algorithms (20)
-        </h3>
-
-        <div className="space-y-1.5 max-h-[220px] overflow-y-auto pr-1 scrollbar-thin">
-          {Object.keys(algorithms).map((key) => {
-            const algo = algorithms[key];
-            const isSelected = algoKey === key;
-            return (
-              <button
-                key={key}
-                onClick={() => setAlgoKey(key)}
-                className={`w-full text-left px-3.5 py-2.5 rounded-2xl text-xs font-heading font-bold transition-all flex items-center justify-between ${
-                  isSelected
-                    ? 'bg-primary text-white shadow-soft shadow-primary/20'
-                    : 'bg-surface text-textPrimary hover:bg-card border border-borderTheme'
-                }`}
-              >
-                <span>{algo.name}</span>
-                <span className={`text-[10px] px-2 py-0.5 rounded-full font-mono font-normal ${
-                  isSelected ? 'bg-white/20 text-white' : 'bg-card text-textSecondary border border-borderTheme'
-                }`}>
-                  {algo.avg}
-                </span>
-              </button>
-            );
-          })}
-        </div>
+      {/* Mode Switcher Banner */}
+      <div className="flex bg-surface p-1 rounded-2xl border-2 border-borderTheme">
+        <button
+          onClick={() => setIsComparisonMode(false)}
+          className={`flex-1 py-2 rounded-xl text-xs font-heading font-bold transition-all flex items-center justify-center gap-1.5 ${
+            !isComparisonMode
+              ? 'bg-card text-textPrimary shadow-soft border border-borderTheme'
+              : 'text-textSecondary hover:text-textPrimary'
+          }`}
+        >
+          <BarChart2 className="w-3.5 h-3.5 text-primary" /> Single Visualizer
+        </button>
+        <button
+          onClick={() => setIsComparisonMode(true)}
+          className={`flex-1 py-2 rounded-xl text-xs font-heading font-bold transition-all flex items-center justify-center gap-1.5 ${
+            isComparisonMode
+              ? 'bg-card text-textPrimary shadow-soft border border-borderTheme'
+              : 'text-textSecondary hover:text-textPrimary'
+          }`}
+        >
+          <Layers className="w-3.5 h-3.5 text-secondary" /> Multi-Compare
+        </button>
       </div>
 
+      {!isComparisonMode ? (
+        /* SINGLE ALGORITHM SELECTOR */
+        <div className="space-y-2">
+          <h3 className="text-xs font-heading font-bold text-textSecondary uppercase tracking-wider flex items-center gap-1.5">
+            <BarChart2 className="w-4 h-4 text-primary" /> Active C++ Algorithm
+          </h3>
+
+          <div className="space-y-1.5 max-h-[200px] overflow-y-auto pr-1 scrollbar-thin">
+            {Object.keys(algorithms).map((key) => {
+              const algo = algorithms[key];
+              const isSelected = algoKey === key;
+              return (
+                <button
+                  key={key}
+                  onClick={() => setAlgoKey(key)}
+                  className={`w-full text-left px-3.5 py-2.5 rounded-2xl text-xs font-heading font-bold transition-all flex items-center justify-between ${
+                    isSelected
+                      ? 'bg-primary text-white shadow-soft shadow-primary/20'
+                      : 'bg-surface text-textPrimary hover:bg-card border border-borderTheme'
+                  }`}
+                >
+                  <span>{algo.name}</span>
+                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-mono font-normal ${
+                    isSelected ? 'bg-white/20 text-white' : 'bg-card text-textSecondary border border-borderTheme'
+                  }`}>
+                    {algo.avg}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      ) : (
+        /* MULTI-COMPARE ALGORITHM SELECTOR CHECKBOXES */
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <h3 className="text-xs font-heading font-bold text-textSecondary uppercase tracking-wider flex items-center gap-1.5">
+              <Layers className="w-4 h-4 text-secondary" /> Pick 2–4 Algorithms
+            </h3>
+            <span className="text-[10px] font-mono font-bold text-primary px-2 py-0.5 bg-surface rounded-full border border-borderTheme">
+              {selectedCompareAlgos.length}/4 Selected
+            </span>
+          </div>
+
+          <div className="space-y-1.5 max-h-[220px] overflow-y-auto pr-1 scrollbar-thin">
+            {Object.keys(algorithms).map((key) => {
+              const algo = algorithms[key];
+              const isChecked = selectedCompareAlgos.includes(key);
+              return (
+                <button
+                  key={key}
+                  onClick={() => toggleCompareAlgo(key)}
+                  className={`w-full text-left px-3 py-2 rounded-2xl text-xs font-heading font-bold transition-all flex items-center justify-between border ${
+                    isChecked
+                      ? 'bg-secondary/15 border-secondary text-textPrimary'
+                      : 'bg-surface border-borderTheme text-textSecondary hover:bg-card'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    {isChecked ? <CheckSquare className="w-4 h-4 text-secondary" /> : <Square className="w-4 h-4 text-textSecondary" />}
+                    <span>{algo.name}</span>
+                  </div>
+                  <span className="text-[10px] font-mono opacity-70">{algo.avg}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          <Button
+            variant="secondary"
+            size="md"
+            className="w-full mt-2"
+            onClick={onRunComparison}
+          >
+            <Play className="w-4 h-4 mr-1" /> Run Multi-Sort Comparison
+          </Button>
+        </div>
+      )}
+
       {/* Quick Sort Pivot Strategy Selector */}
-      {algoKey === 'quick' && (
+      {algoKey === 'quick' && !isComparisonMode && (
         <div className="space-y-2 pt-3 border-t-2 border-borderTheme">
           <label className="text-xs font-heading font-bold text-textPrimary block">QuickSort Pivot Strategy</label>
           <div className="grid grid-cols-3 gap-1.5 text-[11px] font-heading font-bold">
@@ -88,7 +174,7 @@ export const SortingConfigPanel = ({
         </div>
       )}
 
-      {/* Dataset Generation & Controls */}
+      {/* Dataset Config & Size */}
       <div className="space-y-3 pt-4 border-t-2 border-borderTheme">
         <h3 className="text-xs font-heading font-bold text-textSecondary uppercase tracking-wider flex items-center gap-1.5">
           <Sliders className="w-4 h-4 text-secondary" /> Dataset Config & Size
@@ -135,43 +221,30 @@ export const SortingConfigPanel = ({
         </div>
       </div>
 
-      {/* View Mode & Multi-Compare Mode */}
-      <div className="space-y-3 pt-4 border-t-2 border-borderTheme">
-        <label className="text-xs font-heading font-bold text-textSecondary uppercase tracking-wider block">Visualizer View Mode</label>
-        <div className="grid grid-cols-2 gap-2 text-xs">
-          <button
-            onClick={() => setViewMode('bars_vertical')}
-            className={`py-2 rounded-xl font-heading font-bold border transition-all ${
-              viewMode === 'bars_vertical' ? 'bg-primary text-white border-primary' : 'bg-surface text-textPrimary border-borderTheme'
-            }`}
-          >
-            Vertical Bars
-          </button>
-          <button
-            onClick={() => setViewMode('cells')}
-            className={`py-2 rounded-xl font-heading font-bold border transition-all ${
-              viewMode === 'cells' ? 'bg-primary text-white border-primary' : 'bg-surface text-textPrimary border-borderTheme'
-            }`}
-          >
-            Array Cells
-          </button>
+      {/* View Mode */}
+      {!isComparisonMode && (
+        <div className="space-y-3 pt-4 border-t-2 border-borderTheme">
+          <label className="text-xs font-heading font-bold text-textSecondary uppercase tracking-wider block">Visualizer View Mode</label>
+          <div className="grid grid-cols-2 gap-2 text-xs">
+            <button
+              onClick={() => setViewMode('bars_vertical')}
+              className={`py-2 rounded-xl font-heading font-bold border transition-all ${
+                viewMode === 'bars_vertical' ? 'bg-primary text-white border-primary' : 'bg-surface text-textPrimary border-borderTheme'
+              }`}
+            >
+              Vertical Bars
+            </button>
+            <button
+              onClick={() => setViewMode('cells')}
+              className={`py-2 rounded-xl font-heading font-bold border transition-all ${
+                viewMode === 'cells' ? 'bg-primary text-white border-primary' : 'bg-surface text-textPrimary border-borderTheme'
+              }`}
+            >
+              Array Cells
+            </button>
+          </div>
         </div>
-
-        {/* Multi-Sort Mode Toggle */}
-        <div className="pt-2">
-          <button
-            onClick={() => setIsComparisonMode(!isComparisonMode)}
-            className={`w-full py-2.5 rounded-2xl font-heading font-bold text-xs border-2 transition-all flex items-center justify-center gap-2 ${
-              isComparisonMode
-                ? 'bg-secondary text-white border-secondary shadow-soft'
-                : 'bg-surface text-textPrimary border-borderTheme hover:border-secondary'
-            }`}
-          >
-            <Layers className="w-4 h-4" />
-            <span>{isComparisonMode ? 'Exit Multi-Compare Mode' : 'Multi-Algorithm Compare Mode'}</span>
-          </button>
-        </div>
-      </div>
+      )}
 
       {/* Custom CSV Input */}
       <div className="space-y-2 pt-4 border-t-2 border-borderTheme">

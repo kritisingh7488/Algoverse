@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { BarChart2, Layers } from 'lucide-react';
+import { BarChart2, AlertCircle, RefreshCw } from 'lucide-react';
 import AppLayout from '../../layouts/AppLayout';
 import Card from '../../components/common/Card';
+import Button from '../../components/common/Button';
 import MascotRole from '../../components/mascots/MascotRole';
 import api from '../../api/axios';
 
@@ -223,6 +224,7 @@ const SortingLab = () => {
   const [datasetSize, setDatasetSize] = useState(10);
   const [pivotStrategy, setPivotStrategy] = useState('last');
   const [viewMode, setViewMode] = useState('bars_vertical');
+  const [selectedCompareAlgos, setSelectedCompareAlgos] = useState(['bubble', 'quick', 'merge', 'heap']);
   const [isComparisonMode, setIsComparisonMode] = useState(false);
 
   // Playback & Stepper State
@@ -230,13 +232,15 @@ const SortingLab = () => {
   const [speed, setSpeed] = useState(1);
   const [stepIndex, setStepIndex] = useState(0);
   const [events, setEvents] = useState([]);
-  const [stats, setStats] = useState({});
+  const [backendStats, setBackendStats] = useState({});
+  const [error, setError] = useState(null);
 
   const currentSpec = SORTING_SPECS[algoKey] || SORTING_SPECS.bubble;
 
   // Fetch execution steps from C++ Engine backend API
   const fetchCppSteps = async () => {
     try {
+      setError(null);
       const algoNameMap = {
         bubble: 'bubble_sort',
         selection: 'selection_sort',
@@ -259,19 +263,24 @@ const SortingLab = () => {
 
       if (response.data?.success) {
         setEvents(response.data.data.events || []);
-        setStats(response.data.data.statistics || {});
+        setBackendStats(response.data.data.statistics || {});
         setStepIndex(0);
+      } else {
+        setError(response.data?.message || 'Failed to fetch sorting steps from C++ engine.');
       }
     } catch (err) {
       console.error('Error fetching C++ sorting steps:', err);
+      setError('C++ Sorting Engine Connection Failure.');
     }
   };
 
   useEffect(() => {
-    fetchCppSteps();
-  }, [algoKey, array, pivotStrategy]);
+    if (!isComparisonMode) {
+      fetchCppSteps();
+    }
+  }, [algoKey, array, pivotStrategy, isComparisonMode]);
 
-  // Stepper effect
+  // Stepper playback effect
   useEffect(() => {
     let timer;
     if (isPlaying && stepIndex < events.length - 1) {
@@ -309,6 +318,16 @@ const SortingLab = () => {
 
   const currentStep = events[stepIndex] || {};
 
+  // Compute live step statistics
+  const liveStats = {
+    comparisons: currentStep.stats?.comparisons ?? backendStats.comparisons ?? 0,
+    swaps: currentStep.stats?.swaps ?? backendStats.swaps ?? 0,
+    writes: currentStep.stats?.writes ?? backendStats.writes ?? 0,
+    reads: currentStep.stats?.reads ?? backendStats.reads ?? 0,
+    recursiveCalls: currentStep.stats?.recursiveCalls ?? backendStats.recursiveCalls ?? 0,
+    runtimeMs: backendStats.runtimeMs || 0.15
+  };
+
   return (
     <AppLayout>
       <div className="space-y-6 py-2">
@@ -323,20 +342,38 @@ const SortingLab = () => {
               <h1 className="text-2xl font-heading font-bold text-textPrimary">Sorting Laboratory</h1>
             </div>
             <p className="text-sm font-body text-textSecondary mt-1">
-              Deterministic C++ Sorting Engine with real-time comparison, swap, partition, and heap events.
+              Deterministic C++ Sorting Engine with live statistics, step playback, and multi-algorithm comparison.
             </p>
           </div>
           <MascotRole role="teacher" activity="reading" dialogue={`Executing ${currentSpec.name} in C++!`} className="w-20 h-20" />
         </Card>
 
+        {/* Error Alert */}
+        {error && (
+          <div className="p-4 rounded-2xl bg-danger/15 border-2 border-danger/30 text-danger text-xs font-mono font-bold flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <AlertCircle className="w-4 h-4" />
+              <span>{error}</span>
+            </div>
+            <Button variant="outline" size="sm" onClick={fetchCppSteps}>
+              <RefreshCw className="w-3.5 h-3.5 mr-1" /> Retry Connection
+            </Button>
+          </div>
+        )}
+
         {isComparisonMode ? (
-          <SortingComparisonView array={array} algorithms={SORTING_SPECS} />
+          <SortingComparisonView
+            array={array}
+            algorithms={SORTING_SPECS}
+            selectedCompareAlgos={selectedCompareAlgos}
+            onBackToSingle={() => setIsComparisonMode(false)}
+          />
         ) : (
           <div className="space-y-6">
 
             {/* Live Stats Dashboard */}
             <SortingStatsPanel
-              stats={stats}
+              stats={liveStats}
               stepIndex={stepIndex}
               totalSteps={events.length}
             />
@@ -356,8 +393,11 @@ const SortingLab = () => {
                   setDatasetSize={setDatasetSize}
                   viewMode={viewMode}
                   setViewMode={setViewMode}
+                  selectedCompareAlgos={selectedCompareAlgos}
+                  setSelectedCompareAlgos={setSelectedCompareAlgos}
                   isComparisonMode={isComparisonMode}
                   setIsComparisonMode={setIsComparisonMode}
+                  onRunComparison={() => setIsComparisonMode(true)}
                   onGenerateDataset={handleGenerateDataset}
                   onImportCSV={handleImportCSV}
                 />
