@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Trophy, ArrowLeft, RefreshCw, AlertCircle, CheckSquare, Square, Sliders, Play, Pause, ChevronLeft, ChevronRight, RotateCcw, CheckCircle2, XCircle, Zap, ShieldCheck, HardDrive, Sparkles } from 'lucide-react';
+import { Trophy, Target, ArrowLeft, RefreshCw, AlertCircle, CheckSquare, Square, Sliders, Play, Pause, ChevronLeft, ChevronRight, RotateCcw, CheckCircle2, XCircle, Zap, ShieldCheck, HardDrive, Sparkles } from 'lucide-react';
 import Card from '../common/Card';
 import Button from '../common/Button';
 import api from '../../api/axios';
