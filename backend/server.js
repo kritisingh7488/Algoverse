@@ -5,6 +5,7 @@ const dotenv = require('dotenv');
 const authRoutes = require('./routes/authRoutes');
 const sortingRoutes = require('./routes/sortingRoutes');
 const searchingRoutes = require('./routes/searchingRoutes');
+const dsRoutes = require('./routes/dsRoutes');
 
 dotenv.config();
 
@@ -26,6 +27,7 @@ app.get('/', (req, res) => {
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/sorting', sortingRoutes);
 app.use('/api/v1/searching', searchingRoutes);
+app.use('/api/v1/ds', dsRoutes);
 
 // Database Connection & Server Listener
 const PORT = process.env.PORT || 5000;

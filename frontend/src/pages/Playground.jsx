@@ -4,6 +4,7 @@ import AppLayout from '../layouts/AppLayout';
 import Card from '../components/common/Card';
 import Button from '../components/common/Button';
 import MascotRole from '../components/mascots/MascotRole';
+import api from '../api/axios';
 
 import { STRUCTURE_SPECS, generateEngineSteps } from '../components/playground/DataStructureEngines';
 import DsConfigPanel from '../components/playground/DsConfigPanel';
@@ -77,9 +78,31 @@ const Playground = () => {
     space: currentSpec.space
   };
 
-  // Execute Operation in Engine
-  const handleExecuteOp = (opName, opArgs) => {
+  // Execute Operation in C++ Engine
+  const handleExecuteOp = async (opName, opArgs) => {
     setCurrentOpName(opName);
+    try {
+      const res = await api.post('/ds/run', {
+        structureKey,
+        opName,
+        opArgs,
+        items,
+        config
+      });
+      if (res.data?.success && res.data?.data?.events) {
+        setEvents(res.data.data.events);
+        setStepIndex(0);
+        const evs = res.data.data.events;
+        if (evs.length > 0) {
+          setItems(evs[evs.length - 1].items);
+        }
+        setIsPlaying(true);
+        return;
+      }
+    } catch (err) {
+      console.log('Falling back to client step generator:', err);
+    }
+
     const generatedSteps = generateEngineSteps(
       structureKey,
       opName,
@@ -159,7 +182,7 @@ const Playground = () => {
                 <h1 className="text-2xl font-heading font-bold text-textPrimary">Data Structure Laboratory</h1>
               </div>
               <p className="text-sm font-body text-textSecondary mt-1">
-                Interactive memory layout inspector, pointer visualizer, step-by-step engine, and comparison studio for 11 data structures.
+                Deterministic C++ Data Structures Engine with live memory inspection, step-by-step playback, and comparison studio.
               </p>
             </div>
           </div>
@@ -173,7 +196,7 @@ const Playground = () => {
               <BarChart2 className="w-4 h-4 mr-1.5" />
               {isComparisonMode ? 'Single Visualizer' : 'Multi-DS Comparison Studio'}
             </Button>
-            <MascotRole role="teacher" activity="reading" dialogue={`Exploring ${currentSpec.name}!`} className="w-20 h-20" />
+            <MascotRole role="teacher" activity="reading" dialogue={`Executing ${currentSpec.name} in C++!`} className="w-20 h-20" />
           </div>
         </Card>
 
