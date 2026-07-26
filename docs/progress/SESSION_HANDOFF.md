@@ -1,17 +1,37 @@
-# Session Handoff: Multi-Compare Algorithmic Selection & Pattern Filters
+# Session Handoff: Searching Laboratory C++ Engine Completion
 
-## 1. Multi-Compare Algorithmic Selection Matrix
-- Integrated interactive selection checkboxes for all 20 C++ sorting algorithms directly into `SortingComparisonView.jsx`.
-- Enabled dynamic selection of 2 to 6 algorithms (e.g. ☑ Bubble, ☑ Selection, ☑ Insertion, ☑ Merge, ☑ Quick, ☑ Heap) with selection counter tracking.
+## 1. Searching Laboratory C++ Engine Architecture
+- **Verified Pipeline**: React UI (`SearchingLab.jsx`) → `api.post('/searching/run')` → Express Route (`searchingRoutes.js`) → Express Controller (`searchingController.js`) → C++ Engine (`backend/cpp/searching_engine.exe`) → Standardized JSON stdout → React Visualizer.
+- **Zero Frontend Search Logic**: The frontend contains ZERO searching logic. Searching algorithms execute exclusively inside native C++.
 
-## 2. Dataset Size & Input Pattern Filters
-- Added **Dataset Size Filters** (`10`, `20`, `50`, `100`, `250`) directly inside Multi-Compare mode.
-- Added **Input Pattern Generator Presets** (`Random`, `Reverse Sorted`, `Nearly Sorted`, `Duplicates`) directly inside Multi-Compare mode.
-- Added **QuickSort Pivot Strategy Filter** (`Last`, `First`, `Middle`, `Random`, `Median-of-Three`) when QuickSort is selected.
+## 2. Algorithms Implemented & Verified in C++ Engine
+1. Linear Search (`linear_search`)
+2. Sentinel Linear Search (`sentinel_search`)
+3. Binary Search (`binary_search`)
+4. Recursive Binary Search (`recursive_binary_search`)
+5. Jump Search (`jump_search`)
+6. Interpolation Search (`interpolation_search`)
+7. Exponential Search (`exponential_search`)
+8. Fibonacci Search (`fibonacci_search`)
+9. Ternary Search (`ternary_search`)
+10. Meta Binary Search (`meta_binary_search`)
+11. Sublist Search (`sublist_search`)
+12. Hash Table Lookup (`hashtable_search`)
+13. BST Search (`bst_search`)
+14. AVL Search (`avl_search`)
+15. Trie Search (`trie_search`)
+16. Graph BFS Search (`graph_bfs`)
+17. Graph DFS Search (`graph_dfs`)
+18. A* Search (`astar_search`)
+19. Bidirectional Search (`bidirectional_search`)
+20. Bloom Filter Lookup (`bloom_filter`)
 
-## 3. Synchronized Animation Stepper & Metrics
-- Added synchronized playback toolbar (Play/Pause All, Step Prev/Next, Timeline Scrubber, Speed options: `0.5x`, `1x`, `2x`, `4x`).
-- Added live animated array bar previews for each comparing algorithm with comparisons, swaps, writes, runtime ms, memory, and winner trophy badge.
+## 3. UI & Visualizer Features
+- **Canvas View Modes**: Array Cells, Vertical Bars, Pointer/Index Timeline mode with interactive zoom controls (`60%` - `150%`).
+- **Config & Filters**: Target Input, Size Slider (`10` to `500`), Target Placement Filters (`Target at Start`, `Target at Mid`, `Target at End`, `Missing Target`), Custom CSV Importer, Auto-Sort Toggle.
+- **Live Metrics**: Target Found Status Badge (`FOUND` / `NOT FOUND` / `SEARCHING`), Comparisons, Reads, Visited Nodes, Pointer Moves, Recursive Calls, C++ Execution Time (ms), Search Progress %.
+- **Multi-Search Comparison Studio**: Select 2 to 6 algorithms via checkboxes, execute POST `/api/v1/searching/run` for all selected algorithms against identical array & target datasets, synchronized stepper, and declare the Most Efficient Winner algorithm!
+- **State-Preserving Back Button**: Seamless "← Back to Single Search" navigation.
 
 ## 4. Build Verification
-- Production build `npm run build` completed in **2.53s** with **0 errors**.
+- Production build `npm run build` completed in **2.48s** with **0 errors**.
