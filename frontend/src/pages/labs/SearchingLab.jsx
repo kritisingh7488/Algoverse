@@ -36,6 +36,13 @@ const SearchingLab = () => {
 
   const currentSpec = SEARCHING_ALGORITHMS_REGISTRY[algoKey] || SEARCHING_ALGORITHMS_REGISTRY.binary;
 
+  // Sync viewMode with selected algorithm's defaultViewMode
+  useEffect(() => {
+    if (currentSpec?.defaultViewMode) {
+      setViewMode(currentSpec.defaultViewMode);
+    }
+  }, [algoKey]);
+
   // Fetch execution steps from C++ Engine backend API
   const fetchCppSteps = async () => {
     try {

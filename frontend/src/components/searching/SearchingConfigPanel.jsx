@@ -26,6 +26,8 @@ export const SearchingConfigPanel = ({
 }) => {
   const [csvInput, setCsvInput] = useState('');
 
+  const currentSpec = algorithms[algoKey] || {};
+
   const handleImport = () => {
     if (!csvInput.trim()) return;
     const values = csvInput
@@ -99,7 +101,7 @@ export const SearchingConfigPanel = ({
             <Search className="w-4 h-4 text-primary" /> C++ Search Algorithms (20)
           </h3>
 
-          <div className="space-y-1.5 max-h-[200px] overflow-y-auto pr-1 scrollbar-thin">
+          <div className="space-y-1.5 max-h-[220px] overflow-y-auto pr-1 scrollbar-thin">
             {Object.keys(algorithms).map((key) => {
               const algo = algorithms[key];
               const isSelected = algoKey === key;
@@ -113,11 +115,13 @@ export const SearchingConfigPanel = ({
                       : 'bg-surface text-textPrimary hover:bg-card border border-borderTheme'
                   }`}
                 >
-                  <span>{algo.name}</span>
-                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-mono font-normal ${
+                  <div className="flex items-center gap-2 truncate">
+                    <span>{algo.name}</span>
+                  </div>
+                  <span className={`text-[9px] px-2 py-0.5 rounded-full font-mono uppercase font-bold ${
                     isSelected ? 'bg-white/20 text-white' : 'bg-card text-textSecondary border border-borderTheme'
                   }`}>
-                    {algo.avg}
+                    {algo.viewType}
                   </span>
                 </button>
               );
@@ -228,10 +232,10 @@ export const SearchingConfigPanel = ({
         </div>
       )}
 
-      {/* Visualizer View Mode Selector */}
-      {!isComparisonMode && (
+      {/* Visualizer View Mode Selector ONLY for Array Search algorithms */}
+      {!isComparisonMode && currentSpec?.viewType === 'array' && (
         <div className="space-y-3 pt-4 border-t-2 border-borderTheme">
-          <label className="text-xs font-heading font-bold text-textSecondary uppercase tracking-wider block">Visualizer View Mode</label>
+          <label className="text-xs font-heading font-bold text-textSecondary uppercase tracking-wider block">Array View Mode</label>
           <div className="grid grid-cols-2 gap-2 text-xs">
             <button
               onClick={() => setViewMode('cells')}
