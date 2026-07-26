@@ -1,17 +1,17 @@
-# Session Handoff: Collapsible Main Navigation & Full Screen Controls Overlay
+# Session Handoff: Sorting Laboratory Upgrades (Full Screen, Speed Bar, 5 View Modes & Summary Matrix)
 
-## 1. Collapsible Main Navigation Sidebar
-- **AppLayout & Sidebar**: Refactored `AppLayout.jsx` and `Sidebar.jsx` with an expandable/collapsible toggle (`ChevronLeft` / `ChevronRight`). Clicking the collapse button shrinks the main navigation sidebar from `w-64` to `w-20` with icon-only links and adjusts content padding from `lg:pl-64` to `lg:pl-20`, giving maximum width to the laboratory.
+## 1. Full Screen Mode & Controls Overlay
+- **Sorting Canvas Full Screen**: Connected native HTML5 `requestFullscreen()` in `SortingCanvas.jsx`. When in Full Screen mode, an interactive overlay toolbar allows switching algorithms, changing visualizer view modes, adjusting dataset size, applying input pattern presets, setting QuickSort pivot strategies, and importing custom CSVs.
+- **Embedded Playback Bar**: Embedded `SortingPlaybackBar` directly at the bottom of the Full Screen view.
 
-## 2. Full Screen Interactive Control Panel & Target Value Input
-- **Full Screen Overlay**: Added an interactive control toolbar to `SearchingCanvas.jsx` when in Full Screen mode (`isFullscreen === true`), containing:
-  - Editable Target Value input field.
-  - Algorithm Selector dropdown (switch between 20 algorithms in Full Screen).
-  - Dataset Size Buttons (`10`, `20`, `50`, `100`, `250`).
-  - Target Placement Filters (`Start`, `Mid`, `End`, `Missing Target`).
-  - Special Search Config Toggles (`Auto-Sort`, `Show Mid`).
-  - Custom CSV Importer (`Import` button).
-  - Playback Toolbar (`Play/Pause`, `Step`, `Scrubber Slider`, `Speed 0.25x - 10x`).
+## 2. Accessible Speed Controls
+- **Dedicated Speed Row**: Refactored `SortingPlaybackBar.jsx` with a dedicated speed row (`Gauge` icon) so speed buttons (`0.25x` to `10x`) are 100% visible and accessible on all screen sizes.
 
-## 3. Build Verification
-- Production build `npm run build` completed in **4.31s** with **0 errors**.
+## 3. 5 Visualizer View Modes
+- **Visualization Types**: Integrated 5 distinct visualizer modes (`bars_vertical`, `bars_horizontal`, `cells`, `heatmap`, `scatter`) in `SortingCanvas.jsx` and `SortingConfigPanel.jsx` with full user controls to switch among them freely.
+
+## 4. C++ Multi-Sort Comparison Summary Matrix
+- **Comparison Summary Table**: Updated `SortingComparisonView.jsx` to render the complete C++ Multi-Sort Comparison Summary Table displaying Algorithm, Category, Execution Result, C++ Runtime (ms), Comparisons, Swaps/Writes, Array Reads, Memory (KB), Time Complexity, and Winner Badges (`FASTEST`, `LEAST COMPARISONS`, `LEAST SWAPS`).
+
+## 5. Build Verification
+- Production build `npm run build` completed in **4.19s** with **0 errors**.

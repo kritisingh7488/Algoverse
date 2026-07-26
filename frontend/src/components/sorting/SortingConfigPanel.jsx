@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Sliders, BarChart2, Upload, Layers, CheckSquare, Square, Play, Sparkles } from 'lucide-react';
+import { Sliders, BarChart2, Upload, Layers, CheckSquare, Square, Play } from 'lucide-react';
 import Button from '../common/Button';
 
 export const SortingConfigPanel = ({
@@ -40,7 +40,7 @@ export const SortingConfigPanel = ({
         setSelectedCompareAlgos(selectedCompareAlgos.filter(k => k !== key));
       }
     } else {
-      if (selectedCompareAlgos.length < 4) {
+      if (selectedCompareAlgos.length < 6) {
         setSelectedCompareAlgos([...selectedCompareAlgos, key]);
       }
     }
@@ -110,10 +110,10 @@ export const SortingConfigPanel = ({
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <h3 className="text-xs font-heading font-bold text-textSecondary uppercase tracking-wider flex items-center gap-1.5">
-              <Layers className="w-4 h-4 text-secondary" /> Select 2–4 Algorithms
+              <Layers className="w-4 h-4 text-secondary" /> Select 2–6 Algorithms
             </h3>
             <span className="text-[10px] font-mono font-bold text-primary px-2 py-0.5 bg-surface rounded-full border border-borderTheme">
-              {selectedCompareAlgos.length}/4 Selected
+              {selectedCompareAlgos.length}/6 Selected
             </span>
           </div>
 
@@ -212,27 +212,28 @@ export const SortingConfigPanel = ({
         </div>
       </div>
 
-      {/* Visualizer View Mode (Single Mode Only) */}
+      {/* Visualizer View Mode (5 Modes: Vertical, Horizontal, Cells, Heatmap, Scatter) */}
       {!isComparisonMode && (
         <div className="space-y-3 pt-4 border-t-2 border-borderTheme">
           <label className="text-xs font-heading font-bold text-textSecondary uppercase tracking-wider block">Visualizer View Mode</label>
           <div className="grid grid-cols-2 gap-2 text-xs">
-            <button
-              onClick={() => setViewMode('bars_vertical')}
-              className={`py-2 rounded-xl font-heading font-bold border transition-all ${
-                viewMode === 'bars_vertical' ? 'bg-primary text-white border-primary' : 'bg-surface text-textPrimary border-borderTheme'
-              }`}
-            >
-              Vertical Bars
-            </button>
-            <button
-              onClick={() => setViewMode('cells')}
-              className={`py-2 rounded-xl font-heading font-bold border transition-all ${
-                viewMode === 'cells' ? 'bg-primary text-white border-primary' : 'bg-surface text-textPrimary border-borderTheme'
-              }`}
-            >
-              Array Cells
-            </button>
+            {[
+              { key: 'bars_vertical', label: 'Vertical Bars' },
+              { key: 'bars_horizontal', label: 'Horizontal Bars' },
+              { key: 'cells', label: 'Array Cells' },
+              { key: 'heatmap', label: 'Heatmap' },
+              { key: 'scatter', label: 'Scatter Plot' }
+            ].map((m) => (
+              <button
+                key={m.key}
+                onClick={() => setViewMode(m.key)}
+                className={`py-2 rounded-xl font-heading font-bold border transition-all ${
+                  viewMode === m.key ? 'bg-primary text-white border-primary shadow-xs' : 'bg-surface text-textPrimary border-borderTheme'
+                }`}
+              >
+                {m.label}
+              </button>
+            ))}
           </div>
         </div>
       )}

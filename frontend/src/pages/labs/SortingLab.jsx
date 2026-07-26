@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BarChart2, AlertCircle, RefreshCw } from 'lucide-react';
+import { BarChart2, AlertCircle, RefreshCw, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import AppLayout from '../../layouts/AppLayout';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
@@ -226,6 +226,7 @@ const SortingLab = () => {
   const [viewMode, setViewMode] = useState('bars_vertical');
   const [selectedCompareAlgos, setSelectedCompareAlgos] = useState(['bubble', 'quick', 'merge', 'heap']);
   const [isComparisonMode, setIsComparisonMode] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
   // Playback & Stepper State
   const [isPlaying, setIsPlaying] = useState(false);
@@ -307,6 +308,7 @@ const SortingLab = () => {
     } else if (type === 'duplicates') {
       newArr = Array.from({ length: customSize }, () => [15, 30, 45, 60][Math.floor(Math.random() * 4)]);
     }
+    setDatasetSize(customSize);
     setArray(newArr);
     setIsPlaying(false);
   };
@@ -334,16 +336,27 @@ const SortingLab = () => {
 
         {/* Top Header Card */}
         <Card className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="p-2 rounded-2xl bg-primary/15 text-primary border border-primary/30">
-                <BarChart2 className="w-5 h-5" />
-              </span>
-              <h1 className="text-2xl font-heading font-bold text-textPrimary">Sorting Laboratory</h1>
+          <div className="flex items-center gap-3">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+              title={isSidebarCollapsed ? 'Expand Engine Panel' : 'Collapse Engine Panel'}
+              className="shrink-0"
+            >
+              {isSidebarCollapsed ? <PanelLeftOpen className="w-4 h-4" /> : <PanelLeftClose className="w-4 h-4" />}
+            </Button>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="p-2 rounded-2xl bg-primary/15 text-primary border border-primary/30">
+                  <BarChart2 className="w-5 h-5" />
+                </span>
+                <h1 className="text-2xl font-heading font-bold text-textPrimary">Sorting Laboratory</h1>
+              </div>
+              <p className="text-sm font-body text-textSecondary mt-1">
+                Deterministic C++ Sorting Engine with live statistics, step playback, and multi-algorithm comparison.
+              </p>
             </div>
-            <p className="text-sm font-body text-textSecondary mt-1">
-              Deterministic C++ Sorting Engine with live statistics, step playback, and multi-algorithm comparison.
-            </p>
           </div>
           <MascotRole role="teacher" activity="reading" dialogue={`Executing ${currentSpec.name} in C++!`} className="w-20 h-20" />
         </Card>
@@ -378,39 +391,57 @@ const SortingLab = () => {
               totalSteps={events.length}
             />
 
-            {/* 3-Column Laboratory Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            {/* Collapsible Laboratory Grid Layout */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 transition-all duration-300">
 
               {/* LEFT: Engine Configuration */}
-              <div className="lg:col-span-3">
-                <SortingConfigPanel
-                  algoKey={algoKey}
-                  setAlgoKey={setAlgoKey}
-                  algorithms={SORTING_SPECS}
-                  pivotStrategy={pivotStrategy}
-                  setPivotStrategy={setPivotStrategy}
-                  datasetSize={datasetSize}
-                  setDatasetSize={setDatasetSize}
-                  viewMode={viewMode}
-                  setViewMode={setViewMode}
-                  selectedCompareAlgos={selectedCompareAlgos}
-                  setSelectedCompareAlgos={setSelectedCompareAlgos}
-                  isComparisonMode={isComparisonMode}
-                  setIsComparisonMode={setIsComparisonMode}
-                  onRunComparison={() => setIsComparisonMode(true)}
-                  onGenerateDataset={handleGenerateDataset}
-                  onImportCSV={handleImportCSV}
-                />
-              </div>
+              {!isSidebarCollapsed && (
+                <div className="lg:col-span-3 transition-all duration-300">
+                  <SortingConfigPanel
+                    algoKey={algoKey}
+                    setAlgoKey={setAlgoKey}
+                    algorithms={SORTING_SPECS}
+                    pivotStrategy={pivotStrategy}
+                    setPivotStrategy={setPivotStrategy}
+                    datasetSize={datasetSize}
+                    setDatasetSize={setDatasetSize}
+                    viewMode={viewMode}
+                    setViewMode={setViewMode}
+                    selectedCompareAlgos={selectedCompareAlgos}
+                    setSelectedCompareAlgos={setSelectedCompareAlgos}
+                    isComparisonMode={isComparisonMode}
+                    setIsComparisonMode={setIsComparisonMode}
+                    onRunComparison={() => setIsComparisonMode(true)}
+                    onGenerateDataset={handleGenerateDataset}
+                    onImportCSV={handleImportCSV}
+                  />
+                </div>
+              )}
 
               {/* CENTER: Canvas & Controls */}
-              <div className="lg:col-span-6 space-y-4">
+              <div className={`${isSidebarCollapsed ? 'lg:col-span-8' : 'lg:col-span-6'} space-y-4 transition-all duration-300`}>
                 <SortingCanvas
                   array={array}
                   events={events}
                   stepIndex={stepIndex}
+                  datasetSize={datasetSize}
+                  setDatasetSize={setDatasetSize}
+                  onGenerateDataset={handleGenerateDataset}
+                  pivotStrategy={pivotStrategy}
+                  setPivotStrategy={setPivotStrategy}
+                  onImportCSV={handleImportCSV}
+                  algoKey={algoKey}
+                  setAlgoKey={setAlgoKey}
+                  algorithms={SORTING_SPECS}
                   viewMode={viewMode}
+                  setViewMode={setViewMode}
                   spec={currentSpec}
+                  isPlaying={isPlaying}
+                  setIsPlaying={setIsPlaying}
+                  onStepChange={setStepIndex}
+                  speed={speed}
+                  setSpeed={setSpeed}
+                  onRestart={() => setStepIndex(0)}
                 />
 
                 <SortingPlaybackBar
@@ -426,7 +457,7 @@ const SortingLab = () => {
               </div>
 
               {/* RIGHT: Pseudocode & Concepts */}
-              <div className="lg:col-span-3">
+              <div className={`${isSidebarCollapsed ? 'lg:col-span-4' : 'lg:col-span-3'} transition-all duration-300`}>
                 <SortingConceptPanel
                   spec={currentSpec}
                   stepLine={currentStep.line || 0}
