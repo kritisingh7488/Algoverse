@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { ZoomIn, ZoomOut, Maximize2, Target } from 'lucide-react';
+import { ZoomIn, ZoomOut, Maximize2, Target, GitCommit, Layers, Database, Share2, Network } from 'lucide-react';
 
 export const SearchingCanvas = ({
   array,
   events,
   stepIndex,
   target,
-  viewMode = 'cells', // 'cells' | 'bars_vertical' | 'bars_horizontal' | 'timeline'
+  viewMode = 'cells',
   spec
 }) => {
   const [zoom, setZoom] = useState(1);
@@ -23,6 +23,9 @@ export const SearchingCanvas = ({
   const isMid = mid >= 0 && (type === 'mid_calc' || type === 'interpolation_formula' || type === 'recursive_call' || type === 'found') ? mid : null;
   const isDiscarded = (idx) => isLow !== null && isHigh !== null && (idx < isLow || idx > isHigh);
 
+  // Auto-adapt visualizer mode if spec suggests specialized view
+  const activeView = spec?.defaultViewMode || viewMode;
+
   return (
     <div className="bg-card rounded-card border-2 border-borderTheme p-6 shadow-medium flex flex-col justify-between relative min-h-[380px] overflow-hidden font-body">
       
@@ -32,7 +35,7 @@ export const SearchingCanvas = ({
           <span className="w-2.5 h-2.5 rounded-full bg-primary" />
           <span>CANVAS: {spec?.name?.toUpperCase() || 'SEARCHING VISUALIZER'}</span>
           <span className="px-2 py-0.5 rounded-full bg-surface border border-borderTheme font-mono text-[10px]">
-            {currentArr.length} ELEMENTS
+            {spec?.category?.toUpperCase()}
           </span>
         </div>
 
@@ -77,18 +80,22 @@ export const SearchingCanvas = ({
         >
 
           {/* 1. ARRAY CELLS MODE */}
-          {viewMode === 'cells' && (
+          {activeView === 'cells' && (
             <div className="flex flex-wrap items-center justify-center gap-2.5 max-w-4xl py-4">
               {currentArr.map((val, idx) => {
                 const low = isLow === idx;
                 const high = isHigh === idx;
-                const midActive = isMid === idx;
+                const midActive = isMid === idx || i === idx || j === idx;
                 const foundActive = type === 'found' && (idx === mid || idx === i);
                 const discarded = isDiscarded(idx);
 
                 let cellStyle = 'bg-card text-textPrimary border-borderTheme';
                 if (discarded) cellStyle = 'bg-surface text-textSecondary border-borderTheme opacity-30';
                 if (midActive) cellStyle = 'bg-warning text-textPrimary border-warning scale-110 shadow-medium ring-4 ring-warning/30';
+                if (type === 'hash_bucket' && idx === i) cellStyle = 'bg-secondary text-white border-secondary scale-110 shadow-md';
+                if (type === 'queue_push' && idx === i) cellStyle = 'bg-info text-white border-info scale-110 shadow-md';
+                if (type === 'queue_pop' && idx === i) cellStyle = 'bg-accent text-white border-accent scale-110 shadow-md';
+                if (type === 'stack_push' && idx === i) cellStyle = 'bg-primary text-white border-primary scale-110 shadow-md';
                 if (foundActive) cellStyle = 'bg-success text-white border-success scale-115 shadow-medium ring-4 ring-success/40';
 
                 return (
@@ -117,11 +124,11 @@ export const SearchingCanvas = ({
           )}
 
           {/* 2. VERTICAL BARS MODE */}
-          {viewMode === 'bars_vertical' && (
+          {activeView === 'bars_vertical' && (
             <div className="h-56 flex items-end justify-center gap-1.5 w-full max-w-4xl px-2">
               {currentArr.map((val, idx) => {
                 const heightPercent = Math.max(10, Math.round((val / maxVal) * 100));
-                const midActive = isMid === idx;
+                const midActive = isMid === idx || i === idx || j === idx;
                 const foundActive = type === 'found' && (idx === mid || idx === i);
                 const discarded = isDiscarded(idx);
 
@@ -146,11 +153,11 @@ export const SearchingCanvas = ({
           )}
 
           {/* 3. HORIZONTAL BARS MODE */}
-          {viewMode === 'bars_horizontal' && (
+          {activeView === 'bars_horizontal' && (
             <div className="w-full max-w-3xl space-y-2 py-4">
               {currentArr.map((val, idx) => {
                 const widthPercent = Math.max(10, Math.round((val / maxVal) * 100));
-                const midActive = isMid === idx;
+                const midActive = isMid === idx || i === idx || j === idx;
                 const foundActive = type === 'found' && (idx === mid || idx === i);
                 const discarded = isDiscarded(idx);
 
@@ -177,7 +184,7 @@ export const SearchingCanvas = ({
           )}
 
           {/* 4. TIMELINE POINTER VIEW */}
-          {viewMode === 'timeline' && (
+          {activeView === 'timeline' && (
             <div className="w-full max-w-3xl space-y-4 py-6">
               <div className="flex items-center justify-between text-xs font-mono font-bold text-textSecondary px-2">
                 <span>Low: [{isLow ?? 0}]</span>
