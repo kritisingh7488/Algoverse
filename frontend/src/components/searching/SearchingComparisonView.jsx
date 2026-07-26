@@ -4,6 +4,13 @@ import Card from '../common/Card';
 import Button from '../common/Button';
 import api from '../../api/axios';
 
+import { ArrayRenderer } from './renderers/ArrayRenderer';
+import { HashRenderer } from './renderers/HashRenderer';
+import { TreeRenderer } from './renderers/TreeRenderer';
+import { TrieRenderer } from './renderers/TrieRenderer';
+import { PatternRenderer } from './renderers/PatternRenderer';
+import { GraphRenderer } from './renderers/GraphRenderer';
+
 export const SearchingComparisonView = ({
   array,
   setArray,
@@ -347,7 +354,7 @@ export const SearchingComparisonView = ({
         </div>
       </Card>
 
-      {/* Grid of Comparing Visualizers (Strictly mapping viewType) */}
+      {/* Grid of Comparing Visualizers (Mounting exact dedicated visualizers per card!) */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {selectedAlgos.map((key) => {
           const algoSpec = algorithms[key] || { name: key };
@@ -357,8 +364,6 @@ export const SearchingComparisonView = ({
           const eventsList = data.events || [];
           const currentStep = eventsList[Math.min(stepIndex, eventsList.length - 1)] || {};
           const currentArr = currentStep.array || array;
-          const maxVal = Math.max(...currentArr, 1);
-          const found = data.found;
 
           const isFastest = winners.fastest.includes(key);
           const isFewest = winners.fewestComp.includes(key);
@@ -383,42 +388,25 @@ export const SearchingComparisonView = ({
                 </span>
               </div>
 
-              {/* RENDERER SELECTION: Bars ONLY for Array Search! */}
-              <div className="h-32 flex items-center justify-center bg-surface p-2 rounded-xl border border-borderTheme overflow-hidden">
-                {viewType === 'array' ? (
-                  <div className="h-full flex items-end justify-center gap-1 w-full">
-                    {currentArr.map((val, i) => {
-                      const heightPercent = Math.max(10, Math.round((val / maxVal) * 100));
-                      const midActive = currentStep.mid === i;
-                      const foundActive = currentStep.type === 'found' && (currentStep.mid === i || currentStep.i === i);
-
-                      let barBg = 'bg-primary';
-                      if (midActive) barBg = 'bg-warning scale-105';
-                      if (foundActive) barBg = 'bg-success scale-110 shadow-md shadow-success/40';
-
-                      return (
-                        <div
-                          key={i}
-                          style={{ height: `${heightPercent}%` }}
-                          className={`w-full ${barBg} rounded-t-sm transition-all duration-150`}
-                        />
-                      );
-                    })}
-                  </div>
-                ) : (
-                  /* Dedicated Data Structure Cell View for Hash/Tree/Trie/Graph */
-                  <div className="flex flex-wrap items-center justify-center gap-1.5 max-w-full">
-                    {currentArr.slice(0, 10).map((val, i) => (
-                      <div
-                        key={i}
-                        className={`w-7 h-8 rounded-lg border-2 flex items-center justify-center font-mono font-bold text-[10px] ${
-                          currentStep.i === i || currentStep.mid === i ? 'bg-warning text-textPrimary border-warning' : 'bg-card border-borderTheme text-textPrimary'
-                        }`}
-                      >
-                        {val}
-                      </div>
-                    ))}
-                  </div>
+              {/* DEDICATED RENDERER CONTAINER */}
+              <div className="h-44 flex items-center justify-center bg-surface p-2 rounded-xl border border-borderTheme overflow-auto scrollbar-thin">
+                {viewType === 'array' && (
+                  <ArrayRenderer currentArr={currentArr} currentEvent={currentStep} viewMode="bars_vertical" />
+                )}
+                {viewType === 'hashtable' && (
+                  <HashRenderer currentArr={currentArr} currentEvent={currentStep} target={target} />
+                )}
+                {viewType === 'tree' && (
+                  <TreeRenderer currentArr={currentArr} currentEvent={currentStep} spec={algoSpec} />
+                )}
+                {viewType === 'trie' && (
+                  <TrieRenderer currentArr={currentArr} currentEvent={currentStep} target={target} />
+                )}
+                {viewType === 'pattern' && (
+                  <PatternRenderer currentArr={currentArr} currentEvent={currentStep} target={target} spec={algoSpec} />
+                )}
+                {viewType === 'graph' && (
+                  <GraphRenderer currentArr={currentArr} currentEvent={currentStep} spec={algoSpec} />
                 )}
               </div>
 
