@@ -13,10 +13,15 @@ import SortingStatsPanel from '../../components/sorting/SortingStatsPanel';
 import SortingConceptPanel from '../../components/sorting/SortingConceptPanel';
 import SortingComparisonView from '../../components/sorting/SortingComparisonView';
 
-const SORTING_SPECS = {
+export const SORTING_SPECS = {
   bubble: {
     name: 'Bubble Sort',
     category: 'Elementary',
+    defaultViewMode: 'bars_vertical',
+    allowedViewModes: [
+      { key: 'bars_vertical', label: 'Vertical Bars' },
+      { key: 'cells', label: 'Array Cells' }
+    ],
     best: 'O(N)',
     avg: 'O(N²)',
     worst: 'O(N²)',
@@ -37,6 +42,11 @@ const SORTING_SPECS = {
   selection: {
     name: 'Selection Sort',
     category: 'Elementary',
+    defaultViewMode: 'bars_vertical',
+    allowedViewModes: [
+      { key: 'bars_vertical', label: 'Vertical Bars' },
+      { key: 'cells', label: 'Array Cells' }
+    ],
     best: 'O(N²)',
     avg: 'O(N²)',
     worst: 'O(N²)',
@@ -58,6 +68,11 @@ const SORTING_SPECS = {
   insertion: {
     name: 'Insertion Sort',
     category: 'Elementary',
+    defaultViewMode: 'bars_vertical',
+    allowedViewModes: [
+      { key: 'bars_vertical', label: 'Vertical Bars' },
+      { key: 'cells', label: 'Array Cells' }
+    ],
     best: 'O(N)',
     avg: 'O(N²)',
     worst: 'O(N²)',
@@ -81,6 +96,11 @@ const SORTING_SPECS = {
   merge: {
     name: 'Merge Sort',
     category: 'Divide & Conquer',
+    defaultViewMode: 'bars_vertical',
+    allowedViewModes: [
+      { key: 'bars_vertical', label: 'Vertical Bars' },
+      { key: 'merge_tree', label: 'Merge Tree' }
+    ],
     best: 'O(N log N)',
     avg: 'O(N log N)',
     worst: 'O(N log N)',
@@ -103,6 +123,11 @@ const SORTING_SPECS = {
   quick: {
     name: 'Quick Sort',
     category: 'Divide & Conquer',
+    defaultViewMode: 'bars_vertical',
+    allowedViewModes: [
+      { key: 'bars_vertical', label: 'Vertical Bars' },
+      { key: 'partition', label: 'Partition View' }
+    ],
     best: 'O(N log N)',
     avg: 'O(N log N)',
     worst: 'O(N²)',
@@ -124,6 +149,11 @@ const SORTING_SPECS = {
   heap: {
     name: 'Heap Sort',
     category: 'Heap & Trees',
+    defaultViewMode: 'heap_tree',
+    allowedViewModes: [
+      { key: 'heap_tree', label: 'Binary Heap Tree' },
+      { key: 'bars_vertical', label: 'Vertical Bars' }
+    ],
     best: 'O(N log N)',
     avg: 'O(N log N)',
     worst: 'O(N log N)',
@@ -144,6 +174,11 @@ const SORTING_SPECS = {
   shell: {
     name: 'Shell Sort',
     category: 'Specialized',
+    defaultViewMode: 'bars_vertical',
+    allowedViewModes: [
+      { key: 'bars_vertical', label: 'Vertical Bars' },
+      { key: 'gap_view', label: 'Gap View' }
+    ],
     best: 'O(N log N)',
     avg: 'O(N^(4/3))',
     worst: 'O(N²)',
@@ -160,46 +195,14 @@ const SORTING_SPECS = {
     mistakes: 'Choosing poor gap sequences.',
     interviewTip: 'Drastically reduces elements movement compared to standard insertion sort.'
   },
-  counting: {
-    name: 'Counting Sort',
-    category: 'Distribution',
-    best: 'O(N + K)',
-    avg: 'O(N + K)',
-    worst: 'O(N + K)',
-    space: 'O(K)',
-    stable: true,
-    inPlace: false,
-    adaptive: false,
-    pseudocode: [
-      'count = array of zeroes(max - min + 1)',
-      'for x in input: count[x - min]++',
-      'reconstruct output from count frequency'
-    ],
-    intuition: 'Non-comparison integer sorting algorithm based on keys frequency counting.',
-    mistakes: 'Using when key range K is drastically larger than N.',
-    interviewTip: 'Runs in O(N) linear time when input range K is small.'
-  },
-  radix: {
-    name: 'Radix Sort',
-    category: 'Distribution',
-    best: 'O(N * K)',
-    avg: 'O(N * K)',
-    worst: 'O(N * K)',
-    space: 'O(N + K)',
-    stable: true,
-    inPlace: false,
-    adaptive: false,
-    pseudocode: [
-      'for digit position exp = 1 to maxDigit:',
-      '  countingSortByDigit(arr, exp)'
-    ],
-    intuition: 'Sorts numbers digit by digit from least significant to most significant digit.',
-    mistakes: 'Using non-stable intermediate sort.',
-    interviewTip: 'Linear time complexity O(N) when maximum digit length K is constant.'
-  },
   bucket: {
     name: 'Bucket Sort',
     category: 'Distribution',
+    defaultViewMode: 'buckets',
+    allowedViewModes: [
+      { key: 'buckets', label: 'Buckets View' },
+      { key: 'cells', label: 'Array Cells' }
+    ],
     best: 'O(N + K)',
     avg: 'O(N + K)',
     worst: 'O(N²)',
@@ -215,6 +218,53 @@ const SORTING_SPECS = {
     intuition: 'Distributes array elements into buckets and sorts each bucket individually.',
     mistakes: 'Non-uniform distribution causing single bucket overflow.',
     interviewTip: 'Ideal when input data is uniformly distributed over an interval.'
+  },
+  radix: {
+    name: 'Radix Sort',
+    category: 'Distribution',
+    defaultViewMode: 'digit_buckets',
+    allowedViewModes: [
+      { key: 'digit_buckets', label: 'Digit Buckets (0-9)' },
+      { key: 'cells', label: 'Array Cells' }
+    ],
+    best: 'O(N * K)',
+    avg: 'O(N * K)',
+    worst: 'O(N * K)',
+    space: 'O(N + K)',
+    stable: true,
+    inPlace: false,
+    adaptive: false,
+    pseudocode: [
+      'for digit position exp = 1 to maxDigit:',
+      '  countingSortByDigit(arr, exp)'
+    ],
+    intuition: 'Sorts numbers digit by digit from least significant to most significant digit.',
+    mistakes: 'Using non-stable intermediate sort.',
+    interviewTip: 'Linear time complexity O(N) when maximum digit length K is constant.'
+  },
+  counting: {
+    name: 'Counting Sort',
+    category: 'Distribution',
+    defaultViewMode: 'freq_array',
+    allowedViewModes: [
+      { key: 'freq_array', label: 'Frequency Array' },
+      { key: 'cells', label: 'Array Cells' }
+    ],
+    best: 'O(N + K)',
+    avg: 'O(N + K)',
+    worst: 'O(N + K)',
+    space: 'O(K)',
+    stable: true,
+    inPlace: false,
+    adaptive: false,
+    pseudocode: [
+      'count = array of zeroes(max - min + 1)',
+      'for x in input: count[x - min]++',
+      'reconstruct output from count frequency'
+    ],
+    intuition: 'Non-comparison integer sorting algorithm based on keys frequency counting.',
+    mistakes: 'Using when key range K is drastically larger than N.',
+    interviewTip: 'Runs in O(N) linear time when input range K is small.'
   }
 };
 
@@ -237,6 +287,13 @@ const SortingLab = () => {
   const [error, setError] = useState(null);
 
   const currentSpec = SORTING_SPECS[algoKey] || SORTING_SPECS.bubble;
+
+  // Sync viewMode with algorithm's defaultViewMode whenever algorithm changes
+  useEffect(() => {
+    if (currentSpec?.defaultViewMode) {
+      setViewMode(currentSpec.defaultViewMode);
+    }
+  }, [algoKey]);
 
   // Fetch execution steps from C++ Engine backend API
   const fetchCppSteps = async () => {

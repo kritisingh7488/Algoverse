@@ -22,6 +22,12 @@ export const SortingConfigPanel = ({
 }) => {
   const [csvInput, setCsvInput] = useState('');
 
+  const currentSpec = algorithms[algoKey] || {};
+  const allowedModes = currentSpec.allowedViewModes || [
+    { key: 'bars_vertical', label: 'Vertical Bars' },
+    { key: 'cells', label: 'Array Cells' }
+  ];
+
   const handleImport = () => {
     if (!csvInput.trim()) return;
     const values = csvInput
@@ -212,18 +218,19 @@ export const SortingConfigPanel = ({
         </div>
       </div>
 
-      {/* Visualizer View Mode (5 Modes: Vertical, Horizontal, Cells, Heatmap, Scatter) */}
-      {!isComparisonMode && (
+      {/* Visualizer View Mode - STRICTLY restricted to allowed options per algorithm */}
+      {!isComparisonMode && allowedModes.length > 0 && (
         <div className="space-y-3 pt-4 border-t-2 border-borderTheme">
-          <label className="text-xs font-heading font-bold text-textSecondary uppercase tracking-wider block">Visualizer View Mode</label>
+          <div className="flex items-center justify-between">
+            <label className="text-xs font-heading font-bold text-textSecondary uppercase tracking-wider block">
+              {currentSpec.name} Visualizer Mode
+            </label>
+            <span className="text-[9px] font-mono font-bold text-primary px-2 py-0.5 bg-surface rounded-full border border-borderTheme">
+              Default: {allowedModes[0].label}
+            </span>
+          </div>
           <div className="grid grid-cols-2 gap-2 text-xs">
-            {[
-              { key: 'bars_vertical', label: 'Vertical Bars' },
-              { key: 'bars_horizontal', label: 'Horizontal Bars' },
-              { key: 'cells', label: 'Array Cells' },
-              { key: 'heatmap', label: 'Heatmap' },
-              { key: 'scatter', label: 'Scatter Plot' }
-            ].map((m) => (
+            {allowedModes.map((m) => (
               <button
                 key={m.key}
                 onClick={() => setViewMode(m.key)}
