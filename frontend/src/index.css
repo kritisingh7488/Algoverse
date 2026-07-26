@@ -1,35 +1,98 @@
 @import "tailwindcss";
 @config "../tailwind.config.js";
 
+:root {
+  /* Light Theme (Default: Warm Notebook / Cream / Coral / Dusty Lavender) */
+  --bg-app: #FFF8F2;
+  --bg-surface: #F8EDE3;
+  --bg-card: #FFFFFF;
+  --bg-card-accent: #FFE6DD;
+  --color-primary: #FF8A80;
+  --color-primary-hover: #FF7266;
+  --color-secondary: #8B5CF6;
+  --color-secondary-hover: #7C3AED;
+  --color-accent: #FFB38A;
+  --color-success: #72D98B;
+  --color-warning: #FFC857;
+  --color-error: #F87171;
+  --color-info: #7CC6FE;
+  --color-text-primary: #3D3535;
+  --color-text-secondary: #7A6E6E;
+  --color-border: #EADDD4;
+  --shadow-soft: 0 4px 20px -2px rgba(255, 138, 128, 0.12), 0 2px 6px -1px rgba(61, 53, 53, 0.05);
+  --shadow-medium: 0 8px 30px -4px rgba(139, 92, 246, 0.15);
+  --shadow-large: 0 16px 40px -6px rgba(61, 53, 53, 0.15);
+}
+
+[data-theme="dark"], .dark {
+  /* Dark Theme (Deep Plum / Dark Lavender / Warm Orange) */
+  --bg-app: #20162F;
+  --bg-surface: #2B1E3E;
+  --bg-card: #2B1E3E;
+  --bg-card-accent: #3A2747;
+  --color-primary: #FF9F68;
+  --color-primary-hover: #FF8A4B;
+  --color-secondary: #C084FC;
+  --color-secondary-hover: #A855F7;
+  --color-accent: #FFB088;
+  --color-success: #7AE582;
+  --color-warning: #FFD166;
+  --color-error: #FF7A7A;
+  --color-info: #8ED8FF;
+  --color-text-primary: #FFF8F5;
+  --color-text-secondary: #DCCFEA;
+  --color-border: #4A355F;
+  --shadow-soft: 0 4px 20px -2px rgba(0, 0, 0, 0.35);
+  --shadow-medium: 0 8px 30px -4px rgba(0, 0, 0, 0.45);
+  --shadow-large: 0 16px 40px -6px rgba(0, 0, 0, 0.6);
+}
 
 @layer base {
   body {
-    @apply bg-background text-textPrimary font-inter antialiased;
+    background-color: var(--bg-app);
+    color: var(--color-text-primary);
+    font-family: 'Nunito', sans-serif;
+    min-height: 100vh;
+    transition: background-color 300ms ease, color 300ms ease;
+    background-image: radial-gradient(var(--color-border) 1px, transparent 1px);
+    background-size: 24px 24px;
+    background-position: 0 0;
   }
+
   h1, h2, h3, h4, h5, h6 {
-    @apply font-poppins font-semibold tracking-tight;
+    font-family: 'Fredoka', cursive, sans-serif;
+    letter-spacing: -0.01em;
   }
 }
 
-@keyframes slideUp {
-  0% {
-    opacity: 0;
-    transform: translateY(6px);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0);
-  }
+/* Notebook Decorative Components */
+.notebook-card {
+  background-color: var(--bg-card);
+  border: 2px solid var(--color-border);
+  border-radius: 28px;
+  box-shadow: var(--shadow-soft);
+  transition: all 250ms ease;
 }
 
-@keyframes float {
-  0% {
-    transform: translateY(0px);
-  }
-  50% {
-    transform: translateY(-8px);
-  }
-  100% {
-    transform: translateY(0px);
-  }
+.notebook-sticky {
+  background-color: var(--bg-card-accent);
+  border: 2px dashed var(--color-border);
+  border-radius: 20px;
+  transform: rotate(-1deg);
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-primary);
 }

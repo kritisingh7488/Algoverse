@@ -1,96 +1,882 @@
-# 42_DESIGN_SYSTEM.md — Design Tokens & Core System
+# AlgoVerse — Design System
 
-## 1. Color System & Tokens
-
-### Primary Palette (Purple / Violet)
-The primary brand colors represent wisdom, structure, and algorithmic elegance.
-
-| Token Name | Hex Code | Tailwind Class | Usage |
-| :--- | :--- | :--- | :--- |
-| `color-primary-50` | `#F5F3FF` | `bg-primary/5` | Soft background tints, active sidebar buttons |
-| `color-primary-100` | `#EDE9FE` | `bg-primary/10` | Badges, icon container backgrounds |
-| `color-primary-500` | `#A855F7` | `bg-primary`, `text-primary` | Main CTA buttons, active state highlights |
-| `color-primary-600` | `#7C3AED` | `bg-secondary` | Primary hover states, gradient accents |
-| `color-primary-700` | `#6D28D9` | `text-primary-dark` | High-contrast text on light tints |
-
-### Accent Palette (Pink / Rose)
-Used for special highlights, active pointers, swap animations, and success notifications.
-
-| Token Name | Hex Code | Tailwind Class | Usage |
-| :--- | :--- | :--- | :--- |
-| `color-accent-400` | `#FF7AC6` | `text-accent` | Vibrant text highlights |
-| `color-accent-500` | `#EC4899` | `bg-accent` | Active element glows, swap animation states |
-| `color-accent-100` | `#FCE7F3` | `bg-pink-50` | TOP pointer badges, toast notification background |
-
-### Status Palette
-
-| Status | Color Name | Hex Code | Tailwind Class | Usage |
-| :--- | :--- | :--- | :--- | :--- |
-| **Success** | Emerald | `#10B981` | `text-emerald-600`, `bg-emerald-500` | Sorted bars, target found, tests passed |
-| **Warning** | Amber | `#F59E0B` | `text-amber-500`, `bg-amber-400` | Current pointer/mid element, queue tail |
-| **Danger** | Rose/Red | `#EF4444` | `text-red-600`, `bg-red-500` | Node deletion, stack overflow alert |
-| **Info** | Blue | `#3B82F6` | `text-blue-600`, `bg-blue-50` | Comparing elements, visited graph nodes |
+> Purpose
+>
+> This document defines the complete visual design system of AlgoVerse.
+>
+> Every frontend component must follow these rules.
+>
+> No page may introduce its own styling that conflicts with this document.
+>
+> Consistency is more important than creativity.
+>
+> Every AI coding agent must read this file before modifying any frontend component.
 
 ---
 
-## 2. Typography System
+# Design Principles
 
-AlgoVerse uses a strict 3-font hierarchy to cleanly demarcate display text, UI controls, and code logic.
+Every component should be
 
-```
-Headings & Display  ──>  Poppins (Google Font)
-UI Body & Inputs    ──>  Inter (Google Font)
-Code & Monospace    ──>  JetBrains Mono / Monospace
-```
+Simple
 
-### Font Scale & Hierarchy
+Cute
 
-| Usage Level | Font Family | Size | Weight | Line Height | Tailwind Classes |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| **Hero Title** | Poppins | `2rem` (32px) | Bold (700) | `1.2` | `text-3xl font-bold font-poppins` |
-| **Page Header** | Poppins | `1.5rem` (24px) | Bold (700) | `1.3` | `text-2xl font-bold font-poppins` |
-| **Section Header** | Poppins | `1.125rem` (18px) | SemiBold (600) | `1.4` | `text-lg font-semibold font-poppins` |
-| **Subheader / Badge** | Poppins | `0.75rem` (12px) | Bold (700) | `1.5` | `text-xs font-bold font-poppins uppercase` |
-| **Body Regular** | Inter | `0.875rem` (14px) | Normal (400) | `1.5` | `text-sm font-inter` |
-| **Body Small** | Inter | `0.75rem` (12px) | Normal (400) | `1.4` | `text-xs font-inter` |
-| **Code / Pseudocode** | JetBrains Mono | `0.75rem` (12px) | Medium (500) | `1.6` | `font-mono text-xs` |
-| **Array Value** | JetBrains Mono | `0.875rem` (14px) | Bold (700) | `1.0` | `font-mono text-sm font-bold` |
+Premium
 
----
+Comfortable
 
-## 3. Spacing & Container Geometry
+Readable
 
-AlgoVerse utilizes a rounded, pill-inspired card geometry for a modern, approachable feel.
+Consistent
 
-### Radius Scale
-- `rounded-xl`: Inputs, small buttons, status tags (`12px`).
-- `rounded-2xl`: Control panels, medium cards, structure node boxes (`16px`).
-- `rounded-3xl`: Main laboratory containers, dashboard cards (`24px`).
-- `rounded-full`: Circular badges, mascot tags, round node circles (`9999px`).
+Animated
 
-### Border & Elevation Tokens
-- **Borders**: `border border-gray-100` (Light mode subtle divider).
-- **Subtle Elevation**: `shadow-xs` (`0 1px 2px 0 rgba(0, 0, 0, 0.05)`).
-- **Interactive Elevation**: `shadow-md shadow-primary/20` (Glowing primary CTA elevation).
-- **Active Node Glow**: `shadow-lg shadow-accent/30 scale-110 ring-4 ring-accent/20`.
+Accessible
+
+Responsive
 
 ---
 
-## 4. Layout Grid System
+# Visual Hierarchy
 
-All laboratories follow a standard **12-Column Responsive Layout Grid**:
+The interface should naturally guide the user's eyes.
 
-```
-+---------------------------------------------------------------------------------+
-|                                 PAGE HEADER BAR                                 |
-+---------------------------------------------------------------------------------+
-|  LEFT SIDEBAR   |               CENTER CANVAS               |   RIGHT SIDEBAR   |
-|   (col-span-3)  |               (col-span-6)                |    (col-span-3)   |
-|                 |                                           |                   |
-| Algorithm List  |  +-------------------------------------+  |  Pseudocode Box   |
-| Category Switch |  |     VISUALIZATION CANVAS AREA       |  |  (Line Highlighter)|
-| Custom Inputs   |  +-------------------------------------+  |                   |
-| Dataset Sliders |  |     PLAYBACK CONTROL TOOLBAR        |  |  Educational Notes|
-|                 |  +-------------------------------------+  |  (Intuition/Tips) |
-+---------------------------------------------------------------------------------+
-```
+Priority order
+
+1. Primary Action
+2. Current Learning Progress
+3. Visualization
+4. Controls
+5. Supporting Information
+6. Decorations
+
+Decorations must never compete with important content.
+
+---
+
+# Color System
+
+## Light Theme
+
+### Background
+
+Warm Cream
+
+#FFF8F2
+
+---
+
+### Surface
+
+Pastel Beige
+
+#F8EDE3
+
+---
+
+### Elevated Surface
+
+#FFF3EB
+
+---
+
+### Card
+
+Pastel Coral
+
+#FFE6DD
+
+---
+
+### Primary
+
+Coral Pink
+
+#FF8A80
+
+---
+
+### Primary Hover
+
+#FF7266
+
+---
+
+### Secondary
+
+Soft Plum
+
+#8B5CF6
+
+---
+
+### Secondary Hover
+
+#7C3AED
+
+---
+
+### Accent
+
+Pastel Peach
+
+#FFB38A
+
+---
+
+### Highlight
+
+Pastel Yellow
+
+#FFE89C
+
+---
+
+### Success
+
+#72D98B
+
+---
+
+### Warning
+
+#FFC857
+
+---
+
+### Error
+
+#F87171
+
+---
+
+### Information
+
+#7CC6FE
+
+---
+
+### Border
+
+#EADDD4
+
+---
+
+### Divider
+
+#EFE4DD
+
+---
+
+### Text Primary
+
+#3D3535
+
+---
+
+### Text Secondary
+
+#7A6E6E
+
+---
+
+### Disabled Text
+
+#B8AAAA
+
+---
+
+# Dark Theme
+
+Background
+
+#20162F
+
+Surface
+
+#2B1E3E
+
+Elevated Surface
+
+#352547
+
+Card
+
+#3A2747
+
+Primary
+
+#FF9F68
+
+Primary Hover
+
+#FFA97A
+
+Secondary
+
+#C084FC
+
+Accent
+
+#FFB088
+
+Highlight
+
+#FFD479
+
+Success
+
+#7AE582
+
+Warning
+
+#FFD166
+
+Danger
+
+#FF7A7A
+
+Information
+
+#8ED8FF
+
+Text Primary
+
+#FFF8F5
+
+Text Secondary
+
+#DCCFEA
+
+Border
+
+#4A355F
+
+Divider
+
+#43314F
+
+---
+
+# Gradients
+
+Only soft gradients.
+
+Never use harsh neon gradients.
+
+Allowed
+
+Coral → Peach
+
+Lavender → Plum
+
+Pink → Coral
+
+Cream → Beige
+
+Orange → Peach
+
+Dark Plum → Lavender
+
+Gradient opacity should remain subtle.
+
+---
+
+# Elevation System
+
+Level 0
+
+Flat
+
+Level 1
+
+Soft shadow
+
+Level 2
+
+Card shadow
+
+Level 3
+
+Floating panel
+
+Level 4
+
+Modal
+
+Never use harsh black shadows.
+
+Use soft colored shadows matching the theme.
+
+---
+
+# Border Radius
+
+Cards
+
+28px
+
+Buttons
+
+18px
+
+Inputs
+
+18px
+
+Dialogs
+
+30px
+
+Badges
+
+999px
+
+Tags
+
+999px
+
+Charts
+
+24px
+
+---
+
+# Shadows
+
+Use layered shadows.
+
+Example
+
+Shadow 1
+
+Low opacity
+
+Short distance
+
+Shadow 2
+
+Colored shadow
+
+Very soft
+
+Never use heavy black shadows.
+
+---
+
+# Typography
+
+## Heading Font
+
+Fredoka
+
+Rounded
+
+Friendly
+
+Bold
+
+---
+
+## Body Font
+
+Nunito
+
+Readable
+
+Soft
+
+Modern
+
+---
+
+## Code Font
+
+JetBrains Mono
+
+---
+
+# Typography Scale
+
+Hero
+
+48px
+
+Page Title
+
+36px
+
+Section Title
+
+28px
+
+Card Title
+
+22px
+
+Body
+
+16px
+
+Caption
+
+14px
+
+Tiny Labels
+
+12px
+
+---
+
+# Spacing System
+
+Use an 8-point grid.
+
+Allowed spacing
+
+4
+
+8
+
+12
+
+16
+
+20
+
+24
+
+32
+
+40
+
+48
+
+64
+
+96
+
+Never use arbitrary spacing.
+
+---
+
+# Cards
+
+Every card should have
+
+Rounded corners
+
+Soft shadows
+
+Subtle gradients
+
+Comfortable padding
+
+Hover lift
+
+Smooth transition
+
+Cards should never feel flat.
+
+---
+
+# Buttons
+
+Primary
+
+Filled Coral
+
+Rounded
+
+Soft shadow
+
+Hover lift
+
+Secondary
+
+Soft Plum
+
+Outline
+
+Ghost
+
+Transparent
+
+Text only
+
+Danger
+
+Soft Red
+
+Success
+
+Green
+
+Loading buttons must animate.
+
+Disabled buttons should remain visible.
+
+---
+
+# Inputs
+
+Rounded
+
+Soft borders
+
+Large click area
+
+Focus glow
+
+Placeholder should remain readable.
+
+Never use sharp borders.
+
+---
+
+# Dropdowns
+
+Rounded
+
+Animated opening
+
+Soft shadows
+
+Searchable where appropriate.
+
+---
+
+# Sliders
+
+Rounded track
+
+Cute thumb
+
+Animated fill
+
+---
+
+# Toggle Switch
+
+Rounded pill
+
+Animated transition
+
+Glow when active
+
+---
+
+# Progress Bars
+
+Rounded
+
+Gradient fill
+
+Animated progress
+
+Optional mascot celebration at milestones.
+
+---
+
+# Badges
+
+Rounded pill
+
+Pastel colors
+
+Minimal text
+
+---
+
+# Tooltips
+
+Soft fade
+
+Rounded
+
+Small shadow
+
+Readable
+
+---
+
+# Modals
+
+Large radius
+
+Blurred backdrop
+
+Soft entrance animation
+
+---
+
+# Navigation
+
+Sidebar
+
+Rounded
+
+Floating
+
+Icons
+
+Labels
+
+Active indicator
+
+Animated selection
+
+Top Navigation
+
+Clean
+
+Minimal
+
+Sticky
+
+---
+
+# Icons
+
+Use only one icon family.
+
+Preferred
+
+Lucide
+
+Fallback
+
+Heroicons
+
+Never mix icon styles.
+
+---
+
+# Charts
+
+Rounded containers
+
+Pastel palette
+
+Smooth animations
+
+Readable labels
+
+No harsh colors.
+
+---
+
+# Tables
+
+Rounded container
+
+Alternating row backgrounds
+
+Hover highlight
+
+Sticky header where useful.
+
+---
+
+# Code Blocks
+
+Rounded
+
+Monospace
+
+Syntax highlighting
+
+Copy button
+
+Run button
+
+Theme aware
+
+---
+
+# Empty States
+
+Every empty state should contain
+
+Mascot
+
+Friendly message
+
+Suggested action
+
+Illustration
+
+Never show blank screens.
+
+---
+
+# Loading States
+
+Skeleton loaders
+
+Progress animation
+
+Cute mascot messages
+
+Never use plain spinners alone.
+
+---
+
+# Error States
+
+Friendly wording
+
+Helpful suggestions
+
+Cute illustration
+
+Retry button
+
+---
+
+# Hover Behavior
+
+Cards
+
+Lift
+
+Buttons
+
+Scale slightly
+
+Icons
+
+Rotate slightly
+
+Links
+
+Underline
+
+Inputs
+
+Glow
+
+---
+
+# Responsive Design
+
+Desktop First
+
+Tablet
+
+Fully supported
+
+Mobile
+
+Fully supported
+
+No clipped content.
+
+No horizontal scrolling.
+
+---
+
+# Accessibility
+
+Minimum contrast AA
+
+Keyboard navigation
+
+Visible focus
+
+ARIA labels
+
+Reduced motion support
+
+---
+
+# Glassmorphism
+
+Use sparingly.
+
+Only for
+
+Dialogs
+
+Floating panels
+
+Notifications
+
+Never apply glass to every card.
+
+---
+
+# Decorative Elements
+
+Allowed
+
+Paw prints
+
+Stars
+
+Clouds
+
+Tiny sparkles
+
+Paper clips
+
+Sticky notes
+
+Bookmarks
+
+Small plants
+
+Coffee mugs
+
+Tiny books
+
+Not allowed
+
+Random emojis
+
+Heavy textures
+
+Overcrowded decorations
+
+---
+
+# Theme Consistency Rules
+
+Every new component must
+
+Use approved colors.
+
+Use approved radius.
+
+Use approved spacing.
+
+Use approved typography.
+
+Support light mode.
+
+Support dark mode.
+
+Support accessibility.
+
+Support animations.
+
+---
+
+# AI Rules
+
+Never invent new colors.
+
+Never invent new typography.
+
+Never invent new spacing.
+
+Never create inconsistent buttons.
+
+Never introduce different shadows.
+
+Always reuse existing components.
+
+When in doubt,
+
+follow this document.

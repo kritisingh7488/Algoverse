@@ -1,5 +1,6 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { ThemeProvider } from './context/ThemeContext';
 import Login from './pages/auth/Login';
 import Signup from './pages/auth/Signup';
 import ForgotPassword from './pages/auth/ForgotPassword';
@@ -47,168 +48,170 @@ const PublicRoute = ({ children }) => {
 
 function App() {
   return (
-    <Router>
-      <Routes>
-        {/* Landing Page */}
-        <Route path="/" element={<LandingPage />} />
+    <ThemeProvider>
+      <Router>
+        <Routes>
+          {/* Landing Page */}
+          <Route path="/" element={<LandingPage />} />
 
-        {/* Public Auth Routes */}
-        <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
-        <Route path="/signup" element={<PublicRoute><Signup /></PublicRoute>} />
-        <Route path="/forgot-password" element={<PublicRoute><ForgotPassword /></PublicRoute>} />
-        <Route path="/reset-password/:token" element={<PublicRoute><ResetPassword /></PublicRoute>} />
-        <Route path="/verify-email/:token" element={<PublicRoute><VerifyEmail /></PublicRoute>} />
-        
-        {/* Protected Dashboard & Playground Routes */}
-        <Route 
-          path="/dashboard" 
-          element={
-            <ProtectedRoute>
-              <Dashboard />
-            </ProtectedRoute>
-          } 
-        />
-        <Route 
-          path="/playground" 
-          element={
-            <ProtectedRoute>
-              <Playground />
-            </ProtectedRoute>
-          } 
-        />
-        <Route 
-          path="/benchmarks" 
-          element={
-            <ProtectedRoute>
-              <BenchmarkCenter />
-            </ProtectedRoute>
-          } 
-        />
-        <Route 
-          path="/code-playground" 
-          element={
-            <ProtectedRoute>
-              <CodePlayground />
-            </ProtectedRoute>
-          } 
-        />
-        <Route 
-          path="/community" 
-          element={
-            <ProtectedRoute>
-              <Community />
-            </ProtectedRoute>
-          } 
-        />
-        <Route 
-          path="/contests" 
-          element={
-            <ProtectedRoute>
-              <Contests />
-            </ProtectedRoute>
-          } 
-        />
-        <Route 
-          path="/profile" 
-          element={
-            <ProtectedRoute>
-              <Profile />
-            </ProtectedRoute>
-          } 
-        />
-        <Route 
-          path="/settings" 
-          element={
-            <ProtectedRoute>
-              <Settings />
-            </ProtectedRoute>
-          } 
-        />
-        <Route 
-          path="/admin" 
-          element={
-            <ProtectedRoute>
-              <Admin />
-            </ProtectedRoute>
-          } 
-        />
-        <Route 
-          path="/roadmap" 
-          element={
-            <ProtectedRoute>
-              <Roadmap />
-            </ProtectedRoute>
-          } 
-        />
-        <Route 
-          path="/quizzes" 
-          element={
-            <ProtectedRoute>
-              <QuizCenter />
-            </ProtectedRoute>
-          } 
-        />
-        <Route 
-          path="/labs/sorting" 
-          element={
-            <ProtectedRoute>
-              <SortingLab />
-            </ProtectedRoute>
-          } 
-        />
-        <Route 
-          path="/labs/searching" 
-          element={
-            <ProtectedRoute>
-              <SearchingLab />
-            </ProtectedRoute>
-          } 
-        />
-        <Route 
-          path="/labs/tree" 
-          element={
-            <ProtectedRoute>
-              <TreeLab />
-            </ProtectedRoute>
-          } 
-        />
-        <Route 
-          path="/labs/graph" 
-          element={
-            <ProtectedRoute>
-              <GraphLab />
-            </ProtectedRoute>
-          } 
-        />
-        <Route 
-          path="/labs/dp" 
-          element={
-            <ProtectedRoute>
-              <DPStudio />
-            </ProtectedRoute>
-          } 
-        />
-        <Route 
-          path="/labs/string" 
-          element={
-            <ProtectedRoute>
-              <StringLab />
-            </ProtectedRoute>
-          } 
-        />
-        <Route 
-          path="/labs/backtracking" 
-          element={
-            <ProtectedRoute>
-              <BacktrackingLab />
-            </ProtectedRoute>
-          } 
-        />
-        
-        {/* 404 Fallback */}
-        <Route path="*" element={<NotFound />} />
-      </Routes>
-    </Router>
+          {/* Public Auth Routes */}
+          <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
+          <Route path="/signup" element={<PublicRoute><Signup /></PublicRoute>} />
+          <Route path="/forgot-password" element={<PublicRoute><ForgotPassword /></PublicRoute>} />
+          <Route path="/reset-password/:token" element={<PublicRoute><ResetPassword /></PublicRoute>} />
+          <Route path="/verify-email/:token" element={<PublicRoute><VerifyEmail /></PublicRoute>} />
+          
+          {/* Protected Dashboard & Playground Routes */}
+          <Route 
+            path="/dashboard" 
+            element={
+              <ProtectedRoute>
+                <Dashboard />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/playground" 
+            element={
+              <ProtectedRoute>
+                <Playground />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/benchmarks" 
+            element={
+              <ProtectedRoute>
+                <BenchmarkCenter />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/code-playground" 
+            element={
+              <ProtectedRoute>
+                <CodePlayground />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/community" 
+            element={
+              <ProtectedRoute>
+                <Community />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/contests" 
+            element={
+              <ProtectedRoute>
+                <Contests />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/profile" 
+            element={
+              <ProtectedRoute>
+                <Profile />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/settings" 
+            element={
+              <ProtectedRoute>
+                <Settings />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/admin" 
+            element={
+              <ProtectedRoute>
+                <Admin />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/roadmap" 
+            element={
+              <ProtectedRoute>
+                <Roadmap />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/quizzes" 
+            element={
+              <ProtectedRoute>
+                <QuizCenter />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/labs/sorting" 
+            element={
+              <ProtectedRoute>
+                <SortingLab />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/labs/searching" 
+            element={
+              <ProtectedRoute>
+                <SearchingLab />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/labs/tree" 
+            element={
+              <ProtectedRoute>
+                <TreeLab />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/labs/graph" 
+            element={
+              <ProtectedRoute>
+                <GraphLab />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/labs/dp" 
+            element={
+              <ProtectedRoute>
+                <DPStudio />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/labs/string" 
+            element={
+              <ProtectedRoute>
+                <StringLab />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/labs/backtracking" 
+            element={
+              <ProtectedRoute>
+                <BacktrackingLab />
+              </ProtectedRoute>
+            } 
+          />
+          
+          {/* 404 Fallback */}
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </Router>
+    </ThemeProvider>
   );
 }
 

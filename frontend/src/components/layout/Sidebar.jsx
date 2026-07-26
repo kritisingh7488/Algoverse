@@ -15,6 +15,7 @@ import {
   ChevronRight,
   BookOpen
 } from 'lucide-react';
+import MascotRole from '../mascots/MascotRole';
 
 const Sidebar = ({ isOpen, onClose }) => {
   const location = useLocation();
@@ -24,7 +25,7 @@ const Sidebar = ({ isOpen, onClose }) => {
       title: 'Overview',
       items: [
         { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
-        { name: 'Roadmap', path: '/roadmap', icon: BookOpen },
+        { name: 'Learning Roadmap', path: '/roadmap', icon: BookOpen },
       ]
     },
     {
@@ -43,7 +44,7 @@ const Sidebar = ({ isOpen, onClose }) => {
       items: [
         { name: 'Benchmark Center', path: '/benchmarks', icon: Award },
         { name: 'Code Playground', path: '/code-playground', icon: Code },
-        { name: 'Community & Contests', path: '/community', icon: Users },
+        { name: 'Community & Quizzes', path: '/community', icon: Users },
       ]
     }
   ];
@@ -58,27 +59,26 @@ const Sidebar = ({ isOpen, onClose }) => {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 bg-black/20 backdrop-blur-xs z-30 lg:hidden"
+            className="fixed inset-0 bg-black/40 backdrop-blur-xs z-30 lg:hidden"
           />
         )}
       </AnimatePresence>
 
       {/* Sidebar Container */}
       <aside
-        className={`fixed top-16 bottom-0 left-0 z-30 w-64 bg-white/70 backdrop-blur-xl border-r border-gray-100 transition-transform duration-300 ease-in-out lg:translate-x-0 ${
+        className={`fixed top-16 bottom-0 left-0 z-30 w-64 bg-card/90 backdrop-blur-xl border-r-2 border-borderTheme transition-transform duration-300 ease-in-out lg:translate-x-0 ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
-        } flex flex-col justify-between overflow-y-auto shadow-[2px_0_15px_rgba(0,0,0,0.01)]`}
+        } flex flex-col justify-between overflow-y-auto shadow-soft`}
       >
-        <div className="px-4 py-6 space-y-8">
+        <div className="px-4 py-6 space-y-6">
           {menuGroups.map((group, idx) => (
             <div key={idx}>
-              <h3 className="px-3 text-[11px] font-bold font-poppins uppercase tracking-wider text-gray-400 mb-3">
+              <h3 className="px-3 text-[11px] font-heading font-bold uppercase tracking-wider text-textSecondary mb-2">
                 {group.title}
               </h3>
               <div className="space-y-1">
                 {group.items.map((item) => {
                   const Icon = item.icon;
-                  const isActive = location.pathname === item.path;
 
                   return (
                     <NavLink
@@ -88,18 +88,18 @@ const Sidebar = ({ isOpen, onClose }) => {
                         if (window.innerWidth < 1024) onClose();
                       }}
                       className={({ isActive }) =>
-                        `relative flex items-center justify-between px-3 py-2.5 rounded-xl text-[14px] font-medium transition-all duration-200 group ${
+                        `relative flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-[14px] font-heading font-semibold transition-all duration-200 group ${
                           isActive
-                            ? 'text-primary font-semibold bg-primary/10'
-                            : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100/60'
+                            ? 'text-primary font-bold bg-primary/15 border border-primary/20 shadow-xs'
+                            : 'text-textSecondary hover:text-textPrimary hover:bg-surface'
                         }`
                       }
                     >
                       <div className="flex items-center gap-3">
-                        <Icon className={`w-4 h-4 transition-colors ${isActive ? 'text-primary' : 'text-gray-400 group-hover:text-gray-600'}`} />
+                        <Icon className="w-4 h-4 transition-colors" />
                         <span>{item.name}</span>
                       </div>
-                      {isActive && (
+                      {location.pathname === item.path && (
                         <ChevronRight className="w-4 h-4 text-primary" />
                       )}
                     </NavLink>
@@ -110,12 +110,11 @@ const Sidebar = ({ isOpen, onClose }) => {
           ))}
         </div>
 
-        {/* Footer Promo/Status Banner inside Sidebar */}
-        <div className="p-4 border-t border-gray-100/80">
-          <div className="p-3.5 rounded-2xl bg-gradient-to-br from-primary/10 via-accent/10 to-transparent border border-primary/10 text-center">
-            <p className="text-[13px] font-semibold text-gray-900 font-poppins">Master Algorithms</p>
-            <p className="text-[12px] text-gray-500 mt-1 font-inter">Interactive visual step-by-step engine</p>
-          </div>
+        {/* Mascot Companion Footer in Sidebar */}
+        <div className="p-4 border-t-2 border-borderTheme flex flex-col items-center text-center">
+          <MascotRole role="companion" activity="star" className="w-16 h-16" />
+          <p className="text-xs font-heading font-bold text-textPrimary mt-1">AlgoVerse Companion</p>
+          <p className="text-[11px] font-body text-textSecondary">Learning together step-by-step!</p>
         </div>
       </aside>
     </>

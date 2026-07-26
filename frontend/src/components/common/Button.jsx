@@ -1,43 +1,46 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 
-const Button = ({ 
-  children, 
-  onClick, 
-  type = 'button', 
-  variant = 'primary', 
-  isLoading = false, 
+export const Button = ({
+  children,
+  variant = 'primary',
+  size = 'md',
   disabled = false,
-  className = ''
+  onClick,
+  className = '',
+  type = 'button',
+  icon: Icon = null,
+  ...props
 }) => {
-  const baseClasses = 'relative w-full flex justify-center items-center py-2.5 px-4 text-[14px] font-medium rounded-xl transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 overflow-hidden';
-  
+  const baseStyles = 'inline-flex items-center justify-center font-heading font-semibold rounded-button transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary/40 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none select-none';
+
   const variants = {
-    primary: 'bg-primary text-white hover:bg-[#6c4be0] focus-visible:ring-primary shadow-[0_2px_4px_rgba(124,92,252,0.15)] hover:shadow-[0_4px_12px_rgba(124,92,252,0.25)]',
-    outline: 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 focus-visible:ring-gray-200 shadow-sm hover:shadow-md',
-    google: 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 hover:border-gray-300 focus-visible:ring-gray-200 shadow-sm hover:shadow transition-all'
+    primary: 'bg-primary hover:bg-primary-hover text-white shadow-soft shadow-primary/20',
+    secondary: 'bg-secondary hover:bg-secondary-hover text-white shadow-soft shadow-secondary/20',
+    accent: 'bg-accent hover:bg-accent/90 text-textPrimary shadow-soft',
+    outline: 'bg-card border-2 border-borderTheme text-textPrimary hover:border-primary hover:bg-surface shadow-xs',
+    ghost: 'bg-transparent text-textPrimary hover:bg-surface',
+    danger: 'bg-danger text-white hover:bg-danger/90 shadow-soft',
   };
 
-  const currentVariant = variants[variant] || variants.primary;
+  const sizes = {
+    sm: 'px-3 py-1.5 text-xs gap-1.5',
+    md: 'px-4 py-2.5 text-sm gap-2',
+    lg: 'px-6 py-3.5 text-base gap-2.5',
+  };
 
   return (
     <motion.button
-      whileHover={{ scale: disabled || isLoading ? 1 : 1.01 }}
-      whileTap={{ scale: disabled || isLoading ? 1 : 0.98 }}
       type={type}
       onClick={onClick}
-      disabled={disabled || isLoading}
-      className={`${baseClasses} ${currentVariant} ${disabled || isLoading ? 'opacity-60 cursor-not-allowed saturate-50' : ''} ${className}`}
+      disabled={disabled}
+      whileHover={disabled ? {} : { y: -2 }}
+      whileTap={disabled ? {} : { scale: 0.97 }}
+      className={`${baseStyles} ${variants[variant] || variants.primary} ${sizes[size] || sizes.md} ${className}`}
+      {...props}
     >
-      <div className="flex items-center justify-center relative z-10 w-full gap-2">
-        {isLoading && (
-          <svg className="animate-spin h-4 w-4 text-current" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-          </svg>
-        )}
-        <span className={`${isLoading ? 'opacity-90' : ''} truncate`}>{children}</span>
-      </div>
+      {Icon && <Icon className="w-4 h-4" />}
+      <span>{children}</span>
     </motion.button>
   );
 };

@@ -6,9 +6,7 @@ import {
   Trophy, 
   Flame, 
   Award, 
-  Calendar, 
   Sparkles, 
-  CheckCircle2, 
   Layers, 
   BarChart2, 
   Edit 
@@ -16,6 +14,9 @@ import {
 import AppLayout from '../layouts/AppLayout';
 import useAuthStore from '../store/authStore';
 import Button from '../components/common/Button';
+import Card from '../components/common/Card';
+import Badge from '../components/common/Badge';
+import MascotRole from '../components/mascots/MascotRole';
 
 const Profile = () => {
   const { user } = useAuthStore();
@@ -30,66 +31,69 @@ const Profile = () => {
     <AppLayout>
       <div className="space-y-8 py-2">
 
-        {/* Profile Banner & Info Header */}
-        <div className="bg-white rounded-3xl border border-gray-100 shadow-xs overflow-hidden">
-          <div className="h-36 bg-gradient-to-r from-primary via-[#8E44AD] to-[#7C3AED] relative" />
+        {/* Profile Banner & Header */}
+        <Card className="p-0 overflow-hidden border-2 border-borderTheme">
+          <div className="h-36 bg-cardAccent relative" />
           <div className="p-8 relative pt-0 flex flex-col sm:flex-row items-start sm:items-end justify-between gap-6">
             <div className="flex flex-col sm:flex-row items-start sm:items-end gap-5 -mt-14">
-              <div className="w-24 h-24 rounded-3xl bg-white p-1.5 shadow-xl">
-                <div className="w-full h-full rounded-2xl bg-gradient-to-tr from-primary to-accent text-white text-3xl font-extrabold flex items-center justify-center font-poppins">
+              <div className="w-24 h-24 rounded-card bg-card p-1.5 shadow-medium border-2 border-borderTheme">
+                <div className="w-full h-full rounded-2xl bg-primary text-white text-3xl font-heading font-bold flex items-center justify-center">
                   {user?.fullName?.charAt(0) || 'U'}
                 </div>
               </div>
               <div className="space-y-1">
-                <h1 className="text-2xl font-bold font-poppins text-gray-900">{user?.fullName || 'User Profile'}</h1>
-                <p className="text-xs text-gray-500 font-inter flex items-center gap-2">
-                  <Mail className="w-3.5 h-3.5 text-gray-400" /> {user?.email}
+                <h1 className="text-2xl font-heading font-bold text-textPrimary">{user?.fullName || 'User Profile'}</h1>
+                <p className="text-xs font-body text-textSecondary flex items-center gap-2">
+                  <Mail className="w-3.5 h-3.5 text-textSecondary" /> {user?.email}
                 </p>
               </div>
             </div>
 
-            <Button variant="outline" className="text-xs py-2">
-              <Edit className="w-3.5 h-3.5 mr-1.5" /> Edit Profile
-            </Button>
+            <div className="flex items-center gap-4">
+              <MascotRole role="companion" activity="star" dialogue="Great progress!" className="w-20 h-20" />
+              <Button variant="outline" size="sm">
+                <Edit className="w-3.5 h-3.5 mr-1.5" /> Edit Profile
+              </Button>
+            </div>
           </div>
-        </div>
+        </Card>
 
         {/* Metrics Overview Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-          <div className="p-6 bg-white rounded-3xl border border-gray-100 shadow-xs flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-purple-50 text-primary flex items-center justify-center font-bold">
+          <Card hover className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-secondary/15 text-secondary flex items-center justify-center font-bold border border-secondary/30">
               <Trophy className="w-6 h-6" />
             </div>
             <div>
-              <p className="text-xs font-medium text-gray-400 font-inter">Total XP</p>
-              <h3 className="text-xl font-bold font-poppins text-gray-900">1,250 XP</h3>
+              <p className="text-xs font-heading font-bold text-textSecondary uppercase tracking-wider">Total XP</p>
+              <h3 className="text-xl font-heading font-bold text-textPrimary">1,250 XP</h3>
             </div>
-          </div>
+          </Card>
 
-          <div className="p-6 bg-white rounded-3xl border border-gray-100 shadow-xs flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-pink-50 text-accent flex items-center justify-center font-bold">
+          <Card hover className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-primary/15 text-primary flex items-center justify-center font-bold border border-primary/30">
               <Sparkles className="w-6 h-6" />
             </div>
             <div>
-              <p className="text-xs font-medium text-gray-400 font-inter">Current Rank</p>
-              <h3 className="text-xl font-bold font-poppins text-gray-900">Level 4 Explorer</h3>
+              <p className="text-xs font-heading font-bold text-textSecondary uppercase tracking-wider">Current Rank</p>
+              <h3 className="text-xl font-heading font-bold text-textPrimary">Level 4 Explorer</h3>
             </div>
-          </div>
+          </Card>
 
-          <div className="p-6 bg-white rounded-3xl border border-gray-100 shadow-xs flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-orange-50 text-orange-500 flex items-center justify-center font-bold">
+          <Card hover className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-accent/20 text-primary flex items-center justify-center font-bold border border-accent/40">
               <Flame className="w-6 h-6" />
             </div>
             <div>
-              <p className="text-xs font-medium text-gray-400 font-inter">Study Streak</p>
-              <h3 className="text-xl font-bold font-poppins text-gray-900">4 Days Active</h3>
+              <p className="text-xs font-heading font-bold text-textSecondary uppercase tracking-wider">Study Streak</p>
+              <h3 className="text-xl font-heading font-bold text-textPrimary">4 Days Active</h3>
             </div>
-          </div>
+          </Card>
         </div>
 
         {/* Achievements Section */}
-        <div className="bg-white p-8 rounded-3xl border border-gray-100 shadow-xs space-y-6">
-          <h2 className="text-lg font-bold font-poppins text-gray-900 flex items-center gap-2">
+        <Card className="space-y-6">
+          <h2 className="text-lg font-heading font-bold text-textPrimary flex items-center gap-2">
             <Award className="w-5 h-5 text-primary" /> Unlocked Achievements
           </h2>
 
@@ -97,20 +101,20 @@ const Profile = () => {
             {achievements.map((ach, i) => {
               const Icon = ach.icon;
               return (
-                <div key={i} className="p-5 rounded-2xl bg-gray-50/60 border border-gray-100 space-y-3">
+                <div key={i} className="p-5 rounded-2xl bg-surface border-2 border-borderTheme space-y-3">
                   <div className="flex items-center justify-between">
-                    <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+                    <div className="w-10 h-10 rounded-xl bg-primary/15 text-primary flex items-center justify-center border border-primary/30">
                       <Icon className="w-5 h-5" />
                     </div>
-                    <span className="text-[10px] font-mono font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">{ach.date}</span>
+                    <Badge variant="success">{ach.date}</Badge>
                   </div>
-                  <h4 className="text-sm font-semibold font-poppins text-gray-900">{ach.title}</h4>
-                  <p className="text-xs text-gray-500 font-inter leading-relaxed">{ach.desc}</p>
+                  <h4 className="text-sm font-heading font-bold text-textPrimary">{ach.title}</h4>
+                  <p className="text-xs font-body text-textSecondary leading-relaxed">{ach.desc}</p>
                 </div>
               );
             })}
           </div>
-        </div>
+        </Card>
 
       </div>
     </AppLayout>
