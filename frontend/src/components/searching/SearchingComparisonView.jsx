@@ -347,10 +347,11 @@ export const SearchingComparisonView = ({
         </div>
       </Card>
 
-      {/* Grid of Comparing Visualizers (Defaulting to Vertical Bars like Sorting Lab) */}
+      {/* Grid of Comparing Visualizers (Strictly mapping viewType) */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {selectedAlgos.map((key) => {
           const algoSpec = algorithms[key] || { name: key };
+          const viewType = algoSpec.viewType || 'array';
           const data = results[key] || {};
           const stats = data.statistics || {};
           const eventsList = data.events || [];
@@ -377,28 +378,48 @@ export const SearchingComparisonView = ({
 
               <div className="flex items-center justify-between">
                 <span className="text-xs font-heading font-bold text-textPrimary">{algoSpec.name}</span>
-                <span className="text-[10px] font-mono text-textSecondary">{algoSpec.avg}</span>
+                <span className="text-[10px] font-mono text-textSecondary uppercase font-bold text-primary px-2 py-0.5 bg-surface border border-borderTheme rounded-full">
+                  {viewType}
+                </span>
               </div>
 
-              {/* Vertical Bars Visualization */}
-              <div className="h-32 flex items-end justify-center gap-1 bg-surface p-2 rounded-xl border border-borderTheme">
-                {currentArr.map((val, i) => {
-                  const heightPercent = Math.max(10, Math.round((val / maxVal) * 100));
-                  const midActive = currentStep.mid === i;
-                  const foundActive = currentStep.type === 'found' && (currentStep.mid === i || currentStep.i === i);
+              {/* RENDERER SELECTION: Bars ONLY for Array Search! */}
+              <div className="h-32 flex items-center justify-center bg-surface p-2 rounded-xl border border-borderTheme overflow-hidden">
+                {viewType === 'array' ? (
+                  <div className="h-full flex items-end justify-center gap-1 w-full">
+                    {currentArr.map((val, i) => {
+                      const heightPercent = Math.max(10, Math.round((val / maxVal) * 100));
+                      const midActive = currentStep.mid === i;
+                      const foundActive = currentStep.type === 'found' && (currentStep.mid === i || currentStep.i === i);
 
-                  let barBg = 'bg-primary';
-                  if (midActive) barBg = 'bg-warning scale-105';
-                  if (foundActive) barBg = 'bg-success scale-110 shadow-md shadow-success/40';
+                      let barBg = 'bg-primary';
+                      if (midActive) barBg = 'bg-warning scale-105';
+                      if (foundActive) barBg = 'bg-success scale-110 shadow-md shadow-success/40';
 
-                  return (
-                    <div
-                      key={i}
-                      style={{ height: `${heightPercent}%` }}
-                      className={`w-full ${barBg} rounded-t-sm transition-all duration-150`}
-                    />
-                  );
-                })}
+                      return (
+                        <div
+                          key={i}
+                          style={{ height: `${heightPercent}%` }}
+                          className={`w-full ${barBg} rounded-t-sm transition-all duration-150`}
+                        />
+                      );
+                    })}
+                  </div>
+                ) : (
+                  /* Dedicated Data Structure Cell View for Hash/Tree/Trie/Graph */
+                  <div className="flex flex-wrap items-center justify-center gap-1.5 max-w-full">
+                    {currentArr.slice(0, 10).map((val, i) => (
+                      <div
+                        key={i}
+                        className={`w-7 h-8 rounded-lg border-2 flex items-center justify-center font-mono font-bold text-[10px] ${
+                          currentStep.i === i || currentStep.mid === i ? 'bg-warning text-textPrimary border-warning' : 'bg-card border-borderTheme text-textPrimary'
+                        }`}
+                      >
+                        {val}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Action Description */}
@@ -441,6 +462,7 @@ export const SearchingComparisonView = ({
             <thead>
               <tr className="border-b-2 border-borderTheme text-textSecondary uppercase text-[10px]">
                 <th className="py-2.5 px-3">Algorithm</th>
+                <th className="py-2.5 px-3">View Type</th>
                 <th className="py-2.5 px-3">Result</th>
                 <th className="py-2.5 px-3">Time (ms)</th>
                 <th className="py-2.5 px-3">Comparisons</th>
@@ -454,6 +476,7 @@ export const SearchingComparisonView = ({
             <tbody>
               {selectedAlgos.map((key) => {
                 const algoSpec = algorithms[key] || { name: key };
+                const viewType = algoSpec.viewType || 'array';
                 const data = results[key] || {};
                 const stats = data.statistics || {};
                 const comp = data.complexity || {};
@@ -465,6 +488,7 @@ export const SearchingComparisonView = ({
                 return (
                   <tr key={key} className="border-b border-borderTheme hover:bg-surface/50">
                     <td className="py-2.5 px-3 font-heading font-bold text-textPrimary">{algoSpec.name}</td>
+                    <td className="py-2.5 px-3 font-bold text-primary uppercase text-[10px]">{viewType}</td>
                     <td className="py-2.5 px-3">
                       {found ? (
                         <span className="text-success font-bold flex items-center gap-1">
