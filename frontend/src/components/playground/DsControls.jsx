@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Trash2, Search, RotateCw, ArrowLeftRight, Eye, Sparkles } from 'lucide-react';
+import { Plus, Trash2, Search, ArrowLeftRight, Eye, Sparkles } from 'lucide-react';
 import Button from '../common/Button';
 
 export const DsControls = ({ structureKey, onExecuteOp }) => {
@@ -12,13 +12,16 @@ export const DsControls = ({ structureKey, onExecuteOp }) => {
   };
 
   const getIdx = () => {
+    if (!idxInput.trim()) return undefined;
     const parsed = parseInt(idxInput);
-    return !isNaN(parsed) ? parsed : 0;
+    return !isNaN(parsed) ? parsed : undefined;
   };
 
   const handleOp = (opName, customArgs = {}) => {
-    onExecuteOp(opName, { val: getVal(), idx: getIdx(), ...customArgs });
+    const specifiedIdx = getIdx();
+    onExecuteOp(opName, { val: getVal(), idx: specifiedIdx, ...customArgs });
     setValInput('');
+    setIdxInput('');
   };
 
   return (
@@ -39,7 +42,8 @@ export const DsControls = ({ structureKey, onExecuteOp }) => {
               placeholder="Index"
               value={idxInput}
               onChange={(e) => setIdxInput(e.target.value)}
-              className="w-20 px-3 py-2 rounded-input bg-surface border-2 border-borderTheme text-xs font-mono text-textPrimary focus:outline-none focus:border-primary"
+              className="w-24 px-3 py-2 rounded-input bg-surface border-2 border-borderTheme text-xs font-mono text-textPrimary focus:outline-none focus:border-primary"
+              title="Leave empty to insert/delete at Tail by default"
             />
           )}
         </div>

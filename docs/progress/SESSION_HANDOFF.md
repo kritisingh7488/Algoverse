@@ -1,22 +1,16 @@
-# Session Handoff: C++ Data Structures Engine Audit & Integration
+# Session Handoff: Array Default Index Behavior Fix
 
-## 1. Native C++ Data Structures Engine (`backend/cpp/ds_engine.cpp`)
-- Created `ds_engine.cpp` supporting native C++ operations across all 11 data structures:
-  - `array`: `insert`, `delete`, `reverse`, `sort`
-  - `stack`: `push`, `pop`, `peek`
-  - `queue` / `cqueue` / `deque`: `enqueue`, `dequeue`, `pushFront`, `popBack`
-  - `singlylist` / `doublylist` / `circularlist`: `insertHead`, `insertTail`, `deleteHead`, `deleteTail`
-  - `priorityqueue` / `minheap` / `maxheap`: `insert` (sift up), `extract` (sift down)
-- Compiled into standalone executable `ds_engine.exe` using `g++ -O3`.
+## 1. Array Default Tail Insertion & Deletion Fix
+- **Default Index Behavior**: Fixed `DsControls.jsx` and `ds_engine.cpp` so that when the **Index** input box is left empty:
+  - `Insert`: Automatically appends to the **Tail / End** of the array (`items.length`).
+  - `Delete`: Automatically removes from the **Tail / End** of the array (`items.length - 1`).
+  - `Update`: Automatically targets the **Tail / End** of the array (`items.length - 1`).
+- **Explicit Index Support**: If the user enters a specific index (e.g. `1`), the C++ engine targets that exact index and shifts adjacent elements.
 
-## 2. Backend Controller & API Endpoint (`backend/controllers/dsController.js`)
-- Created `dsController.js` & `dsRoutes.js` mounted at `/api/v1/ds/run`.
-- Receives user operations, passes parameters to `ds_engine.exe` via stdin/stdout, and emits JSON step streams with pointer tracking & memory statistics.
+## 2. Binary Recompiled & Verified
+- Recompiled `ds_engine.cpp` $\rightarrow$ `ds_engine.exe` with `g++ -O3`.
+- Tested both default tail insertion `[10, 20, 30] -> [10, 20, 30, 99]` and explicit index insertion `[10, 20, 30] -> [10, 99, 20, 30]`.
 
-## 3. Frontend Alignment (`Playground.jsx`)
-- Updated `Playground.jsx` `handleExecuteOp` function to call `/api/v1/ds/run` API.
-- Preserves smooth client step generator fallback if offline.
-
-## 4. Build & Server Status
+## 3. Build & Server Status
 - **Backend Server**: Running on port `5000` with native C++ DS engine enabled.
-- **Production Build**: `npm run build` completed in **5.83s** with **0 errors**.
+- **Production Build**: `npm run build` completed in **3.86s** with **0 errors**.

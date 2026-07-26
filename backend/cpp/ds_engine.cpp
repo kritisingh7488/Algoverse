@@ -14,8 +14,8 @@ using namespace std;
 struct DSEvent {
     string type;
     int highlight = -1;
-    int pointer1 = -1; // e.g. head / top / front / i
-    int pointer2 = -1; // e.g. tail / rear / j
+    int pointer1 = -1;
+    int pointer2 = -1;
     string ptrLabel1 = "";
     string ptrLabel2 = "";
     int value = 0;
@@ -89,17 +89,24 @@ DSResult runArrayOp(vector<int> items, string op, int val, int idx, string dir) 
     auto start = chrono::high_resolution_clock::now();
 
     if (op == "insert") {
-        int targetIdx = max(0, min((int)items.size(), idx >= 0 ? idx : (int)items.size()));
+        int targetIdx = (idx >= 0 && idx <= (int)items.size()) ? idx : (int)items.size();
         pushEvent(res, items, "locate", targetIdx, targetIdx, "target", -1, "", val, 1, "C++ Array: Targeted index [" + to_string(targetIdx) + "] for insertion.");
         items.insert(items.begin() + targetIdx, val);
         pushEvent(res, items, "insert", targetIdx, targetIdx, "inserted", -1, "", val, 4, "C++ Array: Inserted " + to_string(val) + " at index [" + to_string(targetIdx) + "].");
     } else if (op == "delete") {
         if (!items.empty()) {
-            int targetIdx = max(0, min((int)items.size() - 1, idx >= 0 ? idx : (int)items.size() - 1));
+            int targetIdx = (idx >= 0 && idx < (int)items.size()) ? idx : (int)items.size() - 1;
             int removed = items[targetIdx];
             pushEvent(res, items, "locate", targetIdx, targetIdx, "target", -1, "", removed, 1, "C++ Array: Targeting element " + to_string(removed) + " at index [" + to_string(targetIdx) + "].");
             items.erase(items.begin() + targetIdx);
             pushEvent(res, items, "delete", -1, -1, "", -1, "", removed, 3, "C++ Array: Deleted element " + to_string(removed) + " and shifted elements left.");
+        }
+    } else if (op == "update") {
+        if (!items.empty()) {
+            int targetIdx = (idx >= 0 && idx < (int)items.size()) ? idx : (int)items.size() - 1;
+            int oldVal = items[targetIdx];
+            items[targetIdx] = val;
+            pushEvent(res, items, "update", targetIdx, targetIdx, "updated", -1, "", val, 2, "C++ Array: Updated index [" + to_string(targetIdx) + "] from " + to_string(oldVal) + " to " + to_string(val) + ".");
         }
     } else if (op == "reverse") {
         pushEvent(res, items, "start", -1, 0, "left", (int)items.size() - 1, "right", 0, 1, "C++ Array: Reversing elements with two pointers.");
@@ -217,7 +224,6 @@ DSResult runHeapOp(string key, vector<int> items, string op, int val, string hea
         items.push_back(val);
         pushEvent(res, items, "insert", (int)items.size() - 1, (int)items.size() - 1, "leaf", -1, "", val, 1, "C++ Heap: Inserted " + to_string(val) + " at leaf position.");
 
-        // Sift Up / Bubble Up
         int i = items.size() - 1;
         while (i > 0) {
             int p = (i - 1) / 2;
@@ -236,7 +242,6 @@ DSResult runHeapOp(string key, vector<int> items, string op, int val, string hea
             items.pop_back();
             pushEvent(res, items, "extract", 0, 0, "root", -1, "", rootVal, 2, "C++ Heap: Extracted root (" + to_string(rootVal) + "). Replaced with last leaf.");
 
-            // Sift Down
             int i = 0;
             int n = items.size();
             while (true) {
