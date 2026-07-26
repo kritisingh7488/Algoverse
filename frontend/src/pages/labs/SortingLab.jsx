@@ -364,8 +364,8 @@ const SortingLab = () => {
         {isComparisonMode ? (
           <SortingComparisonView
             array={array}
+            setArray={setArray}
             algorithms={SORTING_SPECS}
-            selectedCompareAlgos={selectedCompareAlgos}
             onBackToSingle={() => setIsComparisonMode(false)}
           />
         ) : (
