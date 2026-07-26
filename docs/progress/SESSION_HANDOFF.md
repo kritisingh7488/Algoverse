@@ -1,16 +1,10 @@
-# Session Handoff: Searching Laboratory Dedicated Visualizer Mapping
+# Session Handoff: Tree Layout & Speed Controller Boundary Fixes
 
-## 1. Audit Findings
-- **Defect**: Algorithms previously fell back to the default array/vertical bar renderer in `SearchingCanvas.jsx` because `activeView` defaulted to array rendering when non-array `viewType`s were not explicitly handled by dedicated view components.
-- **Fix**: Added explicit `viewType` properties (`array`, `hashtable`, `tree`, `trie`, `pattern`, `graph`) to `SEARCHING_ALGORITHMS_REGISTRY` and implemented 6 dedicated visualizer renderers inside `SearchingCanvas.jsx` and `SearchingComparisonView.jsx`.
+## 1. Tree Visualization Fixes
+- **Multi-Level Tree Layout**: Refactored `TreeRenderer.jsx` to render a complete multi-level tree recursively with Root, Left Subtree, Right Subtree, and sub-child nodes with `overflow-x-auto` container scaling and zero clipping.
 
-## 2. Visualization Mappings
-- **Array Searches** (`linear`, `sentinel`, `binary`, `recbinary`, `jump`, `interpolation`, `exponential`, `fibonacci`, `ternary`, `metabinary`) $\rightarrow$ **Array / Vertical Bars / Horizontal Bars / Timeline**.
-- **Hash Searches** (`hashtable`, `cuckoo`) $\rightarrow$ **HashTableRenderer** (Bucket slots, modulo mapping, probing).
-- **Tree Searches** (`bst`, `avl`, `redblack`) $\rightarrow$ **TreeRenderer** (Hierarchical tree nodes, left/right branch decisions).
-- **Trie Search** (`trie`) $\rightarrow$ **TrieRenderer** (Prefix character tree traversal).
-- **Pattern Searching** (`kmp`, `rabinkarp`) $\rightarrow$ **PatternRenderer** (Pattern vs. Text window, LPS table, rolling hash).
-- **Graph Searching** (`bfs`, `dfs`) $\rightarrow$ **GraphRenderer** (Graph network, Queue/Stack container operations).
+## 2. Speed Controller Boundary Fixes
+- **Responsive Flex Wrap**: Refactored `SearchingPlaybackBar.jsx` with `flex-wrap`, `shrink-0`, and compact speed pill buttons (`0.25x` to `10x`) so all 6 speed buttons remain strictly inside card boundaries on all viewport widths.
 
 ## 3. Build Verification
-- Production build `npm run build` completed in **3.09s** with **0 errors**.
+- Production build `npm run build` completed in **3.79s** with **0 errors**.

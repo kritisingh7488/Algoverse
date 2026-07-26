@@ -15,10 +15,10 @@ export const SearchingPlaybackBar = ({
   const speeds = [0.25, 0.5, 1, 2, 4, 10];
 
   return (
-    <div className="bg-card rounded-card border-2 border-borderTheme p-4 shadow-soft flex flex-col md:flex-row items-center justify-between gap-4 font-body">
+    <div className="bg-card rounded-card border-2 border-borderTheme p-4 shadow-soft flex flex-col xl:flex-row items-center justify-between gap-4 font-body max-w-full overflow-hidden">
       
       {/* Action Buttons */}
-      <div className="flex items-center gap-1.5">
+      <div className="flex flex-wrap items-center justify-center gap-1.5 shrink-0">
         <Button
           variant="primary"
           size="md"
@@ -80,8 +80,8 @@ export const SearchingPlaybackBar = ({
       </div>
 
       {/* Timeline Step Scrubber */}
-      <div className="flex-1 w-full flex items-center gap-3 max-w-md">
-        <span className="text-xs font-mono font-bold text-textSecondary min-w-[65px]">
+      <div className="flex-1 w-full flex items-center gap-3 min-w-[200px] max-w-md">
+        <span className="text-xs font-mono font-bold text-textSecondary min-w-[65px] shrink-0">
           Step {totalSteps > 0 ? stepIndex + 1 : 0}/{totalSteps}
         </span>
         <input
@@ -95,14 +95,14 @@ export const SearchingPlaybackBar = ({
         />
       </div>
 
-      {/* Speed Options */}
-      <div className="flex items-center gap-1">
-        <span className="text-xs font-mono text-textSecondary font-bold mr-1">Speed:</span>
+      {/* Speed Options - Responsive Flex Wrap to prevent boundary overflow */}
+      <div className="flex flex-wrap items-center justify-center gap-1 shrink-0">
+        <span className="text-xs font-mono text-textSecondary font-bold mr-1 shrink-0">Speed:</span>
         {speeds.map((s) => (
           <button
             key={s}
             onClick={() => setSpeed(s)}
-            className={`px-2 py-1 rounded-xl text-[11px] font-mono font-bold transition-all ${
+            className={`px-2 py-0.5 rounded-lg text-[10px] font-mono font-bold transition-all ${
               speed === s
                 ? 'bg-primary text-white shadow-soft shadow-primary/20'
                 : 'bg-surface text-textSecondary hover:bg-card border border-borderTheme'

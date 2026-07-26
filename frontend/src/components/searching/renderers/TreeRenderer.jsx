@@ -1,11 +1,11 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { GitBranch, ArrowLeft, ArrowRight } from 'lucide-react';
+import { GitBranch } from 'lucide-react';
 
 export const TreeRenderer = ({ currentArr, currentEvent, spec }) => {
-  const { type, i, j, mid } = currentEvent;
+  const { type, i, j, mid, value } = currentEvent;
 
-  // Build binary tree structure from array elements
+  // Build binary search tree structure recursively from array elements
   const sorted = [...currentArr].sort((a, b) => a - b);
   
   const buildTree = (arr, depth = 0) => {
@@ -19,90 +19,83 @@ export const TreeRenderer = ({ currentArr, currentEvent, spec }) => {
     };
   };
 
-  const root = buildTree(sorted);
+  const rootNode = buildTree(sorted);
 
-  return (
-    <div className="w-full max-w-3xl py-4 space-y-6 font-mono flex flex-col items-center">
-      
-      {/* Tree Architecture Header */}
-      <div className="bg-surface px-5 py-3 rounded-2xl border-2 border-borderTheme flex items-center justify-between w-full max-w-xl text-xs">
-        <span className="font-bold text-textSecondary flex items-center gap-1.5">
-          <GitBranch className="w-4 h-4 text-primary" /> {spec?.name || 'Binary Search Tree'} Topology:
-        </span>
-        <span className="px-3 py-1 rounded-xl bg-card border border-borderTheme text-primary font-bold">
-          Height: {Math.ceil(Math.log2(sorted.length + 1))} Levels
-        </span>
-      </div>
+  // Recursive Tree Node Renderer
+  const RenderNode = ({ node }) => {
+    if (!node) return null;
 
-      {/* Hierarchical Tree Nodes Rendering */}
-      <div className="flex flex-col items-center space-y-6 w-full py-4">
+    const nodeVal = node.val;
+    const isCurrentNode = value === nodeVal || mid === nodeVal || i === nodeVal || j === nodeVal;
+    const isFound = type === 'found' && (value === nodeVal || mid === nodeVal);
+
+    let nodeStyle = 'bg-card border-borderTheme text-textPrimary';
+    if (isCurrentNode) nodeStyle = 'bg-warning text-textPrimary border-warning scale-110 shadow-medium ring-4 ring-warning/30';
+    if (type === 'move_left' && isCurrentNode) nodeStyle = 'bg-primary text-white border-primary scale-110 shadow-md';
+    if (type === 'move_right' && isCurrentNode) nodeStyle = 'bg-secondary text-white border-secondary scale-110 shadow-md';
+    if (isFound) nodeStyle = 'bg-success text-white border-success scale-115 shadow-medium ring-4 ring-success/40';
+
+    return (
+      <div className="flex flex-col items-center">
         
-        {/* Level 0: Root */}
-        {root && (
-          <div className="flex flex-col items-center space-y-4 w-full">
+        {/* Node Circle */}
+        <motion.div
+          layout
+          initial={{ scale: 0.8 }}
+          animate={{ scale: 1 }}
+          className={`w-11 h-11 sm:w-12 sm:h-12 rounded-full border-2 flex items-center justify-center font-bold text-xs transition-all shadow-soft shrink-0 ${nodeStyle}`}
+        >
+          {nodeVal}
+        </motion.div>
+
+        {/* Children Subtrees */}
+        {(node.left || node.right) && (
+          <div className="flex items-start gap-4 sm:gap-8 pt-3 border-t border-dashed border-borderTheme mt-2 w-full justify-center">
             
-            {/* Root Node */}
-            <div className="flex items-center gap-2">
-              <span className="text-[10px] font-bold text-textSecondary uppercase">ROOT</span>
-              <TreeNode nodeVal={root.val} currentEvent={currentEvent} />
+            {/* Left Child */}
+            <div className="flex flex-col items-center">
+              {node.left ? (
+                <RenderNode node={node.left} />
+              ) : (
+                <span className="text-[9px] text-textSecondary italic opacity-40 font-mono">null</span>
+              )}
             </div>
 
-            {/* Subtree Branches */}
-            <div className="grid grid-cols-2 gap-12 w-full max-w-lg border-t-2 border-dashed border-borderTheme pt-4">
-              
-              {/* Left Subtree */}
-              <div className="flex flex-col items-center space-y-3">
-                <span className="text-[10px] font-bold text-primary flex items-center gap-1">
-                  <ArrowLeft className="w-3 h-3" /> LEFT (val &lt; root)
-                </span>
-                {root.left ? (
-                  <TreeNode nodeVal={root.left.val} currentEvent={currentEvent} />
-                ) : (
-                  <span className="text-[10px] text-textSecondary italic">null</span>
-                )}
-              </div>
-
-              {/* Right Subtree */}
-              <div className="flex flex-col items-center space-y-3">
-                <span className="text-[10px] font-bold text-secondary flex items-center gap-1">
-                  RIGHT (val &gt; root) <ArrowRight className="w-3 h-3" />
-                </span>
-                {root.right ? (
-                  <TreeNode nodeVal={root.right.val} currentEvent={currentEvent} />
-                ) : (
-                  <span className="text-[10px] text-textSecondary italic">null</span>
-                )}
-              </div>
-
+            {/* Right Child */}
+            <div className="flex flex-col items-center">
+              {node.right ? (
+                <RenderNode node={node.right} />
+              ) : (
+                <span className="text-[9px] text-textSecondary italic opacity-40 font-mono">null</span>
+              )}
             </div>
 
           </div>
         )}
 
       </div>
-
-    </div>
-  );
-};
-
-const TreeNode = ({ nodeVal, currentEvent }) => {
-  const { type, i, j, mid, value } = currentEvent;
-  const isCurrentNode = value === nodeVal || mid === nodeVal;
-  const isFound = type === 'found' && (value === nodeVal || mid === nodeVal);
-
-  let style = 'bg-card border-borderTheme text-textPrimary';
-  if (isCurrentNode) style = 'bg-warning text-textPrimary border-warning scale-110 shadow-medium ring-4 ring-warning/30';
-  if (type === 'move_left' && isCurrentNode) style = 'bg-primary text-white border-primary scale-110 shadow-md';
-  if (type === 'move_right' && isCurrentNode) style = 'bg-secondary text-white border-secondary scale-110 shadow-md';
-  if (isFound) style = 'bg-success text-white border-success scale-115 shadow-medium ring-4 ring-success/40';
+    );
+  };
 
   return (
-    <motion.div
-      layout
-      className={`w-14 h-14 rounded-full border-2 flex items-center justify-center font-bold text-xs transition-all shadow-soft ${style}`}
-    >
-      {nodeVal}
-    </motion.div>
+    <div className="w-full max-w-4xl py-2 font-mono flex flex-col items-center overflow-x-auto scrollbar-thin px-2">
+      
+      {/* Tree Header Badge */}
+      <div className="bg-surface px-4 py-2 rounded-2xl border-2 border-borderTheme flex items-center justify-between w-full max-w-md text-xs mb-4">
+        <span className="font-bold text-textSecondary flex items-center gap-1.5">
+          <GitBranch className="w-3.5 h-3.5 text-primary" /> {spec?.name || 'Binary Tree'} Layout
+        </span>
+        <span className="px-2.5 py-0.5 rounded-xl bg-card border border-borderTheme text-primary font-bold text-[10px]">
+          {sorted.length} Nodes
+        </span>
+      </div>
+
+      {/* Recursive Multi-Level Tree View */}
+      <div className="w-full flex justify-center py-2 min-w-max">
+        {rootNode && <RenderNode node={rootNode} />}
+      </div>
+
+    </div>
   );
 };
 
