@@ -138,7 +138,7 @@ const SearchingLab = () => {
               variant="outline"
               size="sm"
               onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-              title={isSidebarCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar'}
+              title={isSidebarCollapsed ? 'Expand Engine Panel' : 'Collapse Engine Panel'}
               className="shrink-0"
             >
               {isSidebarCollapsed ? <PanelLeftOpen className="w-4 h-4" /> : <PanelLeftClose className="w-4 h-4" />}
@@ -229,6 +229,18 @@ const SearchingLab = () => {
                   events={events}
                   stepIndex={stepIndex}
                   target={target}
+                  setTarget={setTarget}
+                  datasetSize={datasetSize}
+                  setDatasetSize={setDatasetSize}
+                  onGenerateDataset={handleGenerateDataset}
+                  autoSort={autoSort}
+                  setAutoSort={setAutoSort}
+                  showMid={showMid}
+                  setShowMid={setShowMid}
+                  onImportCSV={handleImportCSV}
+                  algoKey={algoKey}
+                  setAlgoKey={setAlgoKey}
+                  algorithms={SEARCHING_ALGORITHMS_REGISTRY}
                   viewMode={viewMode}
                   spec={currentSpec}
                   isPlaying={isPlaying}
