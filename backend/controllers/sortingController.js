@@ -1,4 +1,4 @@
-const { execFile, exec } = require('child_process');
+const { execFile } = require('child_process');
 const path = require('path');
 const fs = require('fs');
 
@@ -25,7 +25,6 @@ const runSortingAlgorithm = async (req, res) => {
                     try {
                         const parsed = JSON.parse(stdout);
                         if (parsed.success) {
-                            // Embed stats snapshot into events if not present
                             let runStats = parsed.statistics || {};
                             parsed.events = parsed.events.map(ev => ({
                                 ...ev,
@@ -43,7 +42,6 @@ const runSortingAlgorithm = async (req, res) => {
                         console.error('Failed to parse C++ JSON output:', e);
                     }
                 }
-                // Fallback C++ Event Generator if process execution has issue
                 return runFallbackEngine(req, res, algorithm, arr, pivotStrategy);
             });
 
@@ -52,7 +50,6 @@ const runSortingAlgorithm = async (req, res) => {
             return;
         }
 
-        // Fallback C++ Step Generator
         return runFallbackEngine(req, res, algorithm, arr, pivotStrategy);
 
     } catch (error) {
@@ -61,7 +58,7 @@ const runSortingAlgorithm = async (req, res) => {
     }
 };
 
-// Fallback Engine Function producing identical C++ JSON structure
+// Fallback Engine Function producing identical C++ JSON structure for all 10 algorithms
 const runFallbackEngine = (req, res, algorithm, arr, pivotStrategy) => {
     const n = arr.length;
     let events = [];
@@ -232,15 +229,112 @@ const runFallbackEngine = (req, res, algorithm, arr, pivotStrategy) => {
         };
         quickSort(0, n - 1);
     }
-    // 6-20. Other algorithms
-    else {
-        complexity = { bestTime: 'O(N)', avgTime: 'O(N log N)', worstTime: 'O(N^2)', space: 'O(1)', stable: true, inPlace: true, adaptive: true };
-        for (let i = 0; i < n - 1; i++) {
-            for (let j = 0; j < n - i - 1; j++) {
-                comparisons++; reads += 2;
-                if (state[j] > state[j + 1]) {
-                    let tmp = state[j]; state[j] = state[j + 1]; state[j + 1] = tmp; swaps++; writes += 2;
-                    pushEvent('swap', j, j + 1, 0, 2, `Swapped arr[${j}] and arr[${j + 1}]`, state);
+    // 6. Heap Sort
+    else if (algorithm === 'heap_sort') {
+        complexity = { bestTime: 'O(N log N)', avgTime: 'O(N log N)', worstTime: 'O(N log N)', space: 'O(1)', stable: false, inPlace: true, adaptive: false };
+        const heapify = (size, idx) => {
+            let largest = idx;
+            let l = 2 * idx + 1;
+            let r = 2 * idx + 2;
+            if (l < size && state[l] > state[largest]) { comparisons++; largest = l; }
+            if (r < size && state[r] > state[largest]) { comparisons++; largest = r; }
+            if (largest !== idx) {
+                let tmp = state[idx]; state[idx] = state[largest]; state[largest] = tmp; swaps++;
+                pushEvent('heap_swap', idx, largest, state[idx], 3, `Sifted down node arr[${idx}] with child arr[${largest}]`, state);
+                heapify(size, largest);
+            }
+        };
+        for (let i = Math.floor(n / 2) - 1; i >= 0; i--) heapify(n, i);
+        for (let i = n - 1; i > 0; i--) {
+            let tmp = state[0]; state[0] = state[i]; state[i] = tmp; swaps++;
+            pushEvent('heap_swap', 0, i, state[0], 4, `Extracted Max Heap root arr[0] to position [${i}]`, state);
+            heapify(i, 0);
+        }
+    }
+    // 7. Shell Sort
+    else if (algorithm === 'shell_sort') {
+        complexity = { bestTime: 'O(N log N)', avgTime: 'O(N^(4/3))', worstTime: 'O(N^2)', space: 'O(1)', stable: false, inPlace: true, adaptive: true };
+        for (let gap = Math.floor(n / 2); gap > 0; gap = Math.floor(gap / 2)) {
+            for (let i = gap; i < n; i++) {
+                let temp = state[i]; reads++;
+                let j;
+                for (j = i; j >= gap && state[j - gap] > temp; j -= gap) {
+                    comparisons++;
+                    state[j] = state[j - gap]; writes++;
+                    pushEvent('swap', j, j - gap, temp, 3, `Gapped insertion shift with gap=${gap}`, state);
+                }
+                state[j] = temp; writes++;
+            }
+        }
+    }
+    // 8. Counting Sort
+    else if (algorithm === 'counting_sort') {
+        complexity = { bestTime: 'O(N+K)', avgTime: 'O(N+K)', worstTime: 'O(N+K)', space: 'O(K)', stable: true, inPlace: false, adaptive: false };
+        if (n > 0) {
+            let maxVal = Math.max(...state);
+            let minVal = Math.min(...state);
+            let range = maxVal - minVal + 1;
+            let count = new Array(range).fill(0);
+            for (let i = 0; i < n; i++) {
+                count[state[i] - minVal]++;
+                pushEvent('compare', i, -1, state[i], 2, `Counted frequency of key ${state[i]}`, state);
+            }
+            let idx = 0;
+            for (let i = 0; i < range; i++) {
+                while (count[i] > 0) {
+                    state[idx] = i + minVal; writes++;
+                    pushEvent('overwrite', idx, -1, state[idx], 3, `Placed key ${state[idx]} from frequency count`, state);
+                    idx++;
+                    count[i]--;
+                }
+            }
+        }
+    }
+    // 9. Radix Sort
+    else if (algorithm === 'radix_sort') {
+        complexity = { bestTime: 'O(N*K)', avgTime: 'O(N*K)', worstTime: 'O(N*K)', space: 'O(N+K)', stable: true, inPlace: false, adaptive: false };
+        if (n > 0) {
+            let maxVal = Math.max(...state);
+            for (let exp = 1; Math.floor(maxVal / exp) > 0; exp *= 10) {
+                let output = new Array(n);
+                let count = new Array(10).fill(0);
+                for (let i = 0; i < n; i++) {
+                    count[Math.floor(state[i] / exp) % 10]++;
+                    pushEvent('compare', i, -1, state[i], 2, `Digit bucket lookup for ${state[i]} at exp=${exp}`, state);
+                }
+                for (let i = 1; i < 10; i++) count[i] += count[i - 1];
+                for (let i = n - 1; i >= 0; i--) {
+                    let d = Math.floor(state[i] / exp) % 10;
+                    output[count[d] - 1] = state[i];
+                    count[d]--;
+                }
+                for (let i = 0; i < n; i++) {
+                    state[i] = output[i]; writes++;
+                    pushEvent('overwrite', i, -1, state[i], 3, `Sorted by digit exp=${exp}`, state);
+                }
+            }
+        }
+    }
+    // 10. Bucket Sort
+    else if (algorithm === 'bucket_sort') {
+        complexity = { bestTime: 'O(N+K)', avgTime: 'O(N+K)', worstTime: 'O(N^2)', space: 'O(N)', stable: true, inPlace: false, adaptive: true };
+        if (n > 0) {
+            let maxVal = Math.max(...state);
+            let minVal = Math.min(...state);
+            let bucketCount = 5;
+            let buckets = Array.from({ length: bucketCount }, () => []);
+            for (let i = 0; i < n; i++) {
+                let bIdx = Math.min(bucketCount - 1, Math.floor((state[i] - minVal) * bucketCount / (maxVal - minVal + 1)));
+                buckets[bIdx].push(state[i]);
+                pushEvent('compare', i, bIdx, state[i], 2, `Scattered ${state[i]} into bucket [${bIdx}]`, state);
+            }
+            let idx = 0;
+            for (let i = 0; i < bucketCount; i++) {
+                buckets[i].sort((a, b) => a - b);
+                for (let val of buckets[i]) {
+                    state[idx] = val; writes++;
+                    pushEvent('overwrite', idx, i, val, 3, `Gathered ${val} from bucket [${i}]`, state);
+                    idx++;
                 }
             }
         }
