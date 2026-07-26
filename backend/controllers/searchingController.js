@@ -68,7 +68,7 @@ const runFallbackEngine = (req, res, algorithm, arr, target) => {
         avgTime: 'O(log N)',
         worstTime: 'O(N)',
         space: 'O(1)',
-        requiresSorted: algorithm.includes('binary') || algorithm.includes('jump') || algorithm.includes('interpolation'),
+        requiresSorted: algorithm.includes('binary') || algorithm.includes('jump') || algorithm.includes('interpolation') || algorithm.includes('exponential') || algorithm.includes('fibonacci') || algorithm.includes('ternary'),
         stable: true,
         adaptive: true
     };
@@ -92,7 +92,7 @@ const runFallbackEngine = (req, res, algorithm, arr, target) => {
     if (algorithm === 'linear_search') {
         for (let i = 0; i < n; i++) {
             comparisons++; reads++; visitedCount++; pointerMoves++;
-            pushEvent('visit', i, -1, -1, state[i], 1, `Visiting element arr[${i}] = ${state[i]}`);
+            pushEvent('visit', i, -1, -1, state[i], 1, `Scanning element arr[${i}] = ${state[i]}`);
             if (state[i] === target) {
                 found = true; foundIndex = i;
                 pushEvent('found', i, -1, -1, state[i], 2, `Target ${target} FOUND at index [${i}]`);
@@ -101,7 +101,7 @@ const runFallbackEngine = (req, res, algorithm, arr, target) => {
         }
         if (!found) pushEvent('not_found', -1, -1, -1, 0, 3, `Target ${target} NOT FOUND in array.`);
     }
-    // 2. Binary Search
+    // 2. Binary Search & Variants
     else {
         state.sort((a, b) => a - b);
         let low = 0, high = n - 1;

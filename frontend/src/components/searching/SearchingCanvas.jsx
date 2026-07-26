@@ -1,29 +1,26 @@
 import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { ZoomIn, ZoomOut, Maximize2, Search, Target } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { ZoomIn, ZoomOut, Maximize2, Target } from 'lucide-react';
 
 export const SearchingCanvas = ({
   array,
   events,
   stepIndex,
   target,
-  viewMode = 'cells', // 'cells' | 'bars_vertical' | 'bars_horizontal' | 'timeline' | 'tree' | 'hashtable'
+  viewMode = 'cells', // 'cells' | 'bars_vertical' | 'bars_horizontal' | 'timeline'
   spec
 }) => {
   const [zoom, setZoom] = useState(1);
 
   const currentEvent = events[stepIndex] || {};
-  const { type, i, j, mid, value, desc, stats } = currentEvent;
+  const { type, i, j, mid, desc } = currentEvent;
   const currentArr = currentEvent.array || array;
 
   const maxVal = Math.max(...currentArr, 1);
-  const minVal = Math.min(...currentArr, 0);
 
   const isLow = i >= 0 && (type === 'visit' || type === 'mid_calc' || type === 'discard_left' || type === 'discard_right') ? i : null;
   const isHigh = j >= 0 && (type === 'visit' || type === 'mid_calc' || type === 'discard_left' || type === 'discard_right') ? j : null;
   const isMid = mid >= 0 && (type === 'mid_calc' || type === 'interpolation_formula' || type === 'recursive_call' || type === 'found') ? mid : null;
-  const isVisited = (idx) => idx === i || idx === j || idx === mid;
-  const isFound = type === 'found' && idx === mid;
   const isDiscarded = (idx) => isLow !== null && isHigh !== null && (idx < isLow || idx > isHigh);
 
   return (
@@ -148,7 +145,38 @@ export const SearchingCanvas = ({
             </div>
           )}
 
-          {/* 3. TIMELINE POINTER VIEW */}
+          {/* 3. HORIZONTAL BARS MODE */}
+          {viewMode === 'bars_horizontal' && (
+            <div className="w-full max-w-3xl space-y-2 py-4">
+              {currentArr.map((val, idx) => {
+                const widthPercent = Math.max(10, Math.round((val / maxVal) * 100));
+                const midActive = isMid === idx;
+                const foundActive = type === 'found' && (idx === mid || idx === i);
+                const discarded = isDiscarded(idx);
+
+                let barBg = 'bg-primary';
+                if (discarded) barBg = 'bg-surface opacity-30';
+                if (midActive) barBg = 'bg-warning shadow-md';
+                if (foundActive) barBg = 'bg-success shadow-md';
+
+                return (
+                  <div key={idx} className="flex items-center gap-3">
+                    <span className="text-xs font-mono text-textSecondary w-8">[{idx}]</span>
+                    <div className="flex-1 bg-surface rounded-r-xl overflow-hidden h-6 border border-borderTheme">
+                      <div
+                        style={{ width: `${widthPercent}%` }}
+                        className={`h-full ${barBg} flex items-center justify-end px-2 text-xs font-mono font-bold text-white transition-all`}
+                      >
+                        {val}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* 4. TIMELINE POINTER VIEW */}
           {viewMode === 'timeline' && (
             <div className="w-full max-w-3xl space-y-4 py-6">
               <div className="flex items-center justify-between text-xs font-mono font-bold text-textSecondary px-2">
