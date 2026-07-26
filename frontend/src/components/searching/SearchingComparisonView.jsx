@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Trophy, Target, ArrowLeft, RefreshCw, AlertCircle, CheckSquare, Square, Sliders, Play, Pause, ChevronLeft, ChevronRight, RotateCcw, CheckCircle2, XCircle, Zap, ShieldCheck, HardDrive, Sparkles } from 'lucide-react';
+import { Trophy, Target, ArrowLeft, RefreshCw, AlertCircle, CheckSquare, Square, Sliders, Play, Pause, ChevronLeft, ChevronRight, RotateCcw, CheckCircle2, XCircle, Zap, ShieldCheck } from 'lucide-react';
 import Card from '../common/Card';
 import Button from '../common/Button';
 import api from '../../api/axios';
@@ -354,7 +354,7 @@ export const SearchingComparisonView = ({
         </div>
       </Card>
 
-      {/* Grid of Comparing Visualizers (Mounting exact dedicated visualizers per card!) */}
+      {/* Grid of Comparing Visualizers (Mounting exact dedicated visualizers with compact={true}) */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {selectedAlgos.map((key) => {
           const algoSpec = algorithms[key] || { name: key };
@@ -363,7 +363,7 @@ export const SearchingComparisonView = ({
           const stats = data.statistics || {};
           const eventsList = data.events || [];
           const currentStep = eventsList[Math.min(stepIndex, eventsList.length - 1)] || {};
-          const currentArr = currentStep.array || array;
+          const currentArr = array;
 
           const isFastest = winners.fastest.includes(key);
           const isFewest = winners.fewestComp.includes(key);
@@ -388,22 +388,22 @@ export const SearchingComparisonView = ({
                 </span>
               </div>
 
-              {/* DEDICATED RENDERER CONTAINER */}
-              <div className="h-44 flex items-center justify-center bg-surface p-2 rounded-xl border border-borderTheme overflow-auto scrollbar-thin">
+              {/* DEDICATED COMPACT RENDERER CONTAINER */}
+              <div className="h-48 flex items-center justify-center bg-surface p-2 rounded-xl border border-borderTheme overflow-hidden">
                 {viewType === 'array' && (
                   <ArrayRenderer currentArr={currentArr} currentEvent={currentStep} viewMode="bars_vertical" />
                 )}
                 {viewType === 'hashtable' && (
-                  <HashRenderer currentArr={currentArr} currentEvent={currentStep} target={target} />
+                  <HashRenderer currentArr={currentArr} currentEvent={currentStep} target={target} compact={true} />
                 )}
                 {viewType === 'tree' && (
-                  <TreeRenderer currentArr={currentArr} currentEvent={currentStep} spec={algoSpec} />
+                  <TreeRenderer currentArr={currentArr} currentEvent={currentStep} spec={algoSpec} compact={true} />
                 )}
                 {viewType === 'trie' && (
-                  <TrieRenderer currentArr={currentArr} currentEvent={currentStep} target={target} />
+                  <TrieRenderer currentArr={currentArr} currentEvent={currentStep} target={target} compact={true} />
                 )}
                 {viewType === 'pattern' && (
-                  <PatternRenderer currentArr={currentArr} currentEvent={currentStep} target={target} spec={algoSpec} />
+                  <PatternRenderer currentArr={currentArr} currentEvent={currentStep} target={target} spec={algoSpec} compact={true} />
                 )}
                 {viewType === 'graph' && (
                   <GraphRenderer currentArr={currentArr} currentEvent={currentStep} spec={algoSpec} />

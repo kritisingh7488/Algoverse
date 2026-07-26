@@ -7,6 +7,7 @@ import { TreeRenderer } from './renderers/TreeRenderer';
 import { TrieRenderer } from './renderers/TrieRenderer';
 import { PatternRenderer } from './renderers/PatternRenderer';
 import { GraphRenderer } from './renderers/GraphRenderer';
+import { SearchingPlaybackBar } from './SearchingPlaybackBar';
 
 export const SearchingCanvas = ({
   array,
@@ -14,17 +15,23 @@ export const SearchingCanvas = ({
   stepIndex,
   target,
   viewMode = 'cells',
-  spec
+  spec,
+  isPlaying,
+  setIsPlaying,
+  onStepChange,
+  speed,
+  setSpeed,
+  onRestart
 }) => {
   const [zoom, setZoom] = useState(1);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const canvasRef = useRef(null);
 
   const currentEvent = events[stepIndex] || {};
-  const currentArr = currentEvent.array || array;
+  const currentArr = currentEvent.array && currentEvent.array.length > 0 ? currentEvent.array : array;
   const { desc } = currentEvent;
 
-  // Determine active viewType from Registry: 'array' | 'hashtable' | 'tree' | 'trie' | 'pattern' | 'graph'
+  // Determine active viewType: 'array' | 'hashtable' | 'tree' | 'trie' | 'pattern' | 'graph'
   const viewType = spec?.viewType || 'array';
 
   const toggleFullscreen = () => {
@@ -53,13 +60,13 @@ export const SearchingCanvas = ({
   return (
     <div
       ref={canvasRef}
-      className={`bg-card rounded-card border-2 border-borderTheme p-6 shadow-medium flex flex-col justify-between relative transition-all duration-300 font-body ${
-        isFullscreen ? 'fixed inset-0 z-50 rounded-none border-none p-8 overflow-auto bg-card' : 'min-h-[440px] overflow-hidden'
+      className={`bg-card rounded-card border-2 border-borderTheme p-5 shadow-medium flex flex-col justify-between relative transition-all duration-300 font-body ${
+        isFullscreen ? 'fixed inset-0 z-50 rounded-none border-none p-6 bg-card flex flex-col justify-between h-screen w-screen overflow-hidden' : 'min-h-[460px] overflow-hidden'
       }`}
     >
       
       {/* Header Toolbar */}
-      <div className="flex items-center justify-between text-xs font-heading font-bold text-textSecondary border-b-2 border-borderTheme pb-3 z-10">
+      <div className="flex items-center justify-between text-xs font-heading font-bold text-textSecondary border-b-2 border-borderTheme pb-3 shrink-0 z-10">
         <div className="flex items-center gap-2">
           <span className="w-3 h-3 rounded-full bg-primary animate-pulse" />
           <span className="text-sm font-bold text-textPrimary">{spec?.name?.toUpperCase() || 'SEARCHING VISUALIZER'}</span>
@@ -77,7 +84,7 @@ export const SearchingCanvas = ({
         {/* Zoom & Fullscreen Controls */}
         <div className="flex items-center gap-1">
           <button
-            onClick={() => setZoom(prev => Math.max(0.6, prev - 0.1))}
+            onClick={() => setZoom(prev => Math.max(0.5, prev - 0.1))}
             className="p-1.5 rounded-xl bg-surface border border-borderTheme hover:bg-card text-textPrimary transition-all shadow-xs"
             title="Zoom Out"
           >
@@ -85,7 +92,7 @@ export const SearchingCanvas = ({
           </button>
           <span className="text-[10px] font-mono w-10 text-center font-bold">{Math.round(zoom * 100)}%</span>
           <button
-            onClick={() => setZoom(prev => Math.min(1.6, prev + 0.1))}
+            onClick={() => setZoom(prev => Math.min(1.8, prev + 0.1))}
             className="p-1.5 rounded-xl bg-surface border border-borderTheme hover:bg-card text-textPrimary transition-all shadow-xs"
             title="Zoom In"
           >
@@ -95,17 +102,17 @@ export const SearchingCanvas = ({
           {/* Fullscreen Button */}
           <button
             onClick={toggleFullscreen}
-            className="p-1.5 rounded-xl bg-primary text-white hover:bg-primary/90 transition-all ml-1 shadow-soft flex items-center gap-1 text-[11px] font-bold px-2.5"
+            className="p-1.5 rounded-xl bg-primary text-white hover:bg-primary/90 transition-all ml-1 shadow-soft flex items-center gap-1 text-[11px] font-bold px-3"
             title={isFullscreen ? 'Exit Full Screen' : 'Full Screen View'}
           >
             {isFullscreen ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
-            <span className="hidden sm:inline">{isFullscreen ? 'Exit' : 'Full Screen'}</span>
+            <span>{isFullscreen ? 'Exit Full Screen' : 'Full Screen'}</span>
           </button>
         </div>
       </div>
 
       {/* Main Viewport Mounting Dedicated Renderer */}
-      <div className={`flex-1 overflow-auto py-6 px-2 flex items-center justify-center scrollbar-thin ${isFullscreen ? 'min-h-[70vh]' : 'min-h-[320px]'}`}>
+      <div className="flex-1 overflow-auto py-4 px-2 flex items-center justify-center scrollbar-thin">
         <div
           style={{ transform: `scale(${zoom})`, transformOrigin: 'center center' }}
           className="transition-transform duration-200 w-full flex justify-center items-center"
@@ -114,7 +121,7 @@ export const SearchingCanvas = ({
           {/* 1. ARRAY RENDERER */}
           {viewType === 'array' && (
             <ArrayRenderer
-              currentArr={currentArr}
+              currentArr={array}
               currentEvent={currentEvent}
               viewMode={viewMode}
             />
@@ -123,7 +130,7 @@ export const SearchingCanvas = ({
           {/* 2. HASH TABLE RENDERER */}
           {viewType === 'hashtable' && (
             <HashRenderer
-              currentArr={currentArr}
+              currentArr={array}
               currentEvent={currentEvent}
               target={target}
             />
@@ -132,7 +139,7 @@ export const SearchingCanvas = ({
           {/* 3. TREE RENDERER */}
           {viewType === 'tree' && (
             <TreeRenderer
-              currentArr={currentArr}
+              currentArr={array}
               currentEvent={currentEvent}
               spec={spec}
             />
@@ -141,7 +148,7 @@ export const SearchingCanvas = ({
           {/* 4. TRIE RENDERER */}
           {viewType === 'trie' && (
             <TrieRenderer
-              currentArr={currentArr}
+              currentArr={array}
               currentEvent={currentEvent}
               target={target}
             />
@@ -150,7 +157,7 @@ export const SearchingCanvas = ({
           {/* 5. PATTERN RENDERER */}
           {viewType === 'pattern' && (
             <PatternRenderer
-              currentArr={currentArr}
+              currentArr={array}
               currentEvent={currentEvent}
               target={target}
               spec={spec}
@@ -160,7 +167,7 @@ export const SearchingCanvas = ({
           {/* 6. GRAPH RENDERER */}
           {viewType === 'graph' && (
             <GraphRenderer
-              currentArr={currentArr}
+              currentArr={array}
               currentEvent={currentEvent}
               spec={spec}
             />
@@ -169,12 +176,28 @@ export const SearchingCanvas = ({
         </div>
       </div>
 
-      {/* Step Event Message */}
-      <div className="pt-3 border-t-2 border-borderTheme text-center">
+      {/* Step Event Description Banner */}
+      <div className="py-2 border-t-2 border-borderTheme text-center shrink-0">
         <p className="text-xs sm:text-sm font-mono font-bold text-textPrimary truncate px-4 py-1.5 rounded-2xl bg-surface border border-borderTheme inline-block max-w-full">
           {desc || 'Ready to execute C++ search algorithm.'}
         </p>
       </div>
+
+      {/* EMBEDDED PLAYBACK BAR WHEN IN FULL SCREEN MODE */}
+      {isFullscreen && (
+        <div className="pt-3 border-t-2 border-borderTheme shrink-0">
+          <SearchingPlaybackBar
+            isPlaying={isPlaying}
+            setIsPlaying={setIsPlaying}
+            stepIndex={stepIndex}
+            totalSteps={events.length}
+            onStepChange={onStepChange}
+            speed={speed}
+            setSpeed={setSpeed}
+            onRestart={onRestart}
+          />
+        </div>
+      )}
 
     </div>
   );

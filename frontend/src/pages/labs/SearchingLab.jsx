@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, AlertCircle, RefreshCw } from 'lucide-react';
+import { Search, AlertCircle, RefreshCw, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import AppLayout from '../../layouts/AppLayout';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
@@ -25,6 +25,7 @@ const SearchingLab = () => {
   const [showMid, setShowMid] = useState(true);
   const [selectedCompareAlgos, setSelectedCompareAlgos] = useState(['linear', 'binary', 'jump', 'interpolation']);
   const [isComparisonMode, setIsComparisonMode] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
   // Playback Stepper State
   const [isPlaying, setIsPlaying] = useState(false);
@@ -132,16 +133,27 @@ const SearchingLab = () => {
 
         {/* Top Header Card */}
         <Card className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="p-2 rounded-2xl bg-primary/15 text-primary border border-primary/30">
-                <Search className="w-5 h-5" />
-              </span>
-              <h1 className="text-2xl font-heading font-bold text-textPrimary">Searching Laboratory</h1>
+          <div className="flex items-center gap-3">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+              title={isSidebarCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar'}
+              className="shrink-0"
+            >
+              {isSidebarCollapsed ? <PanelLeftOpen className="w-4 h-4" /> : <PanelLeftClose className="w-4 h-4" />}
+            </Button>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="p-2 rounded-2xl bg-primary/15 text-primary border border-primary/30">
+                  <Search className="w-5 h-5" />
+                </span>
+                <h1 className="text-2xl font-heading font-bold text-textPrimary">Searching Laboratory</h1>
+              </div>
+              <p className="text-sm font-body text-textSecondary mt-1">
+                Deterministic C++ Searching Engine with real-time target pointers, search space reduction, and multi-search comparison.
+              </p>
             </div>
-            <p className="text-sm font-body text-textSecondary mt-1">
-              Deterministic C++ Searching Engine with real-time target pointers, search space reduction, and multi-search comparison.
-            </p>
           </div>
           <MascotRole role="teacher" activity="reading" dialogue={`Searching for ${target} in C++!`} className="w-20 h-20" />
         </Card>
@@ -179,37 +191,39 @@ const SearchingLab = () => {
               isFound={isFoundStatus}
             />
 
-            {/* 3-Column Laboratory Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            {/* Collapsible Laboratory Grid Layout */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 transition-all duration-300">
 
-              {/* LEFT: Engine Configuration */}
-              <div className="lg:col-span-3">
-                <SearchingConfigPanel
-                  algoKey={algoKey}
-                  setAlgoKey={setAlgoKey}
-                  algorithms={SEARCHING_ALGORITHMS_REGISTRY}
-                  target={target}
-                  setTarget={setTarget}
-                  datasetSize={datasetSize}
-                  setDatasetSize={setDatasetSize}
-                  viewMode={viewMode}
-                  setViewMode={setViewMode}
-                  autoSort={autoSort}
-                  setAutoSort={setAutoSort}
-                  showMid={showMid}
-                  setShowMid={setShowMid}
-                  selectedCompareAlgos={selectedCompareAlgos}
-                  setSelectedCompareAlgos={setSelectedCompareAlgos}
-                  isComparisonMode={isComparisonMode}
-                  setIsComparisonMode={setIsComparisonMode}
-                  onRunComparison={() => setIsComparisonMode(true)}
-                  onGenerateDataset={handleGenerateDataset}
-                  onImportCSV={handleImportCSV}
-                />
-              </div>
+              {/* LEFT: Engine Configuration Sidebar */}
+              {!isSidebarCollapsed && (
+                <div className="lg:col-span-3 transition-all duration-300">
+                  <SearchingConfigPanel
+                    algoKey={algoKey}
+                    setAlgoKey={setAlgoKey}
+                    algorithms={SEARCHING_ALGORITHMS_REGISTRY}
+                    target={target}
+                    setTarget={setTarget}
+                    datasetSize={datasetSize}
+                    setDatasetSize={setDatasetSize}
+                    viewMode={viewMode}
+                    setViewMode={setViewMode}
+                    autoSort={autoSort}
+                    setAutoSort={setAutoSort}
+                    showMid={showMid}
+                    setShowMid={setShowMid}
+                    selectedCompareAlgos={selectedCompareAlgos}
+                    setSelectedCompareAlgos={setSelectedCompareAlgos}
+                    isComparisonMode={isComparisonMode}
+                    setIsComparisonMode={setIsComparisonMode}
+                    onRunComparison={() => setIsComparisonMode(true)}
+                    onGenerateDataset={handleGenerateDataset}
+                    onImportCSV={handleImportCSV}
+                  />
+                </div>
+              )}
 
-              {/* CENTER: Canvas & Controls */}
-              <div className="lg:col-span-6 space-y-4">
+              {/* CENTER: Canvas & Playback Bar */}
+              <div className={`${isSidebarCollapsed ? 'lg:col-span-8' : 'lg:col-span-6'} space-y-4 transition-all duration-300`}>
                 <SearchingCanvas
                   array={array}
                   events={events}
@@ -217,6 +231,12 @@ const SearchingLab = () => {
                   target={target}
                   viewMode={viewMode}
                   spec={currentSpec}
+                  isPlaying={isPlaying}
+                  setIsPlaying={setIsPlaying}
+                  onStepChange={setStepIndex}
+                  speed={speed}
+                  setSpeed={setSpeed}
+                  onRestart={() => setStepIndex(0)}
                 />
 
                 <SearchingPlaybackBar
@@ -232,7 +252,7 @@ const SearchingLab = () => {
               </div>
 
               {/* RIGHT: Pseudocode & Concepts */}
-              <div className="lg:col-span-3">
+              <div className={`${isSidebarCollapsed ? 'lg:col-span-4' : 'lg:col-span-3'} transition-all duration-300`}>
                 <SearchingConceptPanel
                   spec={currentSpec}
                   stepLine={currentStep.line || 0}
