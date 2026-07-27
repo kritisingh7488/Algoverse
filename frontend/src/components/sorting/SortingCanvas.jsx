@@ -170,95 +170,22 @@ export const SortingCanvas = ({
             {isFullscreen ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
             <span>{isFullscreen ? 'Exit Full Screen' : 'Full Screen'}</span>
           </button>
+
+          {isFullscreen && (
+            <button
+              onClick={() => setShowFullControls(!showFullControls)}
+              className="p-1.5 rounded-xl bg-surface border border-borderTheme hover:bg-card text-textPrimary transition-all ml-1 shadow-xs text-[11px] font-bold px-3 flex items-center gap-1"
+              title={showFullControls ? 'Hide Studio Panel' : 'Show Studio Panel'}
+            >
+              <span>{showFullControls ? 'Hide Panel' : 'Show Panel'}</span>
+            </button>
+          )}
         </div>
       </div>
 
-      {/* FULL SCREEN INTERACTIVE CONTROLS OVERLAY */}
-      {isFullscreen && (
-        <div className="bg-surface p-3 rounded-2xl border-2 border-borderTheme my-2 shadow-soft space-y-3 shrink-0 text-xs font-mono">
-          
-          <div className="flex items-center justify-between">
-            <span className="font-heading font-bold text-textPrimary uppercase flex items-center gap-1.5">
-              <Sliders className="w-3.5 h-3.5 text-primary" /> Full Screen Sorting Controls
-            </span>
-            <button
-              onClick={() => setShowFullControls(!showFullControls)}
-              className="text-[10px] font-bold text-primary px-2 py-0.5 bg-card rounded-lg border border-borderTheme"
-            >
-              {showFullControls ? 'Hide Controls' : 'Show Controls'}
-            </button>
-          </div>
-
-          {showFullControls && (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2 border-t border-borderTheme">
-              
-              {/* Allowed View Modes for Active Algorithm */}
-              <div className="space-y-2">
-                <span className="font-bold text-textSecondary text-[10px] uppercase block">{spec?.name} View Mode</span>
-                <div className="flex gap-1">
-                  {allowedModes.map((m) => (
-                    <button
-                      key={m.key}
-                      onClick={() => setViewMode && setViewMode(m.key)}
-                      className={`flex-1 py-1 rounded-xl font-bold border transition-all ${
-                        activeViewMode === m.key ? 'bg-primary text-white border-primary' : 'bg-card text-textPrimary border-borderTheme'
-                      }`}
-                    >
-                      {m.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Dataset Size & Pattern Filters */}
-              <div className="space-y-2 border-x border-borderTheme px-3">
-                <span className="font-bold text-textSecondary text-[10px] uppercase block">Dataset Size & Input Pattern</span>
-                <div className="flex gap-1">
-                  {[10, 20, 50, 100, 250].map((s) => (
-                    <button
-                      key={s}
-                      onClick={() => onGenerateDataset && onGenerateDataset('random', s)}
-                      className={`flex-1 py-1 rounded-xl font-bold border transition-all ${
-                        datasetSize === s ? 'bg-primary text-white border-primary' : 'bg-card text-textPrimary border-borderTheme'
-                      }`}
-                    >
-                      {s}
-                    </button>
-                  ))}
-                </div>
-                <div className="grid grid-cols-2 gap-1 text-[10px]">
-                  <Button variant="outline" size="sm" onClick={() => onGenerateDataset && onGenerateDataset('random')}>Random</Button>
-                  <Button variant="outline" size="sm" onClick={() => onGenerateDataset && onGenerateDataset('reverse')}>Reverse</Button>
-                  <Button variant="outline" size="sm" onClick={() => onGenerateDataset('nearly')}>Nearly</Button>
-                  <Button variant="outline" size="sm" onClick={() => onGenerateDataset('duplicates')}>Duplicates</Button>
-                </div>
-              </div>
-
-              {/* Custom CSV Import */}
-              <div className="space-y-2">
-                <span className="font-bold text-textSecondary text-[10px] uppercase flex items-center gap-1">
-                  <Upload className="w-3 h-3 text-primary" /> Custom CSV Import
-                </span>
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    placeholder="e.g. 45, 12, 89, 34"
-                    value={csvInput}
-                    onChange={(e) => setCsvInput(e.target.value)}
-                    className="w-full px-3 py-1.5 rounded-xl bg-card border border-borderTheme text-xs font-bold text-textPrimary focus:outline-none focus:border-primary"
-                  />
-                  <Button variant="primary" size="sm" onClick={handleImport}>Import</Button>
-                </div>
-              </div>
-
-            </div>
-          )}
-
-        </div>
-      )}
-
-      {/* Main Visualization Viewport */}
-      <div className="flex-1 overflow-auto py-4 px-2 flex items-center justify-center scrollbar-thin">
+      <div className={`flex-1 w-full overflow-hidden flex ${isFullscreen ? 'flex-row' : 'flex-col'} relative`}>
+        {/* Main Visualization Viewport */}
+        <div className="flex-1 overflow-auto py-4 px-2 flex items-center justify-center scrollbar-thin">
         <div
           style={{ transform: `scale(${zoom})`, transformOrigin: 'center center' }}
           className="transition-transform duration-200 w-full flex justify-center items-end"
@@ -494,6 +421,109 @@ export const SortingCanvas = ({
 
         </div>
       </div>
+        {/* RIGHT-HAND STUDIO SIDE PANEL FOR FULL SCREEN MODE */}
+        {isFullscreen && showFullControls && (
+          <div className="w-80 lg:w-96 bg-surface/90 border-l border-borderTheme p-4 overflow-y-auto space-y-4 shadow-xl shrink-0 flex flex-col justify-between text-xs">
+            <div className="space-y-4">
+              {/* Card 1: Algorithm Selector */}
+              <div className="bg-card p-3 rounded-xl border border-borderTheme space-y-2">
+                <span className="font-heading font-bold text-textPrimary text-xs uppercase flex items-center gap-1.5">
+                  <Sliders className="w-3.5 h-3.5 text-primary" /> Algorithms ({algorithms ? Object.keys(algorithms).length : 0})
+                </span>
+                {setAlgoKey && algorithms && (
+                  <div className="flex items-center gap-1 flex-wrap max-h-40 overflow-y-auto">
+                    {Object.keys(algorithms).map((key) => (
+                      <button
+                        key={key}
+                        onClick={() => setAlgoKey(key)}
+                        className={`px-2 py-1 rounded-lg text-xs font-bold font-mono transition-all ${
+                          algoKey === key
+                            ? 'bg-primary text-white shadow-soft'
+                            : 'bg-surface border border-borderTheme text-textSecondary hover:text-textPrimary hover:border-primary/50'
+                        }`}
+                      >
+                        {algorithms[key].name}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Card 2: View Modes & Dataset Presets */}
+              <div className="bg-card p-3 rounded-xl border border-borderTheme space-y-3">
+                <span className="font-bold text-textSecondary text-[10px] uppercase block">{spec?.name} View Mode</span>
+                <div className="flex gap-1">
+                  {allowedModes.map((m) => (
+                    <button
+                      key={m.key}
+                      onClick={() => setViewMode && setViewMode(m.key)}
+                      className={`flex-1 py-1 rounded-xl font-bold border transition-all text-xs ${
+                        activeViewMode === m.key ? 'bg-primary text-white border-primary' : 'bg-surface text-textPrimary border-borderTheme'
+                      }`}
+                    >
+                      {m.label}
+                    </button>
+                  ))}
+                </div>
+
+                <span className="font-bold text-textSecondary text-[10px] uppercase block pt-2 border-t border-borderTheme">Dataset Size</span>
+                <div className="flex gap-1">
+                  {[10, 20, 50, 100, 250].map((s) => (
+                    <button
+                      key={s}
+                      onClick={() => onGenerateDataset && onGenerateDataset('random', s)}
+                      className={`flex-1 py-1 rounded-xl font-bold border transition-all text-xs ${
+                        datasetSize === s ? 'bg-primary text-white border-primary' : 'bg-surface text-textPrimary border-borderTheme'
+                      }`}
+                    >
+                      {s}
+                    </button>
+                  ))}
+                </div>
+
+                <span className="font-bold text-textSecondary text-[10px] uppercase block pt-1">Patterns</span>
+                <div className="grid grid-cols-2 gap-1 text-[10px]">
+                  <Button variant="outline" size="sm" onClick={() => onGenerateDataset && onGenerateDataset('random')}>Random</Button>
+                  <Button variant="outline" size="sm" onClick={() => onGenerateDataset && onGenerateDataset('reverse')}>Reverse</Button>
+                  <Button variant="outline" size="sm" onClick={() => onGenerateDataset('nearly')}>Nearly</Button>
+                  <Button variant="outline" size="sm" onClick={() => onGenerateDataset('duplicates')}>Duplicates</Button>
+                </div>
+              </div>
+
+              {/* Card 3: Custom CSV Import */}
+              <div className="bg-card p-3 rounded-xl border border-borderTheme space-y-2">
+                <span className="font-bold text-textSecondary text-[10px] uppercase flex items-center gap-1">
+                  <Upload className="w-3 h-3 text-primary" /> Custom CSV Import
+                </span>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    placeholder="e.g. 45, 12, 89, 34"
+                    value={csvInput}
+                    onChange={(e) => setCsvInput(e.target.value)}
+                    className="w-full px-3 py-1.5 rounded-xl bg-surface border border-borderTheme text-xs font-bold text-textPrimary focus:outline-none focus:border-primary"
+                  />
+                  <Button variant="primary" size="sm" onClick={handleImport}>Import</Button>
+                </div>
+              </div>
+            </div>
+
+            {/* Embedded Playback Bar at bottom of side panel */}
+            <div className="pt-3 border-t border-borderTheme">
+              <SortingPlaybackBar
+                isPlaying={isPlaying}
+                setIsPlaying={setIsPlaying}
+                stepIndex={stepIndex}
+                totalSteps={events.length}
+                onStepChange={onStepChange}
+                speed={speed}
+                setSpeed={setSpeed}
+                onRestart={onRestart}
+              />
+            </div>
+          </div>
+        )}
+      </div>
 
       {/* Step Event Description Bar */}
       <div className="py-2 border-t-2 border-borderTheme text-center shrink-0">
@@ -501,22 +531,6 @@ export const SortingCanvas = ({
           {desc || 'Ready to execute C++ sorting algorithm.'}
         </p>
       </div>
-
-      {/* EMBEDDED PLAYBACK BAR WHEN IN FULL SCREEN MODE */}
-      {isFullscreen && (
-        <div className="pt-3 border-t-2 border-borderTheme shrink-0">
-          <SortingPlaybackBar
-            isPlaying={isPlaying}
-            setIsPlaying={setIsPlaying}
-            stepIndex={stepIndex}
-            totalSteps={events.length}
-            onStepChange={onStepChange}
-            speed={speed}
-            setSpeed={setSpeed}
-            onRestart={onRestart}
-          />
-        </div>
-      )}
 
     </div>
   );

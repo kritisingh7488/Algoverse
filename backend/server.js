@@ -7,6 +7,7 @@ const sortingRoutes = require('./routes/sortingRoutes');
 const searchingRoutes = require('./routes/searchingRoutes');
 const dsRoutes = require('./routes/dsRoutes');
 const treeRoutes = require('./routes/treeRoutes');
+const graphRoutes = require('./routes/graphRoutes');
 
 dotenv.config();
 
@@ -24,12 +25,24 @@ app.get('/', (req, res) => {
     res.json({ message: 'AlgoVerse API is running' });
 });
 
+// Health Check Route
+app.get('/api/v1/health', (req, res) => {
+    const dbConnected = mongoose.connection.readyState === 1;
+    res.json({ 
+        status: 'OK',
+        database: dbConnected ? 'connected' : 'disconnected',
+        timestamp: new Date().toISOString()
+    });
+});
+
 // Routes
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/sorting', sortingRoutes);
 app.use('/api/v1/searching', searchingRoutes);
 app.use('/api/v1/ds', dsRoutes);
 app.use('/api/v1/tree', treeRoutes);
+app.use('/api/v1/graph', graphRoutes);
+
 
 // Database Connection & Server Listener
 const PORT = process.env.PORT || 5000;

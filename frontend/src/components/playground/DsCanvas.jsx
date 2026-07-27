@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowRight, ArrowLeftRight, RotateCcw, ZoomIn, ZoomOut, Maximize2, Minimize2, Sliders, Upload, Search } from 'lucide-react';
 import { DsPlaybackBar } from './DsPlaybackBar';
+import { DsControls } from './DsControls';
 import Button from '../common/Button';
 
 export const DsCanvas = ({
@@ -10,6 +11,7 @@ export const DsCanvas = ({
   items,
   activeHighlight,
   pointers = {},
+  sequence = [],
   spec,
   specs = {},
   onLoadPreset,
@@ -22,7 +24,8 @@ export const DsCanvas = ({
   onStepChange,
   speed,
   setSpeed,
-  onRestart
+  onRestart,
+  onExecuteOp
 }) => {
   const [zoom, setZoom] = useState(1);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -142,62 +145,24 @@ export const DsCanvas = ({
             {isFullscreen ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
             <span>{isFullscreen ? 'Exit Full Screen' : 'Full Screen'}</span>
           </button>
+
+          {isFullscreen && (
+            <button
+              onClick={() => setShowFullControls(!showFullControls)}
+              className="p-1.5 rounded-xl bg-surface border border-borderTheme hover:bg-card text-textPrimary transition-all ml-1 shadow-xs text-[11px] font-bold px-3 flex items-center gap-1"
+              title={showFullControls ? 'Hide Studio Panel' : 'Show Studio Panel'}
+            >
+              <span>{showFullControls ? 'Hide Panel' : 'Show Panel'}</span>
+            </button>
+          )}
         </div>
       </div>
 
-      {/* FULL SCREEN INTERACTIVE CONTROLS OVERLAY */}
-      {isFullscreen && (
-        <div className="bg-surface p-3 rounded-2xl border-2 border-borderTheme my-2 shadow-soft space-y-3 shrink-0 text-xs font-mono">
-          <div className="flex items-center justify-between">
-            <span className="font-heading font-bold text-textPrimary uppercase flex items-center gap-1.5">
-              <Sliders className="w-3.5 h-3.5 text-primary" /> Full Screen Data Structure Controls & Presets
-            </span>
-            <button
-              onClick={() => setShowFullControls(!showFullControls)}
-              className="text-[10px] font-bold text-primary px-2 py-0.5 bg-card rounded-lg border border-borderTheme"
-            >
-              {showFullControls ? 'Hide Controls' : 'Show Controls'}
-            </button>
-          </div>
-
-          {showFullControls && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-borderTheme">
-              
-              {/* Presets & Actions */}
-              <div className="space-y-2">
-                <span className="font-bold text-textSecondary text-[10px] uppercase block">Load Presets</span>
-                <div className="grid grid-cols-4 gap-1 text-[10px]">
-                  <Button variant="outline" size="sm" onClick={() => onLoadPreset && onLoadPreset('sorted')}>Sorted</Button>
-                  <Button variant="outline" size="sm" onClick={() => onLoadPreset && onLoadPreset('reverse')}>Reverse</Button>
-                  <Button variant="outline" size="sm" onClick={() => onLoadPreset && onLoadPreset('nearly')}>Nearly</Button>
-                  <Button variant="outline" size="sm" onClick={() => onClear && onClear()}>Clear All</Button>
-                </div>
-              </div>
-
-              {/* CSV Import */}
-              <div className="space-y-2">
-                <span className="font-bold text-textSecondary text-[10px] uppercase flex items-center gap-1">
-                  <Upload className="w-3 h-3 text-primary" /> Custom CSV Import
-                </span>
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    placeholder="e.g. 45, 12, 89, 34"
-                    value={csvInput}
-                    onChange={(e) => setCsvInput(e.target.value)}
-                    className="w-full px-3 py-1.5 rounded-xl bg-card border border-borderTheme text-xs font-bold text-textPrimary focus:outline-none focus:border-primary"
-                  />
-                  <Button variant="primary" size="sm" onClick={handleImport}>Import</Button>
-                </div>
-              </div>
-
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Canvas Node Viewport Container */}
-      <div className="flex-1 overflow-auto py-6 px-4 flex items-center justify-center min-h-[260px] relative scrollbar-thin">
+      <div className={`flex-1 w-full overflow-hidden flex ${isFullscreen ? 'flex-row' : 'flex-col'} relative`}>
+        {/* Left Column: Canvas Viewport + Traversal/Output Banner */}
+        <div className="flex-1 flex flex-col h-full overflow-hidden">
+          {/* Canvas Node Viewport Container */}
+          <div className="flex-1 overflow-auto py-6 px-4 flex items-center justify-center min-h-[260px] relative scrollbar-thin">
         <div
           style={{ transform: `scale(${zoom})`, transformOrigin: 'center center' }}
           className="transition-transform duration-200 w-full flex justify-center"
@@ -440,22 +405,122 @@ export const DsCanvas = ({
         </div>
       </div>
 
-      {/* EMBEDDED PLAYBACK BAR WHEN IN FULL SCREEN MODE */}
-      {isFullscreen && (
-        <div className="pt-3 border-t-2 border-borderTheme shrink-0">
-          <DsPlaybackBar
-            isPlaying={isPlaying}
-            setIsPlaying={setIsPlaying}
-            stepIndex={stepIndex}
-            totalSteps={totalSteps}
-            onStepChange={onStepChange}
-            speed={speed}
-            setSpeed={setSpeed}
-            onRestart={onRestart}
-          />
+          {/* TRAVERSAL & OUTPUT LINE BANNER WITH ANIMATION */}
+          <div className="py-2.5 px-4 border-t-2 border-borderTheme bg-surface/90 flex items-center gap-2 overflow-x-auto text-xs font-mono shrink-0 shadow-inner">
+            <span className="text-textSecondary font-bold shrink-0 uppercase text-[11px] flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-accent animate-pulse inline-block" />
+              Output / Traversal:
+            </span>
+            <AnimatePresence>
+              {sequence && sequence.length > 0 ? (
+                sequence.map((v, i) => (
+                  <motion.span
+                    key={`${i}-${v}`}
+                    initial={{ scale: 0.5, opacity: 0, x: -10 }}
+                    animate={{ scale: 1, opacity: 1, x: 0 }}
+                    exit={{ scale: 0.5, opacity: 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="px-2.5 py-1 rounded-xl bg-primary text-white font-bold shrink-0 shadow-soft border border-primary/40 flex items-center gap-1.5"
+                  >
+                    <span>{v}</span>
+                    <span className="text-[9px] opacity-75 font-mono">#{i + 1}</span>
+                  </motion.span>
+                ))
+              ) : (
+                <span className="text-textSecondary italic text-[11px]">
+                  Click Traverse (Play) or Search to animate and see output sequence
+                </span>
+              )}
+            </AnimatePresence>
+          </div>
         </div>
-      )}
+        {/* RIGHT-HAND STUDIO SIDE PANEL FOR FULL SCREEN MODE */}
+        {isFullscreen && showFullControls && (
+          <div className="w-80 lg:w-96 bg-surface/90 border-l border-borderTheme p-4 overflow-y-auto space-y-4 shadow-xl shrink-0 flex flex-col justify-between text-xs">
+            <div className="space-y-4">
+              {/* Card 1: Data Structure Selector & Presets */}
+              <div className="bg-card p-3 rounded-xl border border-borderTheme space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="font-heading font-bold text-textPrimary text-xs uppercase flex items-center gap-1.5">
+                    <Sliders className="w-3.5 h-3.5 text-primary" /> Data Structures
+                  </span>
+                </div>
+                {setStructureKey && specs && (
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    {Object.keys(specs).map((key) => (
+                      <button
+                        key={key}
+                        onClick={() => setStructureKey(key)}
+                        className={`px-2 py-1 rounded-lg text-xs font-bold font-mono transition-all ${
+                          structureKey === key
+                            ? 'bg-primary text-white shadow-soft'
+                            : 'bg-surface border border-borderTheme text-textSecondary hover:text-textPrimary hover:border-primary/50'
+                        }`}
+                      >
+                        {specs[key].name}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                <div className="pt-2 border-t border-borderTheme">
+                  <span className="font-bold text-textSecondary text-[10px] uppercase block mb-1">Presets</span>
+                  <div className="grid grid-cols-4 gap-1 text-[10px]">
+                    <Button variant="outline" size="sm" onClick={() => onLoadPreset && onLoadPreset('sorted')}>Sorted</Button>
+                    <Button variant="outline" size="sm" onClick={() => onLoadPreset && onLoadPreset('reverse')}>Reverse</Button>
+                    <Button variant="outline" size="sm" onClick={() => onLoadPreset && onLoadPreset('nearly')}>Nearly</Button>
+                    <Button variant="outline" size="sm" onClick={() => onClear && onClear()}>Clear</Button>
+                  </div>
+                </div>
+              </div>
 
+              {/* Card 2: Operations & Controls */}
+              {onExecuteOp && (
+                <div className="bg-card p-3 rounded-xl border border-borderTheme space-y-2">
+                  <span className="font-heading font-bold text-textPrimary text-xs uppercase block">
+                    Operations
+                  </span>
+                  <DsControls
+                    structureKey={structureKey}
+                    onExecuteOp={onExecuteOp}
+                    items={items}
+                  />
+                </div>
+              )}
+
+              {/* Card 3: Custom CSV Import */}
+              <div className="bg-card p-3 rounded-xl border border-borderTheme space-y-2">
+                <span className="font-bold text-textSecondary text-[10px] uppercase flex items-center gap-1">
+                  <Upload className="w-3 h-3 text-primary" /> Custom CSV Import
+                </span>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    placeholder="e.g. 45, 12, 89, 34"
+                    value={csvInput}
+                    onChange={(e) => setCsvInput(e.target.value)}
+                    className="w-full px-3 py-1.5 rounded-xl bg-surface border border-borderTheme text-xs font-bold text-textPrimary focus:outline-none focus:border-primary"
+                  />
+                  <Button variant="primary" size="sm" onClick={handleImport}>Import</Button>
+                </div>
+              </div>
+            </div>
+
+            {/* Embedded Playback Bar at bottom of side panel */}
+            <div className="pt-3 border-t border-borderTheme">
+              <DsPlaybackBar
+                isPlaying={isPlaying}
+                setIsPlaying={setIsPlaying}
+                stepIndex={stepIndex}
+                totalSteps={totalSteps}
+                onStepChange={onStepChange}
+                speed={speed}
+                setSpeed={setSpeed}
+                onRestart={onRestart}
+              />
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 };

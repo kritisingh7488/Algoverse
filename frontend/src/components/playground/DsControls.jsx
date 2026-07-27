@@ -2,13 +2,17 @@ import React, { useState } from 'react';
 import { Plus, Trash2, Search, ArrowLeftRight, Eye, Sparkles } from 'lucide-react';
 import Button from '../common/Button';
 
-export const DsControls = ({ structureKey, onExecuteOp }) => {
+export const DsControls = ({ structureKey, onExecuteOp, items = [] }) => {
   const [valInput, setValInput] = useState('');
   const [idxInput, setIdxInput] = useState('');
 
-  const getVal = () => {
+  const getVal = (opName) => {
     const parsed = parseInt(valInput);
-    return !isNaN(parsed) ? parsed : Math.floor(Math.random() * 90) + 10;
+    if (!isNaN(parsed)) return parsed;
+    if (opName === 'search' && items && items.length > 0) {
+      return items[Math.floor(Math.random() * items.length)];
+    }
+    return Math.floor(Math.random() * 90) + 10;
   };
 
   const getIdx = () => {
@@ -19,7 +23,7 @@ export const DsControls = ({ structureKey, onExecuteOp }) => {
 
   const handleOp = (opName, customArgs = {}) => {
     const specifiedIdx = getIdx();
-    onExecuteOp(opName, { val: getVal(), idx: specifiedIdx, ...customArgs });
+    onExecuteOp(opName, { val: getVal(opName), idx: specifiedIdx, ...customArgs });
     setValInput('');
     setIdxInput('');
   };
@@ -162,6 +166,9 @@ export const DsControls = ({ structureKey, onExecuteOp }) => {
         {/* Search Action */}
         <Button variant="outline" size="sm" onClick={() => handleOp('search')}>
           <Search className="w-3.5 h-3.5 mr-1" /> Search
+        </Button>
+        <Button variant="secondary" size="sm" onClick={() => handleOp('traverse')} title="Traverse all elements step by step">
+          Traverse (Play)
         </Button>
       </div>
     </div>

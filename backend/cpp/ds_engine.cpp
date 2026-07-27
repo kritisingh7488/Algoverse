@@ -22,6 +22,7 @@ struct DSEvent {
     int line = 0;
     string desc;
     vector<int> currentItems;
+    vector<int> sequence;
 };
 
 // Result Structure
@@ -70,6 +71,11 @@ string toJSON(const DSResult& res) {
         for (size_t m = 0; m < ev.currentItems.size(); ++m) {
             ss << ev.currentItems[m] << (m + 1 < ev.currentItems.size() ? "," : "");
         }
+        ss << "],\n";
+        ss << "      \"sequence\": [";
+        for (size_t m = 0; m < ev.sequence.size(); ++m) {
+            ss << ev.sequence[m] << (m + 1 < ev.sequence.size() ? "," : "");
+        }
         ss << "]\n";
         ss << "    }" << (k + 1 < res.events.size() ? "," : "") << "\n";
     }
@@ -79,8 +85,8 @@ string toJSON(const DSResult& res) {
     return ss.str();
 }
 
-void pushEvent(DSResult& res, const vector<int>& items, string type, int highlight, int p1, string lbl1, int p2, string lbl2, int val, int line, string desc) {
-    res.events.push_back({type, highlight, p1, p2, lbl1, lbl2, val, line, desc, items});
+void pushEvent(DSResult& res, const vector<int>& items, string type, int highlight, int p1, string lbl1, int p2, string lbl2, int val, int line, string desc, const vector<int>& seq = {}) {
+    res.events.push_back({type, highlight, p1, p2, lbl1, lbl2, val, line, desc, items, seq});
 }
 
 // 1. Dynamic Array C++ Engine
@@ -115,6 +121,43 @@ DSResult runArrayOp(vector<int> items, string op, int val, int idx, string dir) 
     } else if (op == "sort") {
         sort(items.begin(), items.end());
         pushEvent(res, items, "sort", -1, -1, "", -1, "", 0, 1, "C++ Array: Sorted elements in ascending numerical order.");
+    } else if (op == "search") {
+        vector<int> visited;
+        bool found = false;
+        for (int i = 0; i < (int)items.size(); ++i) {
+            visited.push_back(items[i]);
+            if (items[i] == val) {
+                pushEvent(res, items, "found", i, i, "match", -1, "", val, 3, "C++ Array: Found target " + to_string(val) + " at index [" + to_string(i) + "].", visited);
+                found = true;
+                break;
+            } else {
+                pushEvent(res, items, "compare", i, i, "curr", -1, "", items[i], 2, "C++ Array: Comparing element " + to_string(items[i]) + " with target " + to_string(val) + ".", visited);
+            }
+        }
+        if (!found) {
+            pushEvent(res, items, "not_found", -1, -1, "", -1, "", val, 4, "C++ Array: Target " + to_string(val) + " not found in array.", visited);
+        }
+    } else if (op == "traverse") {
+        vector<int> visited;
+        for (int i = 0; i < (int)items.size(); ++i) {
+            visited.push_back(items[i]);
+            pushEvent(res, items, "visit", i, i, "curr", -1, "", items[i], 2, "C++ Array: Visiting element at index [" + to_string(i) + "]: value is " + to_string(items[i]) + ".", visited);
+        }
+        pushEvent(res, items, "complete", -1, -1, "", -1, "", 0, 5, "C++ Array: Traversal completed across all " + to_string(items.size()) + " elements.", visited);
+    } else if (op == "rotate") {
+        if (!items.empty()) {
+            if (dir == "right") {
+                int last = items.back();
+                items.pop_back();
+                items.insert(items.begin(), last);
+                pushEvent(res, items, "rotate_right", 0, 0, "rotated", -1, "", last, 2, "C++ Array: Rotated right by 1.");
+            } else {
+                int first = items.front();
+                items.erase(items.begin());
+                items.push_back(first);
+                pushEvent(res, items, "rotate_left", (int)items.size() - 1, (int)items.size() - 1, "rotated", -1, "", first, 2, "C++ Array: Rotated left by 1.");
+            }
+        }
     }
 
     res.elementsCount = items.size();
@@ -147,6 +190,29 @@ DSResult runStackOp(vector<int> items, string op, int val, int cap = 8) {
         if (!items.empty()) {
             pushEvent(res, items, "peek", (int)items.size() - 1, (int)items.size() - 1, "top", -1, "", items.back(), 2, "C++ Stack: Top element is " + to_string(items.back()) + ".");
         }
+    } else if (op == "search") {
+        vector<int> visited;
+        bool found = false;
+        for (int i = (int)items.size() - 1; i >= 0; --i) {
+            visited.push_back(items[i]);
+            if (items[i] == val) {
+                pushEvent(res, items, "found", i, i, "top", -1, "", val, 3, "C++ Stack: Found target " + to_string(val) + " at depth from top.", visited);
+                found = true;
+                break;
+            } else {
+                pushEvent(res, items, "compare", i, i, "inspect", -1, "", items[i], 2, "C++ Stack: Inspecting element " + to_string(items[i]) + " from top.", visited);
+            }
+        }
+        if (!found) {
+            pushEvent(res, items, "not_found", -1, -1, "", -1, "", val, 4, "C++ Stack: Target " + to_string(val) + " not found in stack.", visited);
+        }
+    } else if (op == "traverse") {
+        vector<int> visited;
+        for (int i = (int)items.size() - 1; i >= 0; --i) {
+            visited.push_back(items[i]);
+            pushEvent(res, items, "visit", i, i, "curr", -1, "", items[i], 2, "C++ Stack: Traversing stack element from top: value is " + to_string(items[i]) + ".", visited);
+        }
+        pushEvent(res, items, "complete", -1, -1, "", -1, "", 0, 5, "C++ Stack: Traversal completed across all " + to_string(items.size()) + " elements.", visited);
     }
 
     res.elementsCount = items.size();
@@ -167,7 +233,7 @@ DSResult runQueueOp(vector<int> items, string op, int val, int cap = 8) {
             items.push_back(val);
             pushEvent(res, items, "enqueue", (int)items.size() - 1, 0, "front", (int)items.size() - 1, "rear", val, 2, "C++ Queue: Enqueued " + to_string(val) + " at Rear.");
         }
-    } else if (op == "dequeue") {
+    } else if (op == "dequeue" || op == "popFront") {
         if (items.empty()) {
             pushEvent(res, items, "underflow", -1, -1, "", -1, "", 0, 1, "C++ Queue: UNDERFLOW! Queue is empty.");
         } else {
@@ -175,6 +241,41 @@ DSResult runQueueOp(vector<int> items, string op, int val, int cap = 8) {
             items.erase(items.begin());
             pushEvent(res, items, "dequeue", 0, 0, "front", max(0, (int)items.size() - 1), "rear", deq, 3, "C++ Queue: Dequeued front element " + to_string(deq) + ".");
         }
+    } else if (op == "pushFront") {
+        items.insert(items.begin(), val);
+        pushEvent(res, items, "push_front", 0, 0, "front", (int)items.size() - 1, "rear", val, 2, "C++ Deque: Pushed " + to_string(val) + " at Front.");
+    } else if (op == "pushBack") {
+        items.push_back(val);
+        pushEvent(res, items, "push_back", (int)items.size() - 1, 0, "front", (int)items.size() - 1, "rear", val, 2, "C++ Deque: Pushed " + to_string(val) + " at Back.");
+    } else if (op == "popBack") {
+        if (!items.empty()) {
+            int popped = items.back();
+            items.pop_back();
+            pushEvent(res, items, "pop_back", max(0, (int)items.size() - 1), 0, "front", max(0, (int)items.size() - 1), "rear", popped, 3, "C++ Deque: Popped back element " + to_string(popped) + ".");
+        }
+    } else if (op == "search") {
+        vector<int> visited;
+        bool found = false;
+        for (int i = 0; i < (int)items.size(); ++i) {
+            visited.push_back(items[i]);
+            if (items[i] == val) {
+                pushEvent(res, items, "found", i, 0, "front", (int)items.size() - 1, "rear", val, 3, "C++ Queue: Found target " + to_string(val) + " at position [" + to_string(i) + "].", visited);
+                found = true;
+                break;
+            } else {
+                pushEvent(res, items, "compare", i, 0, "front", (int)items.size() - 1, "rear", items[i], 2, "C++ Queue: Inspecting element " + to_string(items[i]) + ".", visited);
+            }
+        }
+        if (!found) {
+            pushEvent(res, items, "not_found", -1, 0, "front", (int)items.size() - 1, "rear", val, 4, "C++ Queue: Target " + to_string(val) + " not found in queue.", visited);
+        }
+    } else if (op == "traverse") {
+        vector<int> visited;
+        for (int i = 0; i < (int)items.size(); ++i) {
+            visited.push_back(items[i]);
+            pushEvent(res, items, "visit", i, 0, "front", (int)items.size() - 1, "rear", items[i], 2, "C++ Queue: Traversing queue element: value is " + to_string(items[i]) + ".", visited);
+        }
+        pushEvent(res, items, "complete", -1, 0, "front", (int)items.size() - 1, "rear", 0, 5, "C++ Queue: Traversal completed across all " + to_string(items.size()) + " elements.", visited);
     }
 
     res.elementsCount = items.size();
@@ -206,6 +307,29 @@ DSResult runLinkedListOp(string key, vector<int> items, string op, int val) {
             items.pop_back();
             pushEvent(res, items, "deleteTail", (int)items.size() - 1, 0, "head", max(0, (int)items.size() - 1), "tail", removed, 2, "C++ " + key + ": Deleted Tail node (" + to_string(removed) + ").");
         }
+    } else if (op == "search") {
+        vector<int> visited;
+        bool found = false;
+        for (int i = 0; i < (int)items.size(); ++i) {
+            visited.push_back(items[i]);
+            if (items[i] == val) {
+                pushEvent(res, items, "found", i, 0, "head", (int)items.size() - 1, "tail", val, 3, "C++ " + key + ": Found target " + to_string(val) + " at node index [" + to_string(i) + "].", visited);
+                found = true;
+                break;
+            } else {
+                pushEvent(res, items, "compare", i, 0, "head", (int)items.size() - 1, "tail", items[i], 2, "C++ " + key + ": Traversing node [" + to_string(i) + "]: value is " + to_string(items[i]) + ".", visited);
+            }
+        }
+        if (!found) {
+            pushEvent(res, items, "not_found", -1, 0, "head", (int)items.size() - 1, "tail", val, 4, "C++ " + key + ": Target " + to_string(val) + " not found in linked list.", visited);
+        }
+    } else if (op == "traverse") {
+        vector<int> visited;
+        for (int i = 0; i < (int)items.size(); ++i) {
+            visited.push_back(items[i]);
+            pushEvent(res, items, "visit", i, 0, "head", (int)items.size() - 1, "tail", items[i], 2, "C++ " + key + ": Visiting node [" + to_string(i) + "]: value is " + to_string(items[i]) + ".", visited);
+        }
+        pushEvent(res, items, "complete", -1, 0, "head", (int)items.size() - 1, "tail", 0, 5, "C++ " + key + ": Traversal completed across all " + to_string(items.size()) + " nodes.", visited);
     }
 
     res.elementsCount = items.size();
@@ -259,6 +383,48 @@ DSResult runHeapOp(string key, vector<int> items, string op, int val, string hea
                 } else break;
             }
         }
+    } else if (op == "heapify") {
+        int n = items.size();
+        pushEvent(res, items, "start", 0, 0, "root", -1, "", 0, 1, "C++ Heap: Starting O(N) bottom-up heapify.");
+        for (int i = n / 2 - 1; i >= 0; --i) {
+            int curr = i;
+            while (true) {
+                int left = 2 * curr + 1;
+                int right = 2 * curr + 2;
+                int target = curr;
+                if (left < n && (isMin ? (items[left] < items[target]) : (items[left] > items[target]))) target = left;
+                if (right < n && (isMin ? (items[right] < items[target]) : (items[right] > items[target]))) target = right;
+                if (target != curr) {
+                    swap(items[curr], items[target]);
+                    pushEvent(res, items, "heapify_swap", target, curr, "node", target, "child", items[target], 3, "C++ Heap: Sifting down node [" + to_string(curr) + "].");
+                    curr = target;
+                } else break;
+            }
+        }
+        pushEvent(res, items, "heapified", 0, 0, "root", -1, "", 0, 5, "C++ Heap: Heapify complete in O(N) time.");
+    } else if (op == "search") {
+        vector<int> visited;
+        bool found = false;
+        for (int i = 0; i < (int)items.size(); ++i) {
+            visited.push_back(items[i]);
+            if (items[i] == val) {
+                pushEvent(res, items, "found", i, 0, "root", i, "match", val, 3, "C++ Heap: Found target " + to_string(val) + " at heap index [" + to_string(i) + "].", visited);
+                found = true;
+                break;
+            } else {
+                pushEvent(res, items, "compare", i, 0, "root", i, "curr", items[i], 2, "C++ Heap: Inspecting node [" + to_string(i) + "]: value is " + to_string(items[i]) + ".", visited);
+            }
+        }
+        if (!found) {
+            pushEvent(res, items, "not_found", -1, 0, "root", -1, "", val, 4, "C++ Heap: Target " + to_string(val) + " not found in heap.", visited);
+        }
+    } else if (op == "traverse") {
+        vector<int> visited;
+        for (int i = 0; i < (int)items.size(); ++i) {
+            visited.push_back(items[i]);
+            pushEvent(res, items, "visit", i, 0, "root", i, "curr", items[i], 2, "C++ Heap: Visiting heap node [" + to_string(i) + "]: value is " + to_string(items[i]) + ".", visited);
+        }
+        pushEvent(res, items, "complete", -1, 0, "root", -1, "", 0, 5, "C++ Heap: Level-order traversal completed across all " + to_string(items.size()) + " nodes.", visited);
     }
 
     res.elementsCount = items.size();

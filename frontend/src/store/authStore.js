@@ -23,19 +23,17 @@ const useAuthStore = create((set) => ({
       set({ user, token, isAuthenticated: true, isLoading: false });
       return true;
     } catch (error) {
-      // If network error (e.g. server is offline or connection refused), fallback to demo session
-      if (!error.response || error.code === 'ERR_NETWORK' || error.message?.includes('Network Error')) {
-        const mockUser = { id: 'demo-1', fullName: 'Algorithm Explorer', email: email || 'user@algoverse.io' };
-        const mockToken = 'algoverse_demo_token_123';
-        localStorage.setItem('algoverse_token', mockToken);
-        set({ user: mockUser, token: mockToken, isAuthenticated: true, isLoading: false });
-        return true;
+      let errorMessage = 'Login failed. Please try again.';
+      
+      if (error.response) {
+        errorMessage = error.response.data?.message || errorMessage;
+      } else if (error.request) {
+        errorMessage = 'Server unavailable. Please check your connection.';
+      } else {
+        errorMessage = error.message || errorMessage;
       }
 
-      set({ 
-        error: error.response?.data?.message || error.message || 'Login failed. Please try again.', 
-        isLoading: false 
-      });
+      set({ error: errorMessage, isLoading: false });
       return false;
     }
   },
@@ -55,26 +53,36 @@ const useAuthStore = create((set) => ({
       set({ user, token, isAuthenticated: true, isLoading: false });
       return true;
     } catch (error) {
-      // Fallback for offline/demo environment when server connection is refused
-      if (!error.response || error.code === 'ERR_NETWORK' || error.message?.includes('Network Error')) {
-        const mockUser = { id: 'demo-1', fullName: userData.fullName || 'Algorithm Explorer', email: userData.email || 'user@algoverse.io' };
-        const mockToken = 'algoverse_demo_token_123';
-        localStorage.setItem('algoverse_token', mockToken);
-        set({ user: mockUser, token: mockToken, isAuthenticated: true, isLoading: false });
-        return true;
+      let errorMessage = 'Registration failed. Please try again.';
+      
+      if (error.response) {
+        errorMessage = error.response.data?.message || errorMessage;
+      } else if (error.request) {
+        errorMessage = 'Server unavailable. Please check your connection.';
+      } else {
+        errorMessage = error.message || errorMessage;
       }
 
-      set({ 
-        error: error.response?.data?.message || error.message || 'Registration failed. Please try again.', 
-        isLoading: false 
-      });
+      set({ error: errorMessage, isLoading: false });
+      return false;
+    }
+  },
+
+  googleLogin: async (token, userData) => {
+    set({ isLoading: true, error: null });
+    try {
+      localStorage.setItem('algoverse_token', token);
+      set({ user: userData, token, isAuthenticated: true, isLoading: false });
+      return true;
+    } catch (error) {
+      set({ error: 'Google login failed', isLoading: false });
       return false;
     }
   },
 
   logout: () => {
     localStorage.removeItem('algoverse_token');
-    set({ user: null, token: null, isAuthenticated: false });
+    set({ user: null, token: null, isAuthenticated: false, error: null });
   },
 
   fetchUserProfile: async () => {
@@ -85,15 +93,17 @@ const useAuthStore = create((set) => ({
       const user = payload?.user || payload;
       set({ user, isAuthenticated: true, isLoading: false });
     } catch (error) {
-      const token = localStorage.getItem('algoverse_token');
-      if (token) {
-        set({ user: { id: 'demo-1', fullName: 'Algorithm Explorer', email: 'user@algoverse.io' }, isAuthenticated: true, isLoading: false });
-      } else {
-        localStorage.removeItem('algoverse_token');
-        set({ user: null, token: null, isAuthenticated: false, isLoading: false });
-      }
+      localStorage.removeItem('algoverse_token');
+      set({ user: null, token: null, isAuthenticated: false, isLoading: false });
     }
   },
+
+  clearError: () => set({ error: null }),
 }));
+
+// Listen for logout events from other tabs or from axios interceptor
+window.addEventListener('auth:logout', () => {
+  useAuthStore.getState().logout();
+});
 
 export default useAuthStore;

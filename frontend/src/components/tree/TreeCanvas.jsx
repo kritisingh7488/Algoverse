@@ -1,21 +1,27 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { ZoomIn, ZoomOut, Maximize2, Minimize2, Sliders, Upload, Search, Shuffle, Trash2 } from 'lucide-react';
 import TreePlaybackBar from './TreePlaybackBar';
 import Button from '../common/Button';
+import { isTraversalSupported, isAlgorithmSupported, isOperationSupported, TYPE_SPECIFIC_CONTROLS } from './treeFilters';
 
 export const TreeCanvas = ({
   treeType,
   setTreeType,
   nodes = [],
+  edges = [],
   activeHighlight,
   traversalSequence = [],
+  desc = '',
   spec,
   specs = {},
   onTraverse,
   onRandomize,
   onClear,
   onImportCSV,
+  onInsert,
+  onDelete,
+  onSearch,
   isPlaying,
   setIsPlaying,
   stepIndex,
@@ -23,57 +29,88 @@ export const TreeCanvas = ({
   onStepChange,
   speed,
   setSpeed,
-  onRestart
+  onRestart,
+  lastOpName = 'READY',
+  inputType = 'Integer',
+  setInputType,
+  supportedInputTypes = ['Integer'],
+  onPreset,
+  onAlgorithm,
+  onCustomOp,
+  autoConvert,
+  setAutoConvert,
+  algParam = '',
+  setAlgParam
 }) => {
   const [zoom, setZoom] = useState(1);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showFullControls, setShowFullControls] = useState(true);
   const [csvInput, setCsvInput] = useState('');
+  const [opInput, setOpInput] = useState('');
   const canvasRef = useRef(null);
 
   const toggleFullscreen = () => {
     if (!canvasRef.current) return;
     if (!document.fullscreenElement) {
-      canvasRef.current.requestFullscreen().then(() => {
-        setIsFullscreen(true);
-      }).catch(err => {
-        console.error('Fullscreen request failed:', err);
-      });
+      canvasRef.current.requestFullscreen().then(() => setIsFullscreen(true)).catch(() => {});
     } else {
-      document.exitFullscreen().then(() => {
-        setIsFullscreen(false);
-      });
+      document.exitFullscreen().then(() => setIsFullscreen(false));
     }
   };
 
   useEffect(() => {
-    const handleFullscreenChange = () => {
-      setIsFullscreen(!!document.fullscreenElement);
-    };
-    document.addEventListener('fullscreenchange', handleFullscreenChange);
-    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+    const handler = () => setIsFullscreen(!!document.fullscreenElement);
+    document.addEventListener('fullscreenchange', handler);
+    return () => document.removeEventListener('fullscreenchange', handler);
   }, []);
 
   const handleImport = () => {
     if (!csvInput.trim() || !onImportCSV) return;
-    const values = csvInput
-      .split(',')
-      .map(x => parseInt(x.trim()))
-      .filter(x => !isNaN(x));
-    if (values.length > 0) {
-      onImportCSV(values);
-      setCsvInput('');
-    }
+    const isNum = inputType === 'Integer';
+    const values = csvInput.split(',')
+      .map(x => isNum ? parseInt(x.trim(), 10) : x.trim())
+      .filter(x => isNum ? !Number.isNaN(x) : x.length > 0);
+    if (values.length > 0) { onImportCSV(values); setCsvInput(''); }
   };
+
+  const handleFsInsert = () => {
+    if (!opInput.trim() || !onInsert) return;
+    onInsert(opInput.trim());
+    setOpInput('');
+  };
+
+  const handleFsDelete = () => {
+    if (!opInput.trim() || !onDelete) return;
+    onDelete(opInput.trim());
+    setOpInput('');
+  };
+
+  const handleFsSearch = () => {
+    if (!opInput.trim() || !onSearch) return;
+    onSearch(opInput.trim());
+  };
+
+  // Compute bounding box for auto-fit with sensible minimum viewport so small trees aren't giant
+  const rawMinX = nodes.length > 0 ? Math.min(...nodes.map(n => n.x)) : 200;
+  const rawMaxX = nodes.length > 0 ? Math.max(...nodes.map(n => n.x)) : 600;
+  const rawMinY = nodes.length > 0 ? Math.min(...nodes.map(n => n.y)) : 0;
+  const rawMaxY = nodes.length > 0 ? Math.max(...nodes.map(n => n.y)) : 200;
+
+  const centerX = (rawMinX + rawMaxX) / 2;
+  const centerY = (rawMinY + rawMaxY) / 2;
+  const spanX = Math.max(rawMaxX - rawMinX + 140, 580);
+  const spanY = Math.max(rawMaxY - rawMinY + 140, 360);
+  
+  const minX = centerX - spanX / 2;
+  const minY = centerY - spanY / 2;
 
   return (
     <div
       ref={canvasRef}
       className={`bg-card rounded-card border-2 border-borderTheme p-5 shadow-medium flex flex-col justify-between relative transition-all duration-300 font-body ${
-        isFullscreen ? 'fixed inset-0 z-50 rounded-none border-none p-6 bg-card flex flex-col justify-between h-screen w-screen overflow-hidden' : 'min-h-[440px] overflow-hidden'
+        isFullscreen ? 'fixed inset-0 z-50 rounded-none border-none p-6 bg-card flex flex-col justify-between h-screen w-screen overflow-hidden' : 'min-h-[480px] overflow-hidden'
       }`}
     >
-      
       {/* Top Header Toolbar */}
       <div className="flex flex-wrap items-center justify-between gap-3 text-xs font-heading font-bold text-textSecondary border-b-2 border-borderTheme pb-3 shrink-0 z-10">
         <div className="flex items-center gap-2">
@@ -82,206 +119,453 @@ export const TreeCanvas = ({
           <span className="px-2.5 py-0.5 rounded-full bg-surface border border-borderTheme font-mono text-[10px]">
             {nodes.length} NODES
           </span>
+          {desc && (
+            <span className="px-2.5 py-0.5 rounded-full bg-primary/10 text-primary font-mono text-[10px] max-w-xs truncate">
+              {desc}
+            </span>
+          )}
         </div>
 
-        {/* Tree Quick Selector (Full Screen) */}
-        {isFullscreen && setTreeType && specs && (
-          <div className="flex items-center gap-2 bg-surface px-3 py-1 rounded-2xl border border-borderTheme">
-            <Search className="w-3.5 h-3.5 text-primary" />
-            <select
-              value={treeType}
-              onChange={(e) => setTreeType(e.target.value)}
-              className="bg-transparent font-heading font-bold text-xs text-textPrimary focus:outline-none cursor-pointer"
+        {isFullscreen && (
+          <div className="flex items-center gap-2">
+            {setTreeType && specs && (
+              <div className="flex items-center gap-2 bg-surface px-3 py-1 rounded-2xl border border-borderTheme">
+                <Search className="w-3.5 h-3.5 text-primary" />
+                <select value={treeType} onChange={(e) => setTreeType(e.target.value)}
+                  className="bg-transparent font-heading font-bold text-xs text-textPrimary focus:outline-none cursor-pointer">
+                  {Object.keys(specs).map((k) => (
+                    <option key={k} value={k} className="bg-card text-textPrimary">{specs[k].name}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+            <button
+              onClick={() => setShowFullControls(!showFullControls)}
+              className={`px-3 py-1 rounded-2xl text-[11px] font-bold font-mono transition-all border flex items-center gap-1 ${
+                showFullControls
+                  ? 'bg-primary/20 text-primary border-primary'
+                  : 'bg-surface text-textSecondary border-borderTheme hover:border-primary'
+              }`}
             >
-              {Object.keys(specs).map((k) => (
-                <option key={k} value={k} className="bg-card text-textPrimary">
-                  {specs[k].name} ({specs[k].category})
-                </option>
-              ))}
-            </select>
+              <Sliders className="w-3.5 h-3.5" />
+              <span>{showFullControls ? 'Hide Panel' : 'Show Studio Panel'}</span>
+            </button>
           </div>
         )}
 
-        {/* Zoom & Fullscreen Controls */}
         <div className="flex items-center gap-1">
-          <button
-            onClick={() => setZoom(prev => Math.max(0.5, prev - 0.1))}
-            className="p-1.5 rounded-xl bg-surface border border-borderTheme hover:bg-card text-textPrimary transition-all shadow-xs"
-            title="Zoom Out"
-          >
+          <button onClick={() => setZoom(prev => Math.max(0.4, prev - 0.1))}
+            className="p-1.5 rounded-xl bg-surface border border-borderTheme hover:bg-card text-textPrimary transition-all shadow-xs" title="Zoom Out">
             <ZoomOut className="w-4 h-4" />
           </button>
           <span className="text-[10px] font-mono w-10 text-center font-bold">{Math.round(zoom * 100)}%</span>
-          <button
-            onClick={() => setZoom(prev => Math.min(1.8, prev + 0.1))}
-            className="p-1.5 rounded-xl bg-surface border border-borderTheme hover:bg-card text-textPrimary transition-all shadow-xs"
-            title="Zoom In"
-          >
+          <button onClick={() => setZoom(prev => Math.min(2.0, prev + 0.1))}
+            className="p-1.5 rounded-xl bg-surface border border-borderTheme hover:bg-card text-textPrimary transition-all shadow-xs" title="Zoom In">
             <ZoomIn className="w-4 h-4" />
           </button>
-
-          {/* Fullscreen Button */}
-          <button
-            onClick={toggleFullscreen}
+          {setAutoConvert && (
+            <button
+              onClick={() => setAutoConvert(!autoConvert)}
+              className={`p-1.5 rounded-xl border transition-all ml-1 shadow-soft flex items-center gap-1 text-[11px] font-bold px-2.5 ${
+                autoConvert
+                  ? 'bg-primary/20 text-primary border-primary font-bold'
+                  : 'bg-surface text-textSecondary border-borderTheme hover:border-primary'
+              }`}
+              title="Automatically rebuild and convert tree when switching tree types"
+            >
+              <span>Auto-Convert: {autoConvert ? 'ON' : 'OFF'}</span>
+            </button>
+          )}
+          <button onClick={toggleFullscreen}
             className="p-1.5 rounded-xl bg-primary text-white hover:bg-primary/90 transition-all ml-1 shadow-soft flex items-center gap-1 text-[11px] font-bold px-3"
-            title={isFullscreen ? 'Exit Full Screen' : 'Full Screen View'}
-          >
+            title={isFullscreen ? 'Exit Full Screen' : 'Full Screen View'}>
             {isFullscreen ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
-            <span>{isFullscreen ? 'Exit Full Screen' : 'Full Screen'}</span>
+            <span>{isFullscreen ? 'Exit' : 'Full Screen'}</span>
           </button>
         </div>
       </div>
 
-      {/* FULL SCREEN INTERACTIVE CONTROLS OVERLAY */}
-      {isFullscreen && (
-        <div className="bg-surface p-3 rounded-2xl border-2 border-borderTheme my-2 shadow-soft space-y-3 shrink-0 text-xs font-mono">
-          <div className="flex items-center justify-between">
-            <span className="font-heading font-bold text-textPrimary uppercase flex items-center gap-1.5">
-              <Sliders className="w-3.5 h-3.5 text-primary" /> Full Screen Tree Controls & Traversals
-            </span>
-            <button
-              onClick={() => setShowFullControls(!showFullControls)}
-              className="text-[10px] font-bold text-primary px-2 py-0.5 bg-card rounded-lg border border-borderTheme"
+      {/* Live C++ Execution Action & Diagnostic Banner (shows what is happening every time!) */}
+      <div className="w-full bg-slate-950 text-slate-100 border-b-2 border-primary/40 px-4 py-2.5 flex items-center justify-between text-xs font-mono shadow-md z-10">
+        <div className="flex items-center gap-2.5 overflow-hidden">
+          <span className="px-2.5 py-0.5 rounded bg-primary text-white font-bold uppercase text-[10px] tracking-wider shrink-0 shadow">
+            {lastOpName || 'READY'}
+          </span>
+          <span className="text-slate-200 font-medium truncate">
+            {desc || 'Select any operation, traversal, or algorithm to see native C++ step-by-step execution details.'}
+          </span>
+        </div>
+        <div className="flex items-center gap-2 shrink-0 ml-2">
+          <span className="px-2 py-0.5 rounded bg-slate-800 text-warning font-bold text-[10px] border border-warning/40">
+            DATA TYPE: {inputType || 'Integer'}
+          </span>
+        </div>
+      </div>
+
+      {/* Horizontal Flex Container in Full Screen mode for Main Canvas + Right Side Panel */}
+      <div className={`flex-1 w-full overflow-hidden flex ${isFullscreen ? 'flex-row' : 'flex-col'} relative`}>
+        {/* LEFT COLUMN: Main SVG Tree Viewport + Traversal Banner + Playback Bar */}
+        <div className="flex-1 h-full flex flex-col overflow-hidden relative">
+          {/* Main SVG Tree Viewport */}
+          <div className="flex-1 w-full overflow-hidden py-3 flex items-center justify-center min-h-[340px] relative">
+            <div
+              style={{ transform: `scale(${zoom})`, transformOrigin: 'center center' }}
+              className="w-full h-full flex items-center justify-center transition-transform duration-200"
             >
-              {showFullControls ? 'Hide Controls' : 'Show Controls'}
-            </button>
+              {nodes.length > 0 ? (
+                <svg
+                  width="100%"
+                  height="100%"
+                  viewBox={`${minX} ${minY} ${spanX} ${spanY}`}
+                  preserveAspectRatio="xMidYMid meet"
+                  style={{
+                    minHeight: isFullscreen ? '70vh' : '340px',
+                    maxHeight: isFullscreen ? '82vh' : '460px'
+                  }}
+                  className="w-full h-full overflow-visible"
+                >
+                  {/* Edges */}
+                  {edges && edges.length > 0 ? (
+                    edges.map((ed, idx) => {
+                      const source = nodes.find(n => n.id === ed.from);
+                      const target = nodes.find(n => n.id === ed.to);
+                      if (!source || !target) return null;
+                      const isHighlightEdge = ed.highlight || activeHighlight === ed.to;
+                      return (
+                        <line key={`ed-${idx}-${ed.from}-${ed.to}`}
+                          x1={source.x} y1={source.y} x2={target.x} y2={target.y}
+                          stroke={isHighlightEdge ? 'var(--color-warning, #f59e0b)' : 'var(--color-borderTheme, #e5e7eb)'}
+                          strokeWidth={isHighlightEdge ? 3 : 2}
+                          strokeDasharray={isHighlightEdge ? '6 3' : 'none'}
+                        />
+                      );
+                    })
+                  ) : (
+                    nodes.map((node) => {
+                      if (node.pid < 0) return null;
+                      const parent = nodes.find(n => n.id === node.pid);
+                      if (!parent) return null;
+                      const isHighlightEdge = activeHighlight === node.id;
+                      return (
+                        <line key={`e-${node.id}`}
+                          x1={parent.x} y1={parent.y} x2={node.x} y2={node.y}
+                          stroke={isHighlightEdge ? 'var(--color-warning, #f59e0b)' : 'var(--color-borderTheme, #e5e7eb)'}
+                          strokeWidth={isHighlightEdge ? 3 : 2}
+                          strokeDasharray={isHighlightEdge ? '6 3' : 'none'}
+                        />
+                      );
+                    })
+                  )}
+
+                  {/* Nodes */}
+                  {nodes.map((node) => {
+                    const isHL = activeHighlight === node.id;
+                    const isRB = treeType === 'redblack';
+                    const isRed = isRB && node.clr === 'red';
+
+                    let fill = 'var(--color-card, white)';
+                    let stroke = 'var(--color-primary, #6366f1)';
+                    let textFill = 'var(--color-primary, #6366f1)';
+
+                    if (isHL) {
+                      fill = 'var(--color-warning, #f59e0b)';
+                      stroke = 'var(--color-warning, #f59e0b)';
+                      textFill = 'white';
+                    } else if (isRB && isRed) {
+                      fill = '#ef4444'; stroke = '#dc2626'; textFill = 'white';
+                    } else if (isRB) {
+                      fill = '#1e293b'; stroke = '#0f172a'; textFill = 'white';
+                    }
+
+                    const labelStr = String(node.displayLabel !== undefined ? node.displayLabel : node.val);
+                    const fontSize = labelStr.length >= 5 ? "9" : labelStr.length === 4 ? "10" : labelStr.length === 3 ? "11" : "12";
+                    const rVal = node.displayRadius ? node.displayRadius : 18;
+
+                    return (
+                      <g key={`n-${node.id}`} className="transition-all duration-300">
+                        <circle
+                          cx={node.x} cy={node.y} r={rVal}
+                          fill={fill} stroke={stroke} strokeWidth="2.5"
+                          className="shadow-sm hover:scale-110 transition-transform cursor-pointer"
+                        />
+                        <text
+                          x={node.x} y={node.y + 4}
+                          textAnchor="middle" fill={textFill}
+                          fontSize={fontSize} fontWeight="bold" fontFamily="monospace"
+                        >
+                          {labelStr}
+                        </text>
+                        {/* Balance factor label for AVL */}
+                        {(treeType === 'avl') && (
+                          <text x={node.x + rVal + 4} y={node.y - 16} textAnchor="start" fontSize="9"
+                            fill={Math.abs(node.bf) > 1 ? '#ef4444' : 'var(--color-textSecondary, #6b7280)'}
+                            fontFamily="monospace" fontWeight="bold">
+                            bf:{node.bf}
+                          </text>
+                        )}
+                        {/* Height label */}
+                        <text x={node.x - rVal - 4} y={node.y - 16} textAnchor="end" fontSize="8"
+                          fill="var(--color-textSecondary, #9ca3af)" fontFamily="monospace">
+                          h:{node.h}
+                        </text>
+                      </g>
+                    );
+                  })}
+                </svg>
+              ) : (
+                <div className="text-center py-16 space-y-2">
+                  <p className="text-sm font-heading font-bold text-textSecondary">Tree is currently empty</p>
+                  <p className="text-xs font-body text-textSecondary">Insert nodes or load a preset to begin.</p>
+                </div>
+              )}
+            </div>
           </div>
 
-          {showFullControls && (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2 border-t border-borderTheme">
-              
-              {/* Traversals */}
-              <div className="space-y-2">
-                <span className="font-bold text-textSecondary text-[10px] uppercase block">Traversals</span>
-                <div className="grid grid-cols-2 gap-1 text-[10px]">
-                  <Button variant="outline" size="sm" onClick={() => onTraverse && onTraverse('inorder')}>In-Order</Button>
-                  <Button variant="outline" size="sm" onClick={() => onTraverse && onTraverse('preorder')}>Pre-Order</Button>
-                  <Button variant="outline" size="sm" onClick={() => onTraverse && onTraverse('postorder')}>Post-Order</Button>
-                  <Button variant="outline" size="sm" onClick={() => onTraverse && onTraverse('levelorder')}>Level-Order</Button>
+          {/* Traversal Sequence Banner */}
+          <div className="py-2 border-t-2 border-borderTheme flex items-center gap-2 overflow-x-auto text-xs font-mono shrink-0">
+            <span className="text-textSecondary font-bold shrink-0">Traversal:</span>
+            {traversalSequence.map((v, i) => (
+              <span key={i} className="px-2 py-0.5 rounded-lg bg-primary text-white font-bold shrink-0">{v}</span>
+            ))}
+            {traversalSequence.length === 0 && <span className="text-textSecondary italic">Execute a traversal to see output</span>}
+          </div>
+
+          {/* Embedded Playback Bar in Full Screen */}
+          {isFullscreen && (
+            <div className="pt-3 border-t-2 border-borderTheme shrink-0">
+              <TreePlaybackBar isPlaying={isPlaying} setIsPlaying={setIsPlaying} stepIndex={stepIndex}
+                totalSteps={totalSteps} onStepChange={onStepChange} speed={speed} setSpeed={setSpeed} onRestart={onRestart} />
+            </div>
+          )}
+        </div>
+
+        {/* RIGHT SIDE PANEL: Full Screen Complete Controls Studio */}
+        {isFullscreen && showFullControls && (
+          <div className="w-80 lg:w-96 shrink-0 h-full bg-surface border-l-2 border-borderTheme overflow-y-auto p-4 space-y-4 font-mono shadow-2xl z-20">
+            {/* Panel Header */}
+            <div className="flex items-center justify-between border-b border-borderTheme pb-2.5">
+              <span className="font-heading font-bold text-textPrimary uppercase flex items-center gap-1.5 text-xs">
+                <Sliders className="w-4 h-4 text-primary" /> Studio Controls Panel
+              </span>
+              <button onClick={() => setShowFullControls(false)}
+                className="text-[10px] font-bold text-textSecondary hover:text-danger px-2 py-1 bg-card rounded-lg border border-borderTheme">
+                ✕ Close
+              </button>
+            </div>
+
+            {/* CARD 1: INPUT DATA TYPE & PRESETS */}
+            <div className="bg-card p-3 rounded-xl border border-borderTheme space-y-2.5">
+              <div>
+                <span className="text-[10px] font-bold text-primary uppercase block mb-1">Input Data Type:</span>
+                <div className="flex items-center gap-1 flex-wrap">
+                  {(supportedInputTypes || ['Integer']).map((typeOption) => (
+                    <Button
+                      key={typeOption}
+                      onClick={() => setInputType && setInputType(typeOption)}
+                      variant={inputType === typeOption ? 'primary' : 'outline'}
+                      size="sm"
+                      className="text-[10px] py-0.5 px-2"
+                    >
+                      {typeOption}
+                    </Button>
+                  ))}
                 </div>
               </div>
 
-              {/* Actions */}
-              <div className="space-y-2 border-x border-borderTheme px-3">
-                <span className="font-bold text-textSecondary text-[10px] uppercase block">Actions</span>
-                <div className="flex gap-2">
-                  <Button variant="outline" size="sm" onClick={onRandomize} className="flex-1">
-                    <Shuffle className="w-3 h-3 mr-1" /> Random
-                  </Button>
-                  <Button variant="danger" size="sm" onClick={onClear} className="flex-1">
-                    <Trash2 className="w-3 h-3 mr-1" /> Clear
-                  </Button>
+              <div className="pt-2 border-t border-borderTheme">
+                <span className="text-[10px] font-bold text-textSecondary uppercase block mb-1">Test Presets:</span>
+                <div className="flex items-center gap-1 flex-wrap">
+                  <Button onClick={() => onPreset && onPreset('Balanced')} variant="outline" size="sm" className="text-[10px] py-0.5 px-2">Balanced</Button>
+                  <Button onClick={() => onPreset && onPreset('Skewed')} variant="outline" size="sm" className="text-[10px] py-0.5 px-2">Skewed</Button>
+                  <Button onClick={() => onPreset && onPreset('Complete')} variant="outline" size="sm" className="text-[10px] py-0.5 px-2">Complete</Button>
+                  <Button onClick={() => onPreset && onPreset('Random')} variant="outline" size="sm" className="text-[10px] py-0.5 px-2">Random</Button>
+                  <Button onClick={() => onPreset && onPreset('Duplicate')} variant="outline" size="sm" className="text-[10px] py-0.5 px-2">Duplicate</Button>
+                  <Button onClick={() => onPreset && onPreset('Large')} variant="outline" size="sm" className="text-[10px] py-0.5 px-2">Large</Button>
                 </div>
               </div>
 
-              {/* CSV Import */}
-              <div className="space-y-2">
-                <span className="font-bold text-textSecondary text-[10px] uppercase flex items-center gap-1">
-                  <Upload className="w-3 h-3 text-primary" /> Custom CSV Import
-                </span>
-                <div className="flex gap-2">
+              {setAutoConvert && (
+                <div className="pt-2 border-t border-borderTheme flex items-center justify-between">
+                  <span className="text-[10px] font-bold text-textSecondary uppercase">Auto Tree Conversion:</span>
+                  <button
+                    onClick={() => setAutoConvert(!autoConvert)}
+                    className={`text-[10px] font-mono px-2.5 py-0.5 rounded-lg border transition-all font-bold ${
+                      autoConvert
+                        ? 'bg-primary/20 text-primary border-primary'
+                        : 'bg-surface text-textSecondary border-borderTheme hover:border-primary'
+                    }`}
+                  >
+                    {autoConvert ? 'ENABLED (ON)' : 'DISABLED (OFF)'}
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* CARD 2: OPERATIONS & IMPORT */}
+            <div className="bg-card p-3 rounded-xl border border-borderTheme space-y-2.5">
+              <span className="text-[10px] font-bold text-textSecondary uppercase block">Basic Operations:</span>
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <input
+                  type="text"
+                  placeholder="Val"
+                  value={opInput}
+                  onChange={(e) => setOpInput(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleFsInsert()}
+                  className="w-16 px-2 py-1 rounded-lg bg-surface border border-borderTheme text-xs font-bold text-textPrimary focus:outline-none focus:border-primary"
+                />
+                {isOperationSupported('insert', treeType) && (
+                  <Button variant="primary" size="sm" onClick={handleFsInsert} className="text-[10px] py-0.5 px-2">+ Insert</Button>
+                )}
+                {isOperationSupported('delete', treeType) && (
+                  <Button variant="outline" size="sm" onClick={handleFsDelete} className="text-[10px] py-0.5 px-2">Delete</Button>
+                )}
+                {isOperationSupported('search', treeType) && (
+                  <Button variant="outline" size="sm" onClick={handleFsSearch} className="text-[10px] py-0.5 px-2">Search</Button>
+                )}
+              </div>
+
+              <div className="pt-2 border-t border-borderTheme flex items-center gap-1.5 flex-wrap">
+                <input
+                  type="text"
+                  placeholder="CSV: 50,25,75"
+                  value={csvInput}
+                  onChange={(e) => setCsvInput(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleImport()}
+                  className="w-36 px-2 py-1 rounded-lg bg-surface border border-borderTheme text-xs font-bold text-textPrimary focus:outline-none focus:border-primary"
+                />
+                <Button variant="secondary" size="sm" onClick={handleImport} className="text-[10px] py-0.5 px-2">Import</Button>
+              </div>
+
+              <div className="pt-2 border-t border-borderTheme flex items-center gap-2">
+                <Button variant="outline" size="sm" onClick={onRandomize} className="text-[10px] py-0.5 px-2"><Shuffle className="w-3 h-3 mr-1" /> Random</Button>
+                <Button variant="outline" size="sm" onClick={onClear} className="text-[10px] py-0.5 px-2"><Trash2 className="w-3 h-3 mr-1 text-danger" /> Clear</Button>
+              </div>
+            </div>
+
+            {/* CARD 3: TYPE-SPECIFIC CONTROLS (SHOW ONLY WHEN APPLICABLE) */}
+            {TYPE_SPECIFIC_CONTROLS[treeType] && TYPE_SPECIFIC_CONTROLS[treeType].length > 0 && (
+              <div className="bg-card p-3 rounded-xl border border-borderTheme space-y-2">
+                <div className="flex items-center justify-between flex-wrap gap-1">
+                  <span className="font-bold text-primary text-[10px] uppercase">
+                    {treeType.toUpperCase()} Specific:
+                  </span>
                   <input
                     type="text"
-                    placeholder="e.g. 50, 25, 75, 15"
-                    value={csvInput}
-                    onChange={(e) => setCsvInput(e.target.value)}
-                    className="w-full px-3 py-1.5 rounded-xl bg-card border border-borderTheme text-xs font-bold text-textPrimary focus:outline-none focus:border-primary"
+                    placeholder="k / param"
+                    value={algParam}
+                    onChange={(e) => setAlgParam && setAlgParam(e.target.value)}
+                    className="w-24 px-2 py-0.5 rounded bg-surface border border-borderTheme text-[11px] font-mono text-textPrimary focus:outline-none focus:border-primary"
+                    title="Value for Type-Specific controls"
                   />
-                  <Button variant="primary" size="sm" onClick={handleImport}>Import</Button>
+                </div>
+                <div className="flex items-center gap-1 flex-wrap">
+                  {TYPE_SPECIFIC_CONTROLS[treeType].map((ctrl) => (
+                    <Button
+                      key={ctrl.key}
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => onCustomOp && onCustomOp(ctrl.key, ctrl.desc)}
+                      className="text-[10px] py-0.5 px-2"
+                    >
+                      {ctrl.label}
+                    </Button>
+                  ))}
                 </div>
               </div>
+            )}
 
-            </div>
-          )}
-        </div>
-      )}
+            {/* CARD 4: FILTERED C++ TRAVERSALS */}
+            {['inorder', 'preorder', 'postorder', 'levelorder', 'zigzag', 'boundary', 'vertical', 'topview', 'bottomview', 'leftview', 'rightview', 'morris'].filter(t => isTraversalSupported(t, treeType)).length > 0 && (
+              <div className="bg-card p-3 rounded-xl border border-borderTheme space-y-2">
+                <span className="font-bold text-textSecondary text-[10px] uppercase block">
+                  C++ Traversals ({['inorder', 'preorder', 'postorder', 'levelorder', 'zigzag', 'boundary', 'vertical', 'topview', 'bottomview', 'leftview', 'rightview', 'morris'].filter(t => isTraversalSupported(t, treeType)).length}):
+                </span>
+                <div className="flex items-center gap-1 flex-wrap">
+                  {['inorder', 'preorder', 'postorder', 'levelorder', 'zigzag', 'boundary', 'vertical', 'topview', 'bottomview', 'leftview', 'rightview', 'morris']
+                    .filter(trav => isTraversalSupported(trav, treeType))
+                    .map((trav) => (
+                      <Button
+                        key={trav}
+                        variant="outline"
+                        size="sm"
+                        onClick={() => onTraverse && onTraverse(trav)}
+                        className="text-[10px] py-0.5 px-2"
+                      >
+                        {trav === 'levelorder' ? 'Level-BFS' : trav.charAt(0).toUpperCase() + trav.slice(1)}
+                      </Button>
+                    ))}
+                </div>
+              </div>
+            )}
 
-      {/* Main Node Tree Viewport */}
-      <div className="flex-1 overflow-auto py-6 px-4 flex items-center justify-center min-h-[280px] relative scrollbar-thin">
-        <div
-          style={{ transform: `scale(${zoom})`, transformOrigin: 'center center' }}
-          className="transition-transform duration-200 w-full flex justify-center items-center relative h-[260px]"
-        >
-          {/* SVG Parent-Child Branch Edges */}
-          <svg className="absolute inset-0 w-full h-full pointer-events-none stroke-borderTheme stroke-2">
-            {nodes.map((node) => {
-              if (!node.parent) return null;
-              const parentNode = nodes.find((n) => n.id === node.parent);
-              if (!parentNode) return null;
-
-              return (
-                <line
-                  key={`edge-${node.id}`}
-                  x1={parentNode.x || 250}
-                  y1={parentNode.y || 50}
-                  x2={node.x || 250}
-                  y2={node.y || 120}
-                  strokeWidth="2.5"
-                  strokeDasharray={activeHighlight === node.id ? "4 4" : "none"}
-                />
-              );
-            })}
-          </svg>
-
-          {/* Render Nodes */}
-          {nodes.map((node) => {
-            const isHighlighted = activeHighlight === node.id;
-            const isRedBlack = treeType === 'redblack';
-            const isRed = isRedBlack && (node.color === 'red' || node.id % 2 === 0);
-
-            let nodeBg = 'bg-card border-primary text-primary';
-            if (isHighlighted) nodeBg = 'bg-warning text-textPrimary border-warning scale-115 ring-4 ring-warning/30 z-20';
-            else if (isRedBlack) nodeBg = isRed ? 'bg-rose-500 text-white border-rose-600' : 'bg-slate-900 text-white border-slate-950';
-
-            return (
-              <motion.div
-                key={node.id}
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                style={{ left: `${(node.x || 250) - 20}px`, top: `${(node.y || 50) - 20}px` }}
-                className={`absolute w-10 h-10 rounded-full border-2 flex items-center justify-center font-mono font-bold text-xs shadow-medium transition-all duration-300 ${nodeBg}`}
-              >
-                {node.val}
-              </motion.div>
-            );
-          })}
-
-          {nodes.length === 0 && (
-            <div className="text-center py-12 space-y-2">
-              <p className="text-sm font-heading font-bold text-textSecondary">Tree is currently empty</p>
-              <p className="text-xs font-body text-textSecondary">Use the node insertion bar below to add elements or load a preset.</p>
-            </div>
-          )}
-        </div>
+            {/* CARD 5: FILTERED C++ ALGORITHMS */}
+            {[
+              { key: 'height', label: 'Height' },
+              { key: 'depth', label: 'Depth' },
+              { key: 'diameter', label: 'Diameter' },
+              { key: 'balance', label: 'Balance Check' },
+              { key: 'lca', label: 'LCA (val)' },
+              { key: 'kthsmall', label: 'Kth Smallest' },
+              { key: 'kthlarge', label: 'Kth Largest' },
+              { key: 'successor', label: 'Successor' },
+              { key: 'predecessor', label: 'Predecessor' },
+              { key: 'mirror', label: 'Mirror/Invert' },
+              { key: 'validate', label: 'Validate BST' },
+              { key: 'serialize', label: 'Serialize' },
+              { key: 'pathsum', label: 'Path Sum' },
+              { key: 'countnodes', label: 'Count Nodes' },
+              { key: 'countleaves', label: 'Count Leaves' }
+            ].filter(alg => isAlgorithmSupported(alg.key, treeType)).length > 0 && (
+              <div className="bg-card p-3 rounded-xl border border-borderTheme space-y-2">
+                <div className="flex items-center justify-between flex-wrap gap-1">
+                  <span className="font-bold text-textSecondary text-[10px] uppercase">
+                    C++ Algorithms:
+                  </span>
+                  <input
+                    type="text"
+                    placeholder="k / val (e.g. 25)"
+                    value={algParam}
+                    onChange={(e) => setAlgParam && setAlgParam(e.target.value)}
+                    className="w-28 px-2 py-0.5 rounded bg-surface border border-borderTheme text-[11px] font-mono text-textPrimary focus:outline-none focus:border-primary"
+                    title="Value for Successor, Predecessor, Kth Smallest, Kth Largest, LCA, Path Sum"
+                  />
+                </div>
+                <div className="flex items-center gap-1 flex-wrap">
+                  {[
+                    { key: 'height', label: 'Height' },
+                    { key: 'depth', label: 'Depth' },
+                    { key: 'diameter', label: 'Diameter' },
+                    { key: 'balance', label: 'Balance Check' },
+                    { key: 'lca', label: 'LCA (val)' },
+                    { key: 'kthsmall', label: 'Kth Smallest' },
+                    { key: 'kthlarge', label: 'Kth Largest' },
+                    { key: 'successor', label: 'Successor' },
+                    { key: 'predecessor', label: 'Predecessor' },
+                    { key: 'mirror', label: 'Mirror/Invert' },
+                    { key: 'validate', label: 'Validate BST' },
+                    { key: 'serialize', label: 'Serialize' },
+                    { key: 'pathsum', label: 'Path Sum' },
+                    { key: 'countnodes', label: 'Count Nodes' },
+                    { key: 'countleaves', label: 'Count Leaves' }
+                  ]
+                    .filter(alg => isAlgorithmSupported(alg.key, treeType))
+                    .map((alg) => (
+                      <Button
+                        key={alg.key}
+                        variant="outline"
+                        size="sm"
+                        onClick={() => onAlgorithm && onAlgorithm(alg.key, algParam)}
+                        className="text-[10px] py-0.5 px-2"
+                      >
+                        {alg.label}
+                      </Button>
+                    ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </div>
-
-      {/* Traversal Sequence Banner */}
-      <div className="py-2 border-t-2 border-borderTheme flex items-center gap-2 overflow-x-auto text-xs font-mono shrink-0">
-        <span className="text-textSecondary font-bold shrink-0">Traversal Output:</span>
-        {traversalSequence.map((v, i) => (
-          <span key={i} className="px-2 py-0.5 rounded-lg bg-primary text-white font-bold shrink-0">
-            {v}
-          </span>
-        ))}
-        {traversalSequence.length === 0 && <span className="text-textSecondary italic">Execute a traversal to inspect output sequence</span>}
-      </div>
-
-      {/* EMBEDDED PLAYBACK BAR WHEN IN FULL SCREEN MODE */}
-      {isFullscreen && (
-        <div className="pt-3 border-t-2 border-borderTheme shrink-0">
-          <TreePlaybackBar
-            isPlaying={isPlaying}
-            setIsPlaying={setIsPlaying}
-            stepIndex={stepIndex}
-            totalSteps={totalSteps}
-            onStepChange={onStepChange}
-            speed={speed}
-            setSpeed={setSpeed}
-            onRestart={onRestart}
-          />
-        </div>
-      )}
-
     </div>
   );
 };

@@ -423,7 +423,7 @@ export const generateEngineSteps = (structureKey, op, args, currentItems, config
   let steps = [];
 
   // Helper step push
-  const addStep = (itemsState, highlight, pointers, line, opName, desc, time = 'O(1)', space = 'O(1)', vars = {}) => {
+  const addStep = (itemsState, highlight, pointers, line, opName, desc, time = 'O(1)', space = 'O(1)', vars = {}, sequence = []) => {
     steps.push({
       items: [...itemsState],
       highlight,
@@ -433,7 +433,8 @@ export const generateEngineSteps = (structureKey, op, args, currentItems, config
       desc,
       time,
       space,
-      vars
+      vars,
+      sequence: [...sequence]
     });
   };
 
@@ -683,25 +684,24 @@ export const generateEngineSteps = (structureKey, op, args, currentItems, config
           }
           addStep(arr, 0, { root: 0 }, 5, `Extracted ${rootVal}`, `Extraction complete. New root is ${arr.length > 0 ? arr[0] : 'NONE'}.`, 'O(log N)');
         }
+      } else if (op === 'delete') {
+        let arr = [...items];
+        if (arr.length > 0) {
+          const rootVal = arr.shift();
+          addStep(arr, 0, { root: 0 }, 2, `Extracted Root (${rootVal})`, `Extracted root element ${rootVal} and restored heap.`, 'O(log N)');
+        }
       } else if (op === 'heapify') {
         let arr = [...items];
         const n = arr.length;
-        addStep([...arr], null, {}, 1, 'Building Heap (Heapify)', `Transforming unordered array into a ${isMin ? 'Min' : 'Max'} Heap...`, 'O(N)');
-
-        const heapifyNode = (i) => {
-          let target = i;
-          let left = 2 * i + 1;
-          let right = 2 * i + 2;
-
-          if (left < n && (isMin ? arr[left] < arr[target] : arr[left] > arr[target])) target = left;
-          if (right < n && (isMin ? arr[right] < arr[target] : arr[right] > arr[target])) target = right;
-
-          if (target !== i) {
-            let temp = arr[i];
-            arr[i] = arr[target];
-            arr[target] = temp;
-            addStep([...arr], target, { current: i, child: target }, 3, `Heapify Swap at [${i}]`, `Swapped node ${arr[target]} with child ${arr[i]}.`, 'O(N)');
-            heapifyNode(target);
+        const heapifyNode = (idx) => {
+          let extreme = idx;
+          const left = 2 * idx + 1;
+          const right = 2 * idx + 2;
+          if (left < n && (isMin ? arr[left] < arr[extreme] : arr[left] > arr[extreme])) extreme = left;
+          if (right < n && (isMin ? arr[right] < arr[extreme] : arr[right] > arr[extreme])) extreme = right;
+          if (extreme !== idx) {
+            [arr[idx], arr[extreme]] = [arr[extreme], arr[idx]];
+            heapifyNode(extreme);
           }
         };
 
@@ -721,18 +721,30 @@ export const generateEngineSteps = (structureKey, op, args, currentItems, config
   if (op === 'search') {
     const { val } = args;
     let found = false;
+    const visited = [];
     for (let i = 0; i < items.length; i++) {
+      visited.push(items[i]);
       const match = items[i] === val;
-      addStep(items, i, {}, 2, `Searching Index [${i}]`, `Inspecting ${items[i]} (Target: ${val})...`, 'O(N)');
+      addStep(items, i, {}, 2, `Searching Index [${i}]`, `Inspecting ${items[i]} (Target: ${val})...`, 'O(N)', 'O(1)', { visited: [...visited] }, [...visited]);
       if (match) {
         found = true;
-        addStep(items, i, { found: i }, 3, `Found Target ${val}`, `Target value ${val} found at index ${i}.`, 'O(N)');
+        addStep(items, i, { found: i }, 3, `Found Target ${val}`, `Target value ${val} found at index ${i}.`, 'O(N)', 'O(1)', { visited: [...visited] }, [...visited]);
         break;
       }
     }
     if (!found) {
-      addStep(items, null, {}, 4, `Target ${val} Not Found`, `Completed search through ${items.length} items. Target not present.`, 'O(N)');
+      addStep(items, null, {}, 4, `Target ${val} Not Found`, `Completed search through ${items.length} items. Target not present.`, 'O(N)', 'O(1)', { visited: [...visited] }, [...visited]);
     }
+  }
+
+  // Common Traversal handler for all structures
+  if (op === 'traverse') {
+    const visited = [];
+    for (let i = 0; i < items.length; i++) {
+      visited.push(items[i]);
+      addStep(items, i, { curr: i }, i + 1, `Traversing Index [${i}]`, `Visiting element at position ${i}: value is ${items[i]}.`, 'O(N)', 'O(1)', { visited: [...visited] }, [...visited]);
+    }
+    addStep(items, null, {}, items.length + 1, 'Traversal Completed', `Successfully traversed all ${items.length} elements in O(N) time.`, 'O(N)', 'O(1)', { visited: [...visited] }, [...visited]);
   }
 
   return steps.length > 0 ? steps : [{ items, highlight: null, pointers: {}, line: 0, op: 'Ready', desc: 'Ready for operations.', time: 'O(1)', space: 'O(1)' }];

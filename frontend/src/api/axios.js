@@ -5,6 +5,7 @@ const api = axios.create({
   withCredentials: true,
 });
 
+// Request Interceptor: Add Bearer token to all requests
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('algoverse_token');
@@ -14,6 +15,18 @@ api.interceptors.request.use(
     return config;
   },
   (error) => Promise.reject(error)
+);
+
+// Response Interceptor: Handle auth errors globally
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      localStorage.removeItem('algoverse_token');
+      window.dispatchEvent(new CustomEvent('auth:logout'));
+    }
+    return Promise.reject(error);
+  }
 );
 
 export default api;

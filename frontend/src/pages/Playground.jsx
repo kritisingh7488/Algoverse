@@ -89,7 +89,7 @@ const Playground = () => {
         items,
         config
       });
-      if (res.data?.success && res.data?.data?.events) {
+      if (res.data?.success && res.data?.data?.events && res.data.data.events.length > 0) {
         setEvents(res.data.data.events);
         setStepIndex(0);
         const evs = res.data.data.events;
@@ -237,6 +237,7 @@ const Playground = () => {
                 items={currentStep.items || items}
                 activeHighlight={currentStep.highlight}
                 pointers={currentStep.pointers}
+                sequence={currentStep.sequence || []}
                 spec={currentSpec}
                 specs={STRUCTURE_SPECS}
                 onLoadPreset={handleLoadPreset}
@@ -250,12 +251,14 @@ const Playground = () => {
                 speed={speed}
                 setSpeed={setSpeed}
                 onRestart={() => setStepIndex(0)}
+                onExecuteOp={handleExecuteOp}
               />
 
               {/* Action Operations Control Bar */}
               <DsControls
                 structureKey={structureKey}
                 onExecuteOp={handleExecuteOp}
+                items={currentStep.items || items}
               />
 
               {/* Bottom Playback & Scrubber Controls */}

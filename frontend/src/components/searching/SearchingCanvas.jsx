@@ -158,104 +158,22 @@ export const SearchingCanvas = ({
             {isFullscreen ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
             <span>{isFullscreen ? 'Exit Full Screen' : 'Full Screen'}</span>
           </button>
+
+          {isFullscreen && (
+            <button
+              onClick={() => setShowFullControls(!showFullControls)}
+              className="p-1.5 rounded-xl bg-surface border border-borderTheme hover:bg-card text-textPrimary transition-all ml-1 shadow-xs text-[11px] font-bold px-3 flex items-center gap-1"
+              title={showFullControls ? 'Hide Studio Panel' : 'Show Studio Panel'}
+            >
+              <span>{showFullControls ? 'Hide Panel' : 'Show Panel'}</span>
+            </button>
+          )}
         </div>
       </div>
 
-      {/* FULL SCREEN CONTROL PANEL OVERLAY (DATASET FILTERS, PRESETS, CONFIG, CSV) */}
-      {isFullscreen && (
-        <div className="bg-surface p-3 rounded-2xl border-2 border-borderTheme my-2 shadow-soft space-y-3 shrink-0 text-xs font-mono">
-          
-          <div className="flex items-center justify-between">
-            <span className="font-heading font-bold text-textPrimary uppercase flex items-center gap-1.5">
-              <Sliders className="w-3.5 h-3.5 text-primary" /> Full Screen Interactive Dataset Filters & Config
-            </span>
-            <button
-              onClick={() => setShowFullControls(!showFullControls)}
-              className="text-[10px] font-bold text-primary px-2 py-0.5 bg-card rounded-lg border border-borderTheme"
-            >
-              {showFullControls ? 'Hide Controls' : 'Show Controls'}
-            </button>
-          </div>
-
-          {showFullControls && (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2 border-t border-borderTheme">
-              
-              {/* 1. Dataset Size & Placement Presets */}
-              <div className="space-y-2">
-                <span className="font-bold text-textSecondary text-[10px] uppercase block">Dataset Size & Placement Presets</span>
-                <div className="flex gap-1">
-                  {[10, 20, 50, 100, 250].map((s) => (
-                    <button
-                      key={s}
-                      onClick={() => onGenerateDataset && onGenerateDataset('sorted', s)}
-                      className={`flex-1 py-1 rounded-xl font-bold border transition-all ${
-                        datasetSize === s ? 'bg-primary text-white border-primary' : 'bg-card text-textPrimary border-borderTheme'
-                      }`}
-                    >
-                      {s}
-                    </button>
-                  ))}
-                </div>
-                <div className="grid grid-cols-2 gap-1 text-[10px]">
-                  <Button variant="outline" size="sm" onClick={() => onGenerateDataset && onGenerateDataset('target_start')}>
-                    Target at Start
-                  </Button>
-                  <Button variant="outline" size="sm" onClick={() => onGenerateDataset && onGenerateDataset('target_mid')}>
-                    Target at Mid
-                  </Button>
-                  <Button variant="outline" size="sm" onClick={() => onGenerateDataset && onGenerateDataset('target_end')}>
-                    Target at End
-                  </Button>
-                  <Button variant="outline" size="sm" onClick={() => onGenerateDataset && onGenerateDataset('missing')}>
-                    Missing Target
-                  </Button>
-                </div>
-              </div>
-
-              {/* 2. Special Config Toggles */}
-              <div className="space-y-2 border-x border-borderTheme px-3">
-                <span className="font-bold text-textSecondary text-[10px] uppercase block">Special Search Config</span>
-                <div className="flex items-center justify-between text-xs text-textPrimary">
-                  <span>Auto-Sort Before Search</span>
-                  <button onClick={() => setAutoSort && setAutoSort(!autoSort)} className="text-primary">
-                    {autoSort ? <ToggleRight className="w-5 h-5 text-primary" /> : <ToggleLeft className="w-5 h-5 text-textSecondary" />}
-                  </button>
-                </div>
-                <div className="flex items-center justify-between text-xs text-textPrimary">
-                  <span>Show Mid Calculation</span>
-                  <button onClick={() => setShowMid && setShowMid(!showMid)} className="text-primary">
-                    {showMid ? <ToggleRight className="w-5 h-5 text-primary" /> : <ToggleLeft className="w-5 h-5 text-textSecondary" />}
-                  </button>
-                </div>
-              </div>
-
-              {/* 3. Import Custom CSV */}
-              <div className="space-y-2">
-                <span className="font-bold text-textSecondary text-[10px] uppercase flex items-center gap-1">
-                  <Upload className="w-3 h-3 text-primary" /> Import Custom CSV
-                </span>
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    placeholder="e.g. 12, 24, 36, 48"
-                    value={csvInput}
-                    onChange={(e) => setCsvInput(e.target.value)}
-                    className="w-full px-3 py-1.5 rounded-xl bg-card border border-borderTheme text-xs font-bold text-textPrimary focus:outline-none focus:border-primary"
-                  />
-                  <Button variant="primary" size="sm" onClick={handleImport}>
-                    Import
-                  </Button>
-                </div>
-              </div>
-
-            </div>
-          )}
-
-        </div>
-      )}
-
-      {/* Main Viewport Mounting Dedicated Renderer */}
-      <div className="flex-1 overflow-auto py-4 px-2 flex items-center justify-center scrollbar-thin">
+      <div className={`flex-1 w-full overflow-hidden flex ${isFullscreen ? 'flex-row' : 'flex-col'} relative`}>
+        {/* Main Viewport Mounting Dedicated Renderer */}
+        <div className="flex-1 overflow-auto py-4 px-2 flex items-center justify-center scrollbar-thin">
         <div
           style={{ transform: `scale(${zoom})`, transformOrigin: 'center center' }}
           className="transition-transform duration-200 w-full flex justify-center items-center"
@@ -317,6 +235,95 @@ export const SearchingCanvas = ({
           )}
 
         </div>
+      </div>
+        {/* RIGHT-HAND STUDIO SIDE PANEL FOR FULL SCREEN MODE */}
+        {isFullscreen && showFullControls && (
+          <div className="w-80 lg:w-96 bg-surface/90 border-l border-borderTheme p-4 overflow-y-auto space-y-4 shadow-xl shrink-0 flex flex-col justify-between text-xs">
+            <div className="space-y-4">
+              {/* Card 1: Dataset Size & Placement Presets */}
+              <div className="bg-card p-3 rounded-xl border border-borderTheme space-y-3">
+                <span className="font-heading font-bold text-textPrimary text-xs uppercase block">Dataset Size & Placement</span>
+                <div className="flex gap-1">
+                  {[10, 20, 50, 100, 250].map((s) => (
+                    <button
+                      key={s}
+                      onClick={() => onGenerateDataset && onGenerateDataset('sorted', s)}
+                      className={`flex-1 py-1 rounded-xl font-bold border transition-all ${
+                        datasetSize === s ? 'bg-primary text-white border-primary' : 'bg-surface text-textPrimary border-borderTheme'
+                      }`}
+                    >
+                      {s}
+                    </button>
+                  ))}
+                </div>
+                <div className="grid grid-cols-2 gap-1 text-[10px]">
+                  <Button variant="outline" size="sm" onClick={() => onGenerateDataset && onGenerateDataset('target_start')}>
+                    Target at Start
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={() => onGenerateDataset && onGenerateDataset('target_mid')}>
+                    Target at Mid
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={() => onGenerateDataset && onGenerateDataset('target_end')}>
+                    Target at End
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={() => onGenerateDataset && onGenerateDataset('missing')}>
+                    Missing Target
+                  </Button>
+                </div>
+              </div>
+
+              {/* Card 2: Special Config Toggles */}
+              <div className="bg-card p-3 rounded-xl border border-borderTheme space-y-3">
+                <span className="font-heading font-bold text-textPrimary text-xs uppercase block">Search Config</span>
+                <div className="flex items-center justify-between text-xs text-textPrimary">
+                  <span>Auto-Sort Before Search</span>
+                  <button onClick={() => setAutoSort && setAutoSort(!autoSort)} className="text-primary">
+                    {autoSort ? <ToggleRight className="w-5 h-5 text-primary" /> : <ToggleLeft className="w-5 h-5 text-textSecondary" />}
+                  </button>
+                </div>
+                <div className="flex items-center justify-between text-xs text-textPrimary">
+                  <span>Show Mid Calculation</span>
+                  <button onClick={() => setShowMid && setShowMid(!showMid)} className="text-primary">
+                    {showMid ? <ToggleRight className="w-5 h-5 text-primary" /> : <ToggleLeft className="w-5 h-5 text-textSecondary" />}
+                  </button>
+                </div>
+              </div>
+
+              {/* Card 3: Custom CSV Import */}
+              <div className="bg-card p-3 rounded-xl border border-borderTheme space-y-2">
+                <span className="font-bold text-textSecondary text-[10px] uppercase flex items-center gap-1">
+                  <Upload className="w-3 h-3 text-primary" /> Import Custom CSV
+                </span>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    placeholder="e.g. 12, 24, 36, 48"
+                    value={csvInput}
+                    onChange={(e) => setCsvInput(e.target.value)}
+                    className="w-full px-3 py-1.5 rounded-xl bg-surface border border-borderTheme text-xs font-bold text-textPrimary focus:outline-none focus:border-primary"
+                  />
+                  <Button variant="primary" size="sm" onClick={handleImport}>
+                    Import
+                  </Button>
+                </div>
+              </div>
+            </div>
+
+            {/* Embedded Playback Bar at bottom of side panel */}
+            <div className="pt-3 border-t border-borderTheme">
+              <SearchingPlaybackBar
+                isPlaying={isPlaying}
+                setIsPlaying={setIsPlaying}
+                stepIndex={stepIndex}
+                totalSteps={events.length}
+                onStepChange={onStepChange}
+                speed={speed}
+                setSpeed={setSpeed}
+                onRestart={onRestart}
+              />
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Step Event Description Banner */}
