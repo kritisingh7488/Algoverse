@@ -15,6 +15,8 @@ import {
 } from 'lucide-react';
 import AppLayout from '../../layouts/AppLayout';
 import Button from '../../components/common/Button';
+import StringAutoVerifier from '../../components/string/StringAutoVerifier';
+import { ShieldCheck } from 'lucide-react';
 
 const STRING_ALGORITHMS = {
   naive: {
@@ -52,6 +54,7 @@ const StringLab = () => {
   const [patternInput, setPatternInput] = useState('ABABCABAB');
   const [isPlaying, setIsPlaying] = useState(false);
   const [speed, setSpeed] = useState(1);
+  const [isVerifierOpen, setIsVerifierOpen] = useState(false);
   const [stepIndex, setStepIndex] = useState(0);
   const [events, setEvents] = useState([]);
   
@@ -64,91 +67,35 @@ const StringLab = () => {
 
   const currentSpec = STRING_ALGORITHMS[algoKey];
 
-  // Precompute KMP LPS Array
-  const computeLPS = (pat) => {
-    let lps = Array(pat.length).fill(0);
-    let len = 0;
-    let i = 1;
-    while (i < pat.length) {
-      if (pat[i] === pat[len]) {
-        len++;
-        lps[i] = len;
-        i++;
-      } else {
-        if (len !== 0) {
-          len = lps[len - 1];
-        } else {
-          lps[i] = 0;
-          i++;
-        }
-      }
-    }
-    return lps;
-  };
-
-  // Generate KMP events
-  const generateKMPEvents = (txt, pat) => {
-    let steps = [];
-    let lps = computeLPS(pat);
-    let i = 0, j = 0;
-    let matches = [];
-
-    steps.push({
-      i: 0, j: 0, matches: [], lps, line: 0,
-      desc: `Computed LPS Table for pattern: [${lps.join(', ')}]`
-    });
-
-    while (i < txt.length) {
-      steps.push({
-        i, j, matches: [...matches], lps, line: 2,
-        desc: `Comparing text[${i}] ('${txt[i]}') with pattern[${j}] ('${pat[j]}')`
+  const fetchEvents = async () => {
+    try {
+      const res = await api.post('/string/run', {
+        algorithm: algoKey,
+        text: textInput,
+        pattern: patternInput
       });
-
-      if (pat[j] === txt[i]) {
-        i++;
-        j++;
+      if (res.data?.success && res.data?.data?.events) {
+        setEvents(res.data.data.events);
+      } else {
+        setEvents([]);
       }
-
-      if (j === pat.length) {
-        matches.push(i - j);
-        steps.push({
-          i, j: lps[j - 1], matches: [...matches], lps, line: 3,
-          desc: `Full Pattern match found at index ${i - j}! Fallback j = lps[${j - 1}] (${lps[j - 1]})`
-        });
-        j = lps[j - 1];
-      } else if (i < txt.length && pat[j] !== txt[i]) {
-        if (j !== 0) {
-          const oldJ = j;
-          j = lps[j - 1];
-          steps.push({
-            i, j, matches: [...matches], lps, line: 5,
-            desc: `Mismatch! Fallback pattern index j from ${oldJ} to lps[${oldJ - 1}] = ${j}`
-          });
-        } else {
-          i++;
-          steps.push({
-            i, j: 0, matches: [...matches], lps, line: 6,
-            desc: `Mismatch at j=0. Advancing text index i to ${i}`
-          });
-        }
-      }
+    } catch (error) {
+      console.error('Failed to fetch string events:', error);
+      setEvents([]);
     }
-
-    steps.push({
-      i: txt.length, j: 0, matches: [...matches], lps, line: 0,
-      desc: `KMP Search completed. Matches found at indices: [${matches.join(', ')}]`
-    });
-
-    return steps;
   };
 
   useEffect(() => {
-    const steps = generateKMPEvents(textInput, patternInput);
-    setEvents(steps);
+    fetchEvents();
+  }, [algoKey, textInput, patternInput]);
+
+  useEffect(() => {
     setStepIndex(0);
     setIsPlaying(false);
-    if (steps.length > 0) applyStep(steps[0]);
-  }, [algoKey, textInput, patternInput]);
+    if (events.length > 0) applyStep(events[0]);
+  }, [events]);
+
+
 
   useEffect(() => {
     let timer;
@@ -187,10 +134,19 @@ const StringLab = () => {
               </span>
               <h1 className="text-2xl font-bold font-poppins text-gray-900">String Algorithms Laboratory</h1>
             </div>
-            <p className="text-sm text-gray-500 font-inter mt-1">
-              Visualize pattern matching, KMP prefix tables, and string preprocessing steps character-by-character.
+            <p className="text-sm font-body text-gray-500 mt-1">
+              Visualize exact substring matching with prefix tables and live pointers.
             </p>
           </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setIsVerifierOpen(true)}
+            className="border-emerald-500/50 text-emerald-600 hover:bg-emerald-500/10 shrink-0"
+          >
+            <ShieldCheck className="w-4 h-4 mr-1.5 text-emerald-500" />
+            Verify Engine Reliability
+          </Button>
         </div>
 
         {/* Main Grid */}
@@ -361,6 +317,7 @@ const StringLab = () => {
 
         </div>
 
+        {isVerifierOpen && <StringAutoVerifier onClose={() => setIsVerifierOpen(false)} />}
       </div>
     </AppLayout>
   );

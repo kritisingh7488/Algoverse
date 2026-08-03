@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
 import api from '../../api/axios';
-import { Play, CheckCircle, XCircle, RefreshCw } from 'lucide-react';
+import { Play, CheckCircle, XCircle, RefreshCw, X, ShieldCheck } from 'lucide-react';
+import Button from '../common/Button';
+import Card from '../common/Card';
+import { isOperationSupported } from './treeFilters';
 
 const TREE_TYPES = [
   'binary', 'bst', 'avl', 'redblack',
@@ -34,6 +37,8 @@ export default function TreeAutoVerifier({ onClose }) {
       for (const dataType of DATA_TYPES) {
         // Test core operations
         for (const op of OPERATIONS) {
+          if (!isOperationSupported(treeType, op)) continue; // Skip unsupported ops
+
           const sampleInput = dataType === 'Character'
             ? ['M', 'F', 'S', 'B', 'H', 'P', 'W']
             : dataType === 'String'
@@ -74,110 +79,122 @@ export default function TreeAutoVerifier({ onClose }) {
               details: err.message || 'API Error'
             });
           }
+          
+          setResults([...allResults]);
+          setSummary({
+            total: passedCount + failedCount,
+            passed: passedCount,
+            failed: failedCount
+          });
         }
       }
     }
-
-    setResults(allResults);
-    setSummary({
-      total: allResults.length,
-      passed: passedCount,
-      failed: failedCount
-    });
     setIsRunning(false);
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 overflow-y-auto">
-      <div className="bg-slate-900 border border-slate-700 rounded-xl w-full max-w-4xl max-h-[85vh] flex flex-col shadow-2xl">
+    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 font-body">
+      <div className="bg-card w-full max-w-4xl max-h-[85vh] rounded-2xl border border-borderTheme shadow-2xl flex flex-col overflow-hidden">
+        
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-slate-800">
-          <div>
-            <h3 className="text-lg font-bold text-white flex items-center gap-2">
-              <CheckCircle className="w-5 h-5 text-emerald-400" />
-              C++ Engine Automated Verification Mode
-            </h3>
-            <p className="text-xs text-slate-400">
-              Executes all operations across all 12 tree types in Integer, Character, and String modes.
-            </p>
+        <div className="flex items-center justify-between p-4 border-b border-borderTheme bg-surface">
+          <div className="flex items-center gap-2.5">
+            <ShieldCheck className="w-6 h-6 text-primary" />
+            <div>
+              <h3 className="text-base font-bold text-foreground">
+                Automated C++ Tree Engine Verification
+              </h3>
+              <p className="text-xs text-muted">
+                Executes automated tests across edge cases and supported tree operations.
+              </p>
+            </div>
           </div>
-          <button
-            onClick={onClose}
-            className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-slate-300 font-medium transition-colors"
-          >
-            Close
-          </button>
+          <Button variant="ghost" size="sm" onClick={onClose}>
+            <X className="w-5 h-5 text-muted" />
+          </Button>
         </div>
 
-        {/* Action & Summary */}
-        <div className="p-4 border-b border-slate-800 flex items-center justify-between bg-slate-950/40">
-          <button
-            onClick={runVerificationSuite}
+        {/* Controls & Summary */}
+        <div className="p-4 border-b border-borderTheme bg-surface/30 grid grid-cols-1 md:grid-cols-4 gap-4 items-center">
+          <Button 
+            onClick={runVerificationSuite} 
             disabled={isRunning}
-            className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white text-sm font-semibold flex items-center gap-2 transition-colors"
+            className="w-full justify-center"
           >
             {isRunning ? (
-              <>
-                <RefreshCw className="w-4 h-4 animate-spin" />
-                Running Verification...
-              </>
+              <><RefreshCw className="w-4 h-4 mr-2 animate-spin" /> Verifying...</>
             ) : (
-              <>
-                <Play className="w-4 h-4" />
-                Run Full Test Suite
-              </>
+              <><Play className="w-4 h-4 mr-2" /> Start Test Suite</>
             )}
-          </button>
-
-          {summary.total > 0 && (
-            <div className="flex items-center gap-4 text-sm font-medium">
-              <span className="text-slate-300">Total: {summary.total}</span>
-              <span className="text-emerald-400">Passed: {summary.passed}</span>
-              <span className="text-rose-400">Failed: {summary.failed}</span>
+          </Button>
+          
+          <div className="col-span-3 flex justify-around p-3 bg-surface rounded-xl border border-borderTheme">
+            <div className="text-center">
+              <div className="text-[10px] text-muted uppercase font-bold tracking-wider mb-0.5">Total Tests</div>
+              <div className="text-xl font-heading font-black text-foreground">{summary.total}</div>
             </div>
-          )}
+            <div className="text-center">
+              <div className="text-[10px] text-emerald-500 uppercase font-bold tracking-wider mb-0.5">Passed</div>
+              <div className="text-xl font-heading font-black text-emerald-500">{summary.passed}</div>
+            </div>
+            <div className="text-center">
+              <div className="text-[10px] text-danger uppercase font-bold tracking-wider mb-0.5">Failed</div>
+              <div className="text-xl font-heading font-black text-danger">{summary.failed}</div>
+            </div>
+            <div className="text-center">
+              <div className="text-[10px] text-primary uppercase font-bold tracking-wider mb-0.5">Pass Rate</div>
+              <div className="text-xl font-heading font-black text-primary">
+                {summary.total === 0 ? '0%' : `${Math.round((summary.passed / summary.total) * 100)}%`}
+              </div>
+            </div>
+          </div>
         </div>
 
-        {/* Results Table */}
-        <div className="flex-1 overflow-y-auto p-4">
-          {results.length === 0 ? (
-            <div className="h-48 flex flex-col items-center justify-center text-slate-500">
-              <p className="text-sm">No verification results yet.</p>
-              <p className="text-xs mt-1">Click &quot;Run Full Test Suite&quot; to begin testing.</p>
+        {/* Results List */}
+        <div className="flex-1 overflow-y-auto p-4 space-y-2 bg-background">
+          {results.length === 0 && !isRunning && (
+            <div className="h-40 flex flex-col items-center justify-center text-muted gap-2">
+              <ShieldCheck className="w-8 h-8 opacity-20" />
+              <p className="text-sm">Click "Start Test Suite" to run backend validations.</p>
             </div>
-          ) : (
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="border-b border-slate-800 text-slate-400 text-xs">
-                  <th className="py-2 px-3">Tree Type</th>
-                  <th className="py-2 px-3">Data Type</th>
-                  <th className="py-2 px-3">Operation</th>
-                  <th className="py-2 px-3">Status</th>
-                  <th className="py-2 px-3">Details</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-800/50 text-xs">
-                {results.map((res, i) => (
-                  <tr key={i} className="hover:bg-slate-800/30">
-                    <td className="py-2 px-3 font-semibold text-slate-200 capitalize">{res.treeType}</td>
-                    <td className="py-2 px-3 text-slate-300">{res.dataType}</td>
-                    <td className="py-2 px-3 text-cyan-400 font-mono">{res.op}</td>
-                    <td className="py-2 px-3">
-                      {res.status === 'PASS' ? (
-                        <span className="inline-flex items-center gap-1 text-emerald-400 font-bold">
-                          <CheckCircle className="w-3.5 h-3.5" /> PASS
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1 text-rose-400 font-bold">
-                          <XCircle className="w-3.5 h-3.5" /> FAIL
-                        </span>
-                      )}
-                    </td>
-                    <td className="py-2 px-3 text-slate-400">{res.details}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          )}
+          
+          {results.map((res, i) => (
+            <Card key={i} className={`p-3 border-l-4 rounded-lg flex items-center justify-between ${
+              res.status === 'PASS' 
+                ? 'border-l-emerald-500 bg-emerald-500/5 hover:bg-emerald-500/10' 
+                : 'border-l-danger bg-danger/5 hover:bg-danger/10'
+            }`}>
+              <div className="flex items-center gap-3 w-1/3">
+                {res.status === 'PASS' 
+                  ? <CheckCircle className="w-5 h-5 text-emerald-500 shrink-0" />
+                  : <XCircle className="w-5 h-5 text-danger shrink-0" />
+                }
+                <div>
+                  <div className="text-xs font-bold font-mono text-foreground capitalize">{res.treeType} Tree</div>
+                  <div className="text-[10px] text-muted truncate">{res.dataType} Data</div>
+                </div>
+              </div>
+
+              <div className="w-1/3">
+                <div className="text-xs font-bold text-foreground font-mono">{res.op}()</div>
+                <div className="text-[10px] text-muted">Operation</div>
+              </div>
+
+              <div className="w-1/3 flex flex-col items-end">
+                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full mb-1 ${
+                  res.status === 'PASS' ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400' : 'bg-danger/20 text-danger'
+                }`}>
+                  {res.status}
+                </span>
+                <span className="text-[9px] text-muted truncate max-w-full">{res.details}</span>
+              </div>
+            </Card>
+          ))}
+          {isRunning && (
+             <div className="p-4 text-center text-muted text-sm font-mono animate-pulse flex items-center justify-center gap-2">
+               <RefreshCw className="w-4 h-4 animate-spin" /> Executing next batch...
+             </div>
           )}
         </div>
       </div>

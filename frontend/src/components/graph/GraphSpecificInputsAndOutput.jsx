@@ -58,17 +58,12 @@ export const GraphSpecificInputsAndOutput = ({
       'multi_source_bfs', 'level_order_bfs', 'kahn', 'dfs_topo',
       'euler_path', 'euler_circuit', 'hamiltonian_path', 'hamiltonian_cycle'
     ].includes(algo)) {
-      const visitedIds = [];
-      for (let i = 0; i <= Math.min(stepIndex, events.length - 1); i++) {
-        const ev = events[i];
-        if (ev && (ev.type === 'visit' || ev.type === 'node_visit') && ev.nodeId !== undefined) {
-          if (!visitedIds.includes(ev.nodeId)) {
-            visitedIds.push(`V${ev.nodeId}`);
-          }
-        }
-      }
-      if (visitedIds.length > 0) {
-        return `Traversal Sequence (${visitedIds.length} vertices): ${visitedIds.join(' → ')}`;
+      if (currentEvent.sequence && currentEvent.sequence.length > 0) {
+        return `Traversal Sequence (${currentEvent.sequence.length} vertices): ` + currentEvent.sequence.map(id => {
+          // try to find the label for this id
+          const v = vertices.find(v => v.id === id);
+          return v && v.label !== String(id) ? `${v.label} (V${id})` : `V${id}`;
+        }).join(' → ');
       }
       return `Traversal in progress... (Step ${stepIndex + 1} of ${events.length})`;
     }
@@ -130,8 +125,8 @@ export const GraphSpecificInputsAndOutput = ({
     }
 
     // Default fallback line
-    if (currentEvent.description || currentEvent.msg) {
-      return currentEvent.description || currentEvent.msg;
+    if (currentEvent.desc || currentEvent.description || currentEvent.msg) {
+      return currentEvent.desc || currentEvent.description || currentEvent.msg;
     }
     return `Algorithm ${algo.toUpperCase()} step ${stepIndex + 1} of ${events.length} completed.`;
   };
@@ -197,7 +192,7 @@ export const GraphSpecificInputsAndOutput = ({
       {/* Right: Live Output Line Bar */}
       <div className="flex items-center gap-2 bg-primary/10 border border-primary/20 px-3.5 py-1.5 rounded-lg flex-1 min-w-[240px] shadow-xs">
         <Activity className="w-4 h-4 text-primary shrink-0 animate-pulse" />
-        <span className="text-xs font-mono font-bold text-foreground truncate">
+        <span className="text-xs font-mono font-bold text-foreground break-words whitespace-normal">
           Output: {computeAlgorithmOutputLine()}
         </span>
       </div>

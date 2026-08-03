@@ -28,7 +28,7 @@ import {
 import AppLayout from '../../layouts/AppLayout';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
-import MascotRole from '../../components/mascots/MascotRole';
+
 import api from '../../api/axios';
 
 import GraphCanvas from '../../components/graph/GraphCanvas';
@@ -1016,10 +1016,10 @@ export default function GraphLab() {
 
   return (
     <AppLayout>
-      <div className={`space-y-6 py-2 font-body ${isFullScreen ? 'fixed inset-0 z-50 bg-background overflow-y-auto p-4' : ''}`}>
+      <div className={`space-y-4 py-1 font-body ${isFullScreen ? 'fixed inset-0 z-50 bg-background overflow-y-auto p-4' : ''}`}>
         
         {/* Header Bar */}
-        <Card className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <Card className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-[1.5px] border-borderTheme">
           <div className="flex items-center gap-3">
             <Button variant="outline" size="sm" onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)} className="shrink-0" title="Toggle Sidebar">
               {isSidebarCollapsed ? <PanelLeftOpen className="w-4 h-4" /> : <PanelLeftClose className="w-4 h-4" />}
@@ -1046,11 +1046,10 @@ export default function GraphLab() {
               <BarChart2 className="w-4 h-4 mr-1.5" />
               <span>{mode === 'compare' ? 'Interactive Studio' : 'Compare Algorithms'}</span>
             </Button>
-            <MascotRole role="teacher" activity="reading" dialogue={`${currentMeta.name}!`} className="w-20 h-20" />
           </div>
         </Card>
 
-        {/* Error Banner */}
+        {/* Global Error Banner */}
         {errorMessage && (
           <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-xl flex items-center justify-between text-xs font-semibold text-red-500">
             <span>{errorMessage}</span>
@@ -1504,7 +1503,7 @@ export default function GraphLab() {
                   </p>
                   <p className="text-muted">{currentMeta.interviewTip}</p>
                 </div>
-                <MascotRole role="graph_mentor" size="sm" />
+
               </Card>
 
               {/* Live Algorithm Data Structures & C++ Statistics Panel */}

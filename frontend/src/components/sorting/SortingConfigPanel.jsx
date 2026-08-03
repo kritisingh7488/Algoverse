@@ -55,30 +55,6 @@ export const SortingConfigPanel = ({
   return (
     <div className="bg-card rounded-card border-2 border-borderTheme p-5 shadow-soft space-y-6 font-body">
       
-      {/* Visualizer Mode Switcher Tabs */}
-      <div className="flex bg-surface p-1 rounded-2xl border-2 border-borderTheme">
-        <button
-          onClick={() => setIsComparisonMode(false)}
-          className={`flex-1 py-2 rounded-xl text-xs font-heading font-bold transition-all flex items-center justify-center gap-1.5 ${
-            !isComparisonMode
-              ? 'bg-card text-textPrimary shadow-soft border border-borderTheme'
-              : 'text-textSecondary hover:text-textPrimary'
-          }`}
-        >
-          <BarChart2 className="w-3.5 h-3.5 text-primary" /> Single Visualizer
-        </button>
-        <button
-          onClick={() => setIsComparisonMode(true)}
-          className={`flex-1 py-2 rounded-xl text-xs font-heading font-bold transition-all flex items-center justify-center gap-1.5 ${
-            isComparisonMode
-              ? 'bg-card text-textPrimary shadow-soft border border-borderTheme'
-              : 'text-textSecondary hover:text-textPrimary'
-          }`}
-        >
-          <Layers className="w-3.5 h-3.5 text-secondary" /> Multi-Compare
-        </button>
-      </div>
-
       {!isComparisonMode ? (
         /* SINGLE ALGORITHM SELECTOR */
         <div className="space-y-2">

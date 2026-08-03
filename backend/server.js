@@ -8,6 +8,10 @@ const searchingRoutes = require('./routes/searchingRoutes');
 const dsRoutes = require('./routes/dsRoutes');
 const treeRoutes = require('./routes/treeRoutes');
 const graphRoutes = require('./routes/graphRoutes');
+const stringRoutes = require('./routes/stringRoutes');
+const backtrackingRoutes = require('./routes/backtrackingRoutes');
+const dpRoutes = require('./routes/dpRoutes');
+const userRoutes = require('./routes/userRoutes');
 
 dotenv.config();
 
@@ -42,6 +46,10 @@ app.use('/api/v1/searching', searchingRoutes);
 app.use('/api/v1/ds', dsRoutes);
 app.use('/api/v1/tree', treeRoutes);
 app.use('/api/v1/graph', graphRoutes);
+app.use('/api/v1/string', stringRoutes);
+app.use('/api/v1/backtracking', backtrackingRoutes);
+app.use('/api/v1/dp', dpRoutes);
+app.use('/api/v1/user', userRoutes);
 
 
 // Database Connection & Server Listener

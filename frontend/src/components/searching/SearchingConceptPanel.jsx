@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { Code, BookOpen, Lightbulb, AlertTriangle, Sparkles } from 'lucide-react';
+import { Code, BookOpen, Lightbulb, AlertTriangle, Sparkles, Maximize2, X } from 'lucide-react';
 
 export const SearchingConceptPanel = ({ spec, stepLine, stepDesc }) => {
   const [activeTab, setActiveTab] = useState('pseudocode');
+  const [isExpanded, setIsExpanded] = useState(false);
 
   const pseudocodeLines = spec.pseudocode || [];
 
@@ -38,8 +39,11 @@ export const SearchingConceptPanel = ({ spec, stepLine, stepDesc }) => {
           
           {/* Active Pseudocode */}
           <div className="space-y-2">
-            <h4 className="text-xs font-heading font-bold text-textSecondary uppercase tracking-wider flex items-center gap-1.5">
-              <Code className="w-3.5 h-3.5 text-primary" /> Pseudocode Line Tracker
+            <h4 className="text-xs font-heading font-bold text-textSecondary uppercase tracking-wider flex items-center justify-between gap-1.5">
+              <div className="flex items-center gap-1.5"><Code className="w-3.5 h-3.5 text-primary" /> Pseudocode Line Tracker</div>
+              <button onClick={() => setIsExpanded(true)} className="hover:text-primary transition-colors" title="Expand Pseudocode">
+                <Maximize2 className="w-3.5 h-3.5" />
+              </button>
             </h4>
             <div className="bg-surface border-2 border-borderTheme rounded-2xl p-3.5 font-mono text-[11px] text-textPrimary space-y-1 overflow-x-auto">
               {pseudocodeLines.map((line, idx) => (
@@ -125,6 +129,30 @@ export const SearchingConceptPanel = ({ spec, stepLine, stepDesc }) => {
         </div>
       )}
 
+      {/* Fullscreen Pseudocode Modal */}
+      {isExpanded && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 md:p-8">
+          <div className="bg-card w-full max-w-4xl max-h-full rounded-2xl border-2 border-borderTheme shadow-2xl flex flex-col overflow-hidden">
+            <div className="p-4 border-b-2 border-borderTheme flex items-center justify-between bg-surface">
+              <h2 className="text-lg font-heading font-bold text-textPrimary flex items-center gap-2">
+                <Code className="w-5 h-5 text-primary" />
+                {spec.name} Pseudocode
+              </h2>
+              <button onClick={() => setIsExpanded(false)} className="p-2 rounded-xl hover:bg-card text-textSecondary hover:text-danger transition-colors">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-6 overflow-y-auto bg-slate-950 font-mono text-sm text-slate-300 leading-relaxed space-y-1">
+               {pseudocodeLines.map((line, idx) => (
+                  <div key={idx} className={`py-1.5 px-3 rounded-lg flex items-start gap-4 transition-colors ${stepLine === idx + 1 || stepLine === idx ? 'bg-primary/30 text-white font-bold border-l-4 border-primary' : 'hover:bg-white/5 border-l-4 border-transparent'}`}>
+                    <span className="text-slate-600 select-none shrink-0 w-6 text-right">{idx}</span>
+                    <span className="whitespace-pre-wrap">{line}</span>
+                  </div>
+               ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

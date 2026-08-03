@@ -14,6 +14,8 @@ import {
 } from 'lucide-react';
 import AppLayout from '../../layouts/AppLayout';
 import Button from '../../components/common/Button';
+import BacktrackingAutoVerifier from '../../components/backtracking/BacktrackingAutoVerifier';
+import { ShieldCheck } from 'lucide-react';
 
 const BACKTRACKING_PROBLEMS = {
   nqueens: {
@@ -42,65 +44,34 @@ const BacktrackingLab = () => {
   const [events, setEvents] = useState([]);
   const [backtracks, setBacktracks] = useState(0);
   const [desc, setDesc] = useState('');
+  const [isVerifierOpen, setIsVerifierOpen] = useState(false);
 
-  const generateNQueensEvents = () => {
-    let steps = [];
-    let grid = Array(4).fill(null).map(() => Array(4).fill(0));
-    let countBacktracks = 0;
-
-    const isSafe = (g, row, col) => {
-      for (let i = 0; i < row; i++) if (g[i][col] === 1) return false;
-      for (let i = row, j = col; i >= 0 && j >= 0; i--, j--) if (g[i][j] === 1) return false;
-      for (let i = row, j = col; i >= 0 && j < 4; i--, j++) if (g[i][j] === 1) return false;
-      return true;
-    };
-
-    const solve = (row) => {
-      if (row === 4) {
-        steps.push({
-          grid: grid.map(r => [...r]), row: 4, col: -1, backtracks: countBacktracks,
-          desc: 'Solution Found! All 4 Queens placed safely.'
-        });
-        return true;
+  const fetchEvents = async () => {
+    try {
+      const res = await api.post('/backtracking/run', {
+        algorithm: 'nqueens',
+        size: boardSize
+      });
+      if (res.data?.success && res.data?.data?.events) {
+        setEvents(res.data.data.events);
+      } else {
+        setEvents([]);
       }
-
-      for (let col = 0; col < 4; col++) {
-        grid[row][col] = 1;
-        steps.push({
-          grid: grid.map(r => [...r]), row, col, backtracks: countBacktracks,
-          desc: `Trying Queen at row ${row}, col ${col}...`
-        });
-
-        if (isSafe(grid, row, col)) {
-          steps.push({
-            grid: grid.map(r => [...r]), row, col, backtracks: countBacktracks,
-            desc: `Safe position at row ${row}, col ${col}. Moving to next row.`
-          });
-          if (solve(row + 1)) return true;
-        }
-
-        // Backtrack
-        grid[row][col] = 0;
-        countBacktracks++;
-        steps.push({
-          grid: grid.map(r => [...r]), row, col, backtracks: countBacktracks,
-          desc: `Conflict! Backtracking queen from row ${row}, col ${col}.`
-        });
-      }
-      return false;
-    };
-
-    solve(0);
-    return steps;
+    } catch (error) {
+      console.error('Failed to fetch backtracking events:', error);
+      setEvents([]);
+    }
   };
 
   useEffect(() => {
-    const steps = generateNQueensEvents();
-    setEvents(steps);
+    fetchEvents();
+  }, [boardSize]);
+
+  useEffect(() => {
     setStepIndex(0);
     setIsPlaying(false);
-    if (steps.length > 0) applyStep(steps[0]);
-  }, []);
+    if (events.length > 0) applyStep(events[0]);
+  }, [events]);
 
   useEffect(() => {
     let timer;
@@ -143,7 +114,16 @@ const BacktrackingLab = () => {
 
           <div className="flex items-center gap-3 font-mono text-xs">
             <span className="text-gray-400">Total Backtracks:</span>
-            <span className="px-3 py-1 rounded-xl bg-red-50 text-red-600 font-bold border border-red-100">{backtracks}</span>
+            <span className="px-3 py-1 rounded-xl bg-red-50 text-red-600 font-bold border border-red-100 mr-2">{backtracks}</span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsVerifierOpen(true)}
+              className="border-emerald-500/50 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 shrink-0"
+            >
+              <ShieldCheck className="w-4 h-4 mr-1.5 text-emerald-500" />
+              Verify Engine Reliability
+            </Button>
           </div>
         </div>
 
@@ -257,7 +237,7 @@ const BacktrackingLab = () => {
           </div>
 
         </div>
-
+        {isVerifierOpen && <BacktrackingAutoVerifier onClose={() => setIsVerifierOpen(false)} />}
       </div>
     </AppLayout>
   );

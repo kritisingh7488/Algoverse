@@ -1,33 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import {
-  Network,
-  Maximize2,
-  Minimize2,
-  PanelRightClose,
-  PanelRightOpen,
-  Layout,
-  Grid,
-  Circle,
-  Share2,
-  ZoomIn,
-  ZoomOut,
-  RotateCcw,
-  Eye,
-  EyeOff,
-  Sliders,
-  Table,
-  List,
-  FileText,
-  Play,
-  Activity,
-  Search,
-  Plus,
-  Trash2,
-  Shuffle,
-  Check,
-  Code
-} from 'lucide-react';
+import { Maximize2, Minimize2, ZoomIn, ZoomOut, Save, Download, Upload, Plus, Trash2, ArrowRight, MousePointer2, Move, Type, Check, X, RotateCcw, AlertCircle, Play, Pause, FastForward, SkipForward, Rewind, Layers, Cpu, Database, Eye, Code, Map, Grid, Activity, Sliders, ChevronDown, Network, PanelRightClose, PanelRightOpen, Layout, Circle, Share2, EyeOff, Table, List, FileText, Shuffle } from 'lucide-react';
 import Button from '../common/Button';
 import Card from '../common/Card';
 import GraphPlaybackBar from './GraphPlaybackBar';
@@ -91,6 +64,8 @@ export const GraphCanvas = ({
   const [showFullControls, setShowFullControls] = useState(true);
   const [zoom, setZoom] = useState(1);
   const [showWeights, setShowWeights] = useState(true);
+  const [showMatrixOverlay, setShowMatrixOverlay] = useState(false);
+  const [isPseudocodeExpanded, setIsPseudocodeExpanded] = useState(false);
   const [showLabels, setShowLabels] = useState(true);
   const [showDirections, setShowDirections] = useState(true);
   const [nodePositions, setNodePositions] = useState({});
@@ -126,22 +101,22 @@ export const GraphCanvas = ({
     return () => document.removeEventListener('fullscreenchange', handler);
   }, [onToggleFullScreen]);
 
+  const currentMeta = (ALGORITHM_METADATA && ALGORITHM_METADATA[algorithm]) || {
+    name: algorithm,
+    time: 'O(V + E)',
+    space: 'O(V)',
+    pseudocode: [`// C++ native ${algorithm} execution`]
+  };
+
   const renderFullScreenStudioPanel = () => {
     const categories = ['All', 'Traversal', 'Shortest Path', 'Minimum Spanning Tree', 'Connectivity', 'Cycle Detection', 'Topological Sort', 'Flow & Matching', 'Disjoint Set Union', 'Graph Coloring', 'Clique & Set', 'Euler & Hamilton', 'Heuristics & AI'];
     const filteredAlgos = Object.entries(ALGORITHM_METADATA || {}).filter(([key, meta]) => {
       if (selectedCategory === 'All') return true;
       return meta.category === selectedCategory;
     });
-    const currentMeta = (ALGORITHM_METADATA && ALGORITHM_METADATA[algorithm]) || {
-      name: algorithm,
-      time: 'O(V + E)',
-      space: 'O(V)',
-      pseudocode: [`// C++ native ${algorithm} execution`]
-    };
 
     return (
       <div className="w-80 lg:w-96 shrink-0 h-full bg-surface border-l-2 border-borderTheme overflow-y-auto p-4 space-y-4 font-body shadow-2xl z-20">
-        {/* Panel Header */}
         <div className="flex items-center justify-between border-b border-borderTheme pb-2.5">
           <span className="font-heading font-bold text-textPrimary uppercase flex items-center gap-1.5 text-xs">
             <Sliders className="w-4 h-4 text-primary" /> Studio Controls Panel
@@ -154,7 +129,6 @@ export const GraphCanvas = ({
           </button>
         </div>
 
-        {/* Card 1: Graph Architectures & Presets */}
         <div className="bg-card p-3 rounded-xl border border-borderTheme space-y-2.5">
           <div>
             <span className="text-[10px] font-bold text-primary uppercase block mb-1.5">
@@ -206,13 +180,11 @@ export const GraphCanvas = ({
           </div>
         </div>
 
-        {/* Card 2: Interactive Construction & Mutations */}
         <div className="bg-card p-3 rounded-xl border border-borderTheme space-y-2.5">
           <span className="text-[10px] font-bold text-primary uppercase block">
             2. Interactive Construction:
           </span>
           <div className="space-y-2 text-xs">
-            {/* Add/Delete Vertex */}
             <div className="flex flex-wrap items-center justify-between gap-1.5 bg-surface p-2 rounded-lg border border-borderTheme">
               <div className="flex items-center gap-1 flex-1 min-w-[140px]">
                 <input
@@ -240,7 +212,6 @@ export const GraphCanvas = ({
               </div>
             </div>
 
-            {/* Add/Delete Edge */}
             <div className="flex flex-wrap items-center justify-between gap-1.5 bg-surface p-2 rounded-lg border border-borderTheme">
               <div className="flex items-center gap-1 flex-wrap">
                 <input
@@ -305,7 +276,6 @@ export const GraphCanvas = ({
           </div>
         </div>
 
-        {/* Card 3: Categorized Algorithms Bar */}
         <div className="bg-card p-3 rounded-xl border border-borderTheme space-y-2.5">
           <span className="text-[10px] font-bold text-primary uppercase block">
             3. Select & Execute Algorithm (40+ Available):
@@ -344,11 +314,15 @@ export const GraphCanvas = ({
           </div>
         </div>
 
-        {/* Card 4: Pseudocode & Complexity */}
         <div className="bg-card p-3 rounded-xl border border-borderTheme space-y-2">
-          <div className="flex items-center gap-1.5 border-b border-borderTheme pb-1.5">
-            <Code className="w-3.5 h-3.5 text-primary" />
-            <span className="text-xs font-bold text-foreground">C++ Native {currentMeta.name}</span>
+          <div className="flex items-center justify-between border-b border-borderTheme pb-1.5">
+            <div className="flex items-center gap-1.5">
+              <Code className="w-3.5 h-3.5 text-primary" />
+              <span className="text-xs font-bold text-foreground">C++ Native {currentMeta.name}</span>
+            </div>
+            <button onClick={() => setIsPseudocodeExpanded(true)} className="hover:text-primary transition-colors text-muted" title="Expand Pseudocode">
+              <Maximize2 className="w-3.5 h-3.5" />
+            </button>
           </div>
           <pre className="p-2 bg-surface rounded text-[10px] font-mono text-foreground overflow-x-auto border border-borderTheme space-y-0.5">
             {(currentMeta.pseudocode || []).map((l, i) => (
@@ -365,7 +339,6 @@ export const GraphCanvas = ({
           </div>
         </div>
 
-        {/* Card 5: Live Information Panel */}
         <GraphInformationPanel
           algorithm={algorithm}
           events={events}
@@ -378,7 +351,6 @@ export const GraphCanvas = ({
     );
   };
 
-  // Sync initial node positions from C++ engine output
   useEffect(() => {
     const newPos = {};
     vertices.forEach((v) => {
@@ -387,27 +359,34 @@ export const GraphCanvas = ({
     setNodePositions(newPos);
   }, [vertices]);
 
-  // Handle draggable nodes
-  const handleMouseDown = (nodeId) => {
+  const handleNodePointerDown = (e, nodeId) => {
+    e.stopPropagation();
+    e.currentTarget.setPointerCapture(e.pointerId);
     setDraggingNode(nodeId);
   };
 
-  const handleMouseMove = (e) => {
-    if (draggingNode === null || !svgRef.current) return;
-    const rect = svgRef.current.getBoundingClientRect();
-    const x = (e.clientX - rect.left) / zoom;
-    const y = (e.clientY - rect.top) / zoom;
+  const handleNodePointerMove = (e, nodeId) => {
+    if (draggingNode !== nodeId || !svgRef.current) return;
+    e.stopPropagation();
+    const svg = svgRef.current;
+    const pt = svg.createSVGPoint();
+    pt.x = e.clientX;
+    pt.y = e.clientY;
+    const svgP = pt.matrixTransform(svg.getScreenCTM().inverse());
     setNodePositions((prev) => ({
       ...prev,
-      [draggingNode]: { x, y }
+      [nodeId]: { x: svgP.x, y: svgP.y }
     }));
   };
 
-  const handleMouseUp = () => {
+  const handleNodePointerUp = (e, nodeId) => {
+    e.currentTarget.releasePointerCapture(e.pointerId);
     setDraggingNode(null);
   };
 
-  // Auto Layout triggers
+  const handleMouseMove = () => {};
+  const handleMouseUp = () => {};
+
   const applyLayout = (layoutType) => {
     const n = vertices.length;
     if (n === 0) return;
@@ -445,7 +424,6 @@ export const GraphCanvas = ({
   const currentVertices = currentEvent.vertices || vertices;
   const currentEdges = currentEvent.edges || edges;
 
-  // Render SVG Node Graph
   const renderSvgGraph = () => {
     const isDirectedGraph = graphType === 'directed' || graphType === 'dag' || graphType === 'cyclic';
 
@@ -483,7 +461,6 @@ export const GraphCanvas = ({
           </marker>
         </defs>
 
-        {/* Edges */}
         {currentEdges.map((e) => {
           const fromPos = nodePositions[e.from] || { x: 200, y: 200 };
           const toPos = nodePositions[e.to] || { x: 300, y: 300 };
@@ -495,14 +472,14 @@ export const GraphCanvas = ({
           let markerId = isDirectedGraph && showDirections ? 'url(#arrow)' : undefined;
 
           if (e.state === 'tree_edge' || e.state === 'mst') {
-            strokeColor = '#10B981'; // Emerald
+            strokeColor = '#10B981';
             strokeWidth = 3.5;
             if (isDirectedGraph && showDirections) markerId = 'url(#arrow-active)';
           } else if (e.state === 'rejected') {
-            strokeColor = '#EF4444'; // Red
+            strokeColor = '#EF4444';
             strokeWidth = 2;
           } else if (e.state === 'cross_edge' || e.state === 'back_edge') {
-            strokeColor = '#3B82F6'; // Blue
+            strokeColor = '#3B82F6';
             strokeWidth = 2.5;
           }
 
@@ -542,38 +519,40 @@ export const GraphCanvas = ({
           );
         })}
 
-        {/* Vertices */}
         {currentVertices.map((v) => {
           const pos = nodePositions[v.id] || { x: v.x || 200, y: v.y || 200 };
 
-          let fillColor = '#1E293B'; // default dark
+          let fillColor = '#1E293B';
           let strokeColor = '#64748B';
-          let textColor = '#FFFFFF';
 
           if (v.state === 'active') {
-            fillColor = '#3B82F6'; // active blue
+            fillColor = '#3B82F6';
             strokeColor = '#60A5FA';
           } else if (v.state === 'visited') {
-            fillColor = '#10B981'; // visited emerald
+            fillColor = '#10B981';
             strokeColor = '#34D399';
           } else if (v.state === 'completed') {
-            fillColor = '#475569'; // completed slate
+            fillColor = '#475569';
             strokeColor = '#94A3B8';
           }
 
+          const isDragging = draggingNode === v.id;
           return (
             <g
-              key={`node-${v.id}`}
+              key={`n-${v.id}`}
+              className={isDragging ? "cursor-grabbing" : "transition-all duration-300 cursor-grab"}
               transform={`translate(${pos.x}, ${pos.y})`}
-              onMouseDown={() => handleMouseDown(v.id)}
-              className="cursor-pointer"
+              onPointerDown={(e) => handleNodePointerDown(e, v.id)}
+              onPointerMove={(e) => handleNodePointerMove(e, v.id)}
+              onPointerUp={(e) => handleNodePointerUp(e, v.id)}
             >
               <circle
-                r="20"
+                r={isDragging ? 22 : 20}
                 fill={fillColor}
-                stroke={strokeColor}
-                strokeWidth="3"
-                className="transition-colors duration-200 shadow-md"
+                stroke={isDragging ? '#F59E0B' : strokeColor}
+                strokeWidth={isDragging ? 4 : 3}
+                className="transition-colors duration-150"
+                style={{ filter: isDragging ? 'drop-shadow(0 0 8px rgba(245,158,11,0.6))' : 'none' }}
               />
               {showLabels && (
                 <text
@@ -592,7 +571,6 @@ export const GraphCanvas = ({
     );
   };
 
-  // Render 4 Live Synchronized Representations
   const renderRepresentation = () => {
     if (activeTab === 'edgelist') {
       const elData = typeof representations.edgeList === 'string'
@@ -600,7 +578,7 @@ export const GraphCanvas = ({
         : (representations.edgeList || []);
 
       return (
-        <Card className="p-4 bg-card border-borderTheme overflow-x-auto">
+        <Card className="p-4 bg-card border-borderTheme overflow-auto w-full h-full">
           <h4 className="text-xs font-bold uppercase tracking-wider text-muted mb-3">
             Edge List Representation [O(E)]
           </h4>
@@ -636,7 +614,7 @@ export const GraphCanvas = ({
         : (representations.adjacencyList || {});
 
       return (
-        <Card className="p-4 bg-card border-borderTheme overflow-x-auto">
+        <Card className="p-4 bg-card border-borderTheme overflow-auto w-full h-full">
           <h4 className="text-xs font-bold uppercase tracking-wider text-muted mb-3">
             Adjacency List Representation [O(V + E)]
           </h4>
@@ -666,7 +644,7 @@ export const GraphCanvas = ({
         : (representations.adjacencyMatrix || []);
 
       return (
-        <Card className="p-4 bg-card border-borderTheme overflow-x-auto">
+        <Card className="p-4 bg-card border-borderTheme overflow-auto w-full h-full">
           <h4 className="text-xs font-bold uppercase tracking-wider text-muted mb-3">
             Adjacency Matrix Representation [O(V²)]
           </h4>
@@ -705,7 +683,7 @@ export const GraphCanvas = ({
         : (representations.incidenceMatrix || []);
 
       return (
-        <Card className="p-4 bg-card border-borderTheme overflow-x-auto">
+        <Card className="p-4 bg-card border-borderTheme overflow-auto w-full h-full">
           <h4 className="text-xs font-bold uppercase tracking-wider text-muted mb-3">
             Incidence Matrix Representation (Vertices × Edges) [O(V·E)]
           </h4>
@@ -741,193 +719,6 @@ export const GraphCanvas = ({
     return null;
   };
 
-  // ---------------------------------------------------------------------------
-  // Main Workspace Structure with Right-Hand Studio Side Panel in Full-Screen
-  // ---------------------------------------------------------------------------
-  const renderSidePanelControls = () => (
-    <div className="space-y-4 font-body">
-      {/* 1. Graph Type & Algorithm Selector */}
-      <Card className="p-4 bg-card border-borderTheme space-y-3">
-        <h4 className="text-xs font-bold uppercase tracking-wider text-muted">
-          Graph Type & Algorithm
-        </h4>
-        <div className="grid grid-cols-2 gap-2">
-          <div>
-            <label className="text-[11px] font-bold text-muted block mb-1">Graph Type</label>
-            <select
-              value={graphType}
-              onChange={(e) => setGraphType(e.target.value)}
-              className="w-full bg-surface border border-borderTheme rounded px-2.5 py-1.5 text-xs font-semibold"
-            >
-              <optgroup label="Basic Graphs">
-                <option value="undirected">Undirected Graph</option>
-                <option value="directed">Directed Graph</option>
-                <option value="weighted">Weighted Graph</option>
-                <option value="unweighted">Unweighted Graph</option>
-              </optgroup>
-              <optgroup label="Advanced Graphs">
-                <option value="dag">DAG (Acyclic)</option>
-                <option value="cyclic">Cyclic Graph</option>
-                <option value="bipartite">Bipartite Graph</option>
-                <option value="complete">Complete Graph</option>
-                <option value="connected">Connected Graph</option>
-                <option value="disconnected">Disconnected Graph</option>
-                <option value="sparse">Sparse Graph</option>
-                <option value="dense">Dense Graph</option>
-                <option value="tree">Tree Graph</option>
-                <option value="forest">Forest</option>
-              </optgroup>
-            </select>
-          </div>
-          <div>
-            <label className="text-[11px] font-bold text-muted block mb-1">Algorithm</label>
-            <select
-              value={algorithm}
-              onChange={(e) => setAlgorithm(e.target.value)}
-              className="w-full bg-surface border border-borderTheme rounded px-2.5 py-1.5 text-xs font-semibold"
-            >
-              <optgroup label="Traversals">
-                <option value="bfs">BFS (Breadth-First)</option>
-                <option value="dfs">DFS (Depth-First)</option>
-                <option value="iterative_dfs">Iterative DFS</option>
-                <option value="recursive_dfs">Recursive DFS</option>
-              </optgroup>
-              <optgroup label="Shortest Path">
-                <option value="dijkstra">Dijkstra's Algorithm</option>
-                <option value="bellman_ford">Bellman-Ford</option>
-              </optgroup>
-              <optgroup label="Minimum Spanning Tree">
-                <option value="prim">Prim's MST</option>
-                <option value="kruskal">Kruskal's MST</option>
-              </optgroup>
-              <optgroup label="Topological & DAG">
-                <option value="kahn">Kahn's Topological Sort</option>
-              </optgroup>
-            </select>
-          </div>
-        </div>
-
-        {/* Start Node Input */}
-        <div className="flex items-center gap-2 pt-1">
-          <label className="text-[11px] font-bold text-muted shrink-0">Start Node (ID):</label>
-          <input
-            type="number"
-            value={startNode}
-            onChange={(e) => setStartNode(Number(e.target.value))}
-            className="w-20 bg-surface border border-borderTheme rounded px-2 py-1 text-xs font-mono font-bold"
-          />
-          <Button
-            variant="primary"
-            size="sm"
-            onClick={() => onRunOperation()}
-            className="ml-auto"
-          >
-            Run Algorithm
-          </Button>
-        </div>
-      </Card>
-
-      {/* 2. Representation Switcher */}
-      <Card className="p-4 bg-card border-borderTheme space-y-2">
-        <h4 className="text-xs font-bold uppercase tracking-wider text-muted">
-          Synchronized Graph Representations
-        </h4>
-        <div className="grid grid-cols-5 gap-1 bg-surface p-1 rounded-lg border border-borderTheme">
-          {[
-            { id: 'canvas', label: 'Canvas', icon: Network },
-            { id: 'edgelist', label: 'Edge List', icon: List },
-            { id: 'adjlist', label: 'Adj List', icon: FileText },
-            { id: 'adjmatrix', label: 'Adj Matrix', icon: Table },
-            { id: 'incmatrix', label: 'Inc Matrix', icon: Grid }
-          ].map((tab) => {
-            const Icon = tab.icon;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`flex flex-col items-center justify-center p-1.5 rounded-md text-[10px] font-semibold transition-all ${
-                  activeTab === tab.id
-                    ? 'bg-primary text-primary-foreground font-bold shadow-sm'
-                    : 'text-muted hover:text-foreground'
-                }`}
-              >
-                <Icon className="w-3.5 h-3.5 mb-0.5" />
-                <span>{tab.label}</span>
-              </button>
-            );
-          })}
-        </div>
-      </Card>
-
-      {/* 3. Auto Layouts & Visual Controls */}
-      <Card className="p-4 bg-card border-borderTheme space-y-3">
-        <h4 className="text-xs font-bold uppercase tracking-wider text-muted">
-          Layouts & Visual Controls
-        </h4>
-        <div className="flex flex-wrap gap-1.5">
-          <Button variant="outline" size="sm" onClick={() => applyLayout('circular')}>
-            <Circle className="w-3.5 h-3.5 mr-1" />
-            Circular
-          </Button>
-          <Button variant="outline" size="sm" onClick={() => applyLayout('grid')}>
-            <Grid className="w-3.5 h-3.5 mr-1" />
-            Grid
-          </Button>
-          <Button variant="outline" size="sm" onClick={() => applyLayout('tree')}>
-            <Layout className="w-3.5 h-3.5 mr-1" />
-            Tree
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setZoom((z) => Math.min(1.5, z + 0.1))}
-            title="Zoom In"
-          >
-            <ZoomIn className="w-3.5 h-3.5" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setZoom((z) => Math.max(0.6, z - 0.1))}
-            title="Zoom Out"
-          >
-            <ZoomOut className="w-3.5 h-3.5" />
-          </Button>
-        </div>
-
-        <div className="flex items-center justify-between pt-1 border-t border-borderTheme text-xs">
-          <label className="flex items-center gap-1.5 cursor-pointer text-muted font-semibold">
-            <input
-              type="checkbox"
-              checked={showWeights}
-              onChange={(e) => setShowWeights(e.target.checked)}
-              className="accent-primary"
-            />
-            Show Weights
-          </label>
-          <label className="flex items-center gap-1.5 cursor-pointer text-muted font-semibold">
-            <input
-              type="checkbox"
-              checked={showLabels}
-              onChange={(e) => setShowLabels(e.target.checked)}
-              className="accent-primary"
-            />
-            Show Labels
-          </label>
-          <label className="flex items-center gap-1.5 cursor-pointer text-muted font-semibold">
-            <input
-              type="checkbox"
-              checked={showDirections}
-              onChange={(e) => setShowDirections(e.target.checked)}
-              className="accent-primary"
-            />
-            Arrows
-          </label>
-        </div>
-      </Card>
-    </div>
-  );
-
   return (
     <div
       ref={canvasContainerRef}
@@ -937,7 +728,6 @@ export const GraphCanvas = ({
           : 'space-y-4'
       }`}
     >
-      {/* Top Bar with View Switcher, Graph Type Dropdown (in fullscreen) & Layout Controls */}
       <div className="flex flex-wrap items-center justify-between gap-2 bg-card border-2 border-borderTheme rounded-card p-3 shadow-soft shrink-0">
         <div className="flex items-center gap-2">
           <Network className="w-5 h-5 text-primary" />
@@ -949,7 +739,6 @@ export const GraphCanvas = ({
           </span>
         </div>
 
-        {/* In Full-Screen: Allow switching Graph Type directly from Header! */}
         {isFullscreen && setGraphType && (
           <div className="flex items-center gap-1.5 bg-surface px-2.5 py-1 rounded-lg border border-borderTheme">
             <span className="text-xs font-semibold text-muted">Graph Type:</span>
@@ -967,7 +756,6 @@ export const GraphCanvas = ({
           </div>
         )}
 
-        {/* Representation Switcher Tabs */}
         <div className="flex items-center gap-1 bg-surface p-1 rounded-lg border border-borderTheme flex-wrap">
           <Button
             variant={activeTab === 'canvas' ? 'primary' : 'ghost'}
@@ -1050,33 +838,30 @@ export const GraphCanvas = ({
         </div>
       </div>
 
-      {/* Main Workspace: Left Canvas + Right Studio Panel (when in Full-Screen) */}
       <div className={`w-full flex-1 overflow-hidden flex ${isFullscreen ? 'flex-row' : 'flex-col'} relative gap-4`}>
-        {/* Left Side: Specific Inputs Bar + Canvas + Playback Bar (in full screen) */}
         <div className="flex-1 h-full flex flex-col justify-between overflow-hidden gap-3">
-          {/* Specific Inputs Box & Live Output Line Bar right at the top of the canvas! */}
-          <GraphSpecificInputsAndOutput
-            algorithm={algorithm}
-            startNode={startNode}
-            setStartNode={setStartNode}
-            targetNode={targetNode}
-            setTargetNode={setTargetNode}
-            kValue={kValue}
-            setKValue={setKValue}
-            onRunOperation={onRunOperation}
-            events={events}
-            stepIndex={stepIndex}
-            statistics={statistics}
-            vertices={vertices}
-            edges={edges}
-          />
+          {isFullscreen && (
+            <GraphSpecificInputsAndOutput
+              algorithm={algorithm}
+              startNode={startNode}
+              setStartNode={setStartNode}
+              targetNode={targetNode}
+              setTargetNode={setTargetNode}
+              kValue={kValue}
+              setKValue={setKValue}
+              onRunOperation={onRunOperation}
+              events={events}
+              stepIndex={stepIndex}
+              statistics={statistics}
+              vertices={vertices}
+              edges={edges}
+            />
+          )}
 
-          {/* SVG Graph / Representation Table */}
           <div className="flex-1 w-full overflow-hidden flex items-center justify-center">
             {activeTab === 'canvas' ? renderSvgGraph() : renderRepresentation()}
           </div>
 
-          {/* Embedded Playback Bar at the bottom of the canvas in Full-Screen Mode */}
           {isFullscreen && (
             <div className="shrink-0 pt-2">
               <GraphPlaybackBar
@@ -1093,9 +878,32 @@ export const GraphCanvas = ({
           )}
         </div>
 
-        {/* Right Studio Panel (in Full-Screen mode when showFullControls is true) */}
         {isFullscreen && showFullControls && renderFullScreenStudioPanel()}
       </div>
+
+      {isPseudocodeExpanded && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 md:p-8 font-body">
+          <div className="bg-card w-full max-w-4xl max-h-full rounded-2xl border-2 border-borderTheme shadow-2xl flex flex-col overflow-hidden">
+            <div className="p-4 border-b-2 border-borderTheme flex items-center justify-between bg-surface">
+              <h2 className="text-lg font-heading font-bold text-textPrimary flex items-center gap-2">
+                <Code className="w-5 h-5 text-primary" />
+                {currentMeta.name} Pseudocode
+              </h2>
+              <button onClick={() => setIsPseudocodeExpanded(false)} className="p-2 rounded-xl hover:bg-card text-textSecondary hover:text-danger transition-colors">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-6 overflow-y-auto bg-slate-950 font-mono text-sm text-slate-300 leading-relaxed space-y-1">
+               {(currentMeta.pseudocode || []).map((line, idx) => (
+                  <div key={idx} className={`py-1.5 px-3 rounded-lg flex items-start gap-4 transition-colors hover:bg-white/5 border-l-4 border-transparent`}>
+                    <span className="text-slate-600 select-none shrink-0 w-6 text-right">{idx}</span>
+                    <span className="whitespace-pre-wrap">{line}</span>
+                  </div>
+               ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

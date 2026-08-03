@@ -1224,7 +1224,31 @@ int main(int argc, char* argv[]) {
 
     vector<GraphVertex> verts;
     vector<GraphEdge> edges;
-    generatePresetGraph(graphType, verts, edges);
+    
+    string marker;
+    if (cin >> marker && marker == "CUSTOM_GRAPH") {
+        int vCount;
+        if (cin >> vCount) {
+            for(int i=0; i<vCount; ++i){
+                GraphVertex v;
+                cin >> v.id >> v.label >> v.x >> v.y;
+                verts.push_back(v);
+            }
+        }
+        int eCount;
+        if (cin >> eCount) {
+            for(int i=0; i<eCount; ++i){
+                GraphEdge e;
+                int dir;
+                cin >> e.id >> e.from >> e.to >> e.weight >> dir;
+                e.directed = (dir == 1);
+                edges.push_back(e);
+            }
+        }
+    } else {
+        generatePresetGraph(graphType, verts, edges);
+    }
+    
     ensureLayout(verts);
 
     GraphResult res;

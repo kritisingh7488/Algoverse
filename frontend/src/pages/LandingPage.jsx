@@ -5,7 +5,6 @@ import {
   Play, 
   Pause, 
   RotateCcw, 
-  Sparkles, 
   Layers, 
   BarChart3, 
   Cpu, 
@@ -18,9 +17,7 @@ import {
 import AppLayout from '../layouts/AppLayout';
 import Button from '../components/common/Button';
 import Card from '../components/common/Card';
-import Badge from '../components/common/Badge';
 import MascotRole from '../components/mascots/MascotRole';
-import StickyNote from '../components/notebook/StickyNote';
 import { PaperClip, SparkleStar, TapeAccent } from '../components/notebook/PaperClip';
 
 // Interactive Sorting Demo Component for Hero
@@ -54,10 +51,10 @@ const HeroVisualization = () => {
   };
 
   return (
-    <Card className="relative overflow-hidden border-2 border-borderTheme p-6 shadow-medium bg-card">
+    <Card className="relative overflow-hidden border-[1.5px] border-borderTheme p-4 shadow-medium bg-card">
       <PaperClip className="absolute top-2 right-4 w-6 h-10 text-secondary z-10" />
       {/* Visual Header */}
-      <div className="flex items-center justify-between mb-6 pb-4 border-b-2 border-borderTheme">
+      <div className="flex items-center justify-between mb-6 pb-4 border-b-[1.5px] border-borderTheme">
         <div className="flex items-center gap-2">
           <span className="w-3 h-3 rounded-full bg-danger" />
           <span className="w-3 h-3 rounded-full bg-warning" />
@@ -150,25 +147,25 @@ const LandingPage = () => {
 
   return (
     <AppLayout showSidebar={false}>
-      <div className="space-y-24 py-6">
+      <div className="space-y-14 py-4">
 
         {/* Hero Section */}
         <section className="relative pt-6 pb-12 overflow-hidden">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
             
             {/* Hero Left Content */}
             <motion.div 
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.6 }}
-              className="lg:col-span-6 space-y-6 text-left"
+              className="lg:col-span-6 space-y-4 text-left"
             >
-              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-card border-2 border-primary text-primary text-xs font-heading font-bold shadow-soft">
+              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-card border-[1.5px] border-primary text-primary text-xs font-heading font-bold shadow-soft">
                 <SparkleStar className="w-3.5 h-3.5 text-warning" />
                 <span>Handcrafted Algorithm Playground</span>
               </div>
 
-              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-heading font-bold text-textPrimary tracking-tight leading-[1.15]">
+              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-heading font-bold text-textPrimary tracking-tight leading-[1.15]">
                 Master Algorithms <span className="text-primary">Visually & Interactively</span>.
               </h1>
 
@@ -190,7 +187,7 @@ const LandingPage = () => {
               </div>
 
               {/* Stats Counters */}
-              <div className="grid grid-cols-3 gap-4 pt-8 border-t-2 border-borderTheme">
+              <div className="grid grid-cols-3 gap-4 pt-8 border-t-[1.5px] border-borderTheme">
                 <div>
                   <h3 className="text-2xl font-heading font-bold text-textPrimary">50+</h3>
                   <p className="text-xs text-textSecondary font-body">Algorithms</p>
@@ -215,7 +212,7 @@ const LandingPage = () => {
             >
               <HeroVisualization />
               <div className="flex justify-end">
-                <MascotRole role="teacher" activity="reading" dialogue="Click Play to watch BubbleSort in action!" className="w-24 h-24" />
+                <MascotRole role="teacher" activity="reading" dialogue="Click Play to watch BubbleSort in action!" className="w-16 h-16" />
               </div>
             </motion.div>
           </div>
@@ -224,7 +221,7 @@ const LandingPage = () => {
         {/* Features Section */}
         <section className="space-y-12 text-center">
           <div className="max-w-2xl mx-auto space-y-3">
-            <h2 className="text-3xl sm:text-4xl font-heading font-bold text-textPrimary tracking-tight">
+            <h2 className="text-2xl sm:text-3xl font-heading font-bold text-textPrimary tracking-tight">
               Everything You Need to Master DSA
             </h2>
             <p className="text-textSecondary text-[15px] font-body">
@@ -232,7 +229,7 @@ const LandingPage = () => {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
             {features.map((item, idx) => {
               const Icon = item.icon;
               return (
@@ -251,7 +248,7 @@ const LandingPage = () => {
         {/* FAQ Section */}
         <section className="max-w-3xl mx-auto space-y-8">
           <div className="text-center space-y-2">
-            <h2 className="text-3xl font-heading font-bold text-textPrimary">Frequently Asked Questions</h2>
+            <h2 className="text-2xl font-heading font-bold text-textPrimary">Frequently Asked Questions</h2>
             <p className="text-textSecondary text-sm font-body">Everything you need to know about getting started with AlgoVerse.</p>
           </div>
 
@@ -276,11 +273,11 @@ const LandingPage = () => {
         </section>
 
         {/* CTA Banner with Mascot */}
-        <Card className="bg-cardAccent p-10 sm:p-14 text-center space-y-6 shadow-medium relative overflow-hidden border-2 border-borderTheme">
+        <Card className="bg-cardAccent p-6 sm:p-8 text-center space-y-4 shadow-medium relative overflow-hidden border-[1.5px] border-borderTheme">
           <TapeAccent className="absolute top-3 left-6" />
           <div className="max-w-2xl mx-auto space-y-4 relative z-10 flex flex-col items-center">
             <MascotRole role="companion" activity="star" className="w-20 h-20 mb-2" />
-            <h2 className="text-3xl sm:text-4xl font-heading font-bold text-textPrimary tracking-tight">
+            <h2 className="text-2xl sm:text-3xl font-heading font-bold text-textPrimary tracking-tight">
               Ready to Accelerate Your Algorithm Learning?
             </h2>
             <p className="text-textSecondary text-base font-body">

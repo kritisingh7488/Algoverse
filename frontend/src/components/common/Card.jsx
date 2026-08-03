@@ -5,8 +5,8 @@ export const Card = ({ children, className = '', hover = false, onClick, accent 
   return (
     <motion.div
       onClick={onClick}
-      whileHover={hover ? { y: -4, shadow: 'var(--shadow-medium)' } : {}}
-      className={`notebook-card p-6 ${accent ? 'bg-cardAccent' : 'bg-card'} ${
+      whileHover={hover ? { y: -2, shadow: 'var(--shadow-medium)' } : {}}
+      className={`notebook-card p-4 ${accent ? 'bg-cardAccent' : 'bg-card'} ${
         hover ? 'cursor-pointer hover:border-primary' : ''
       } ${className}`}
       {...props}

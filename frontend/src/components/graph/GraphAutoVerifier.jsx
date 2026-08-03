@@ -98,28 +98,38 @@ export default function GraphAutoVerifier({ onClose }) {
         </div>
 
         {/* Controls & Summary */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 border-b border-borderTheme bg-card">
-          <Button
-            variant="primary"
-            size="md"
-            onClick={runVerificationSuite}
+        <div className="p-4 border-b border-borderTheme bg-surface/30 grid grid-cols-1 md:grid-cols-4 gap-4 items-center">
+          <Button 
+            onClick={runVerificationSuite} 
             disabled={isRunning}
-            className="w-full sm:w-auto"
+            className="w-full justify-center"
           >
-            <Play className={`w-4 h-4 mr-1.5 ${isRunning ? 'animate-spin' : ''}`} />
-            <span>{isRunning ? 'Running Verification...' : 'Run All 126 Graph Test Cases'}</span>
+            {isRunning ? (
+              <><RefreshCw className="w-4 h-4 mr-2 animate-spin" /> Verifying...</>
+            ) : (
+              <><Play className="w-4 h-4 mr-2" /> Start Test Suite</>
+            )}
           </Button>
-
-          <div className="flex items-center gap-3 text-xs font-mono font-bold">
-            <span className="px-2.5 py-1 bg-surface border border-borderTheme rounded-md text-foreground">
-              Total: {summary.total}
-            </span>
-            <span className="px-2.5 py-1 bg-emerald-500/10 border border-emerald-500/30 text-emerald-500 rounded-md">
-              Passed: {summary.passed}
-            </span>
-            <span className="px-2.5 py-1 bg-red-500/10 border border-red-500/30 text-red-500 rounded-md">
-              Failed: {summary.failed}
-            </span>
+          
+          <div className="col-span-3 flex justify-around p-3 bg-surface rounded-xl border border-borderTheme">
+            <div className="text-center">
+              <div className="text-[10px] text-muted uppercase font-bold tracking-wider mb-0.5">Total Tests</div>
+              <div className="text-xl font-heading font-black text-foreground">{summary.total}</div>
+            </div>
+            <div className="text-center">
+              <div className="text-[10px] text-emerald-500 uppercase font-bold tracking-wider mb-0.5">Passed</div>
+              <div className="text-xl font-heading font-black text-emerald-500">{summary.passed}</div>
+            </div>
+            <div className="text-center">
+              <div className="text-[10px] text-danger uppercase font-bold tracking-wider mb-0.5">Failed</div>
+              <div className="text-xl font-heading font-black text-danger">{summary.failed}</div>
+            </div>
+            <div className="text-center">
+              <div className="text-[10px] text-primary uppercase font-bold tracking-wider mb-0.5">Pass Rate</div>
+              <div className="text-xl font-heading font-black text-primary">
+                {summary.total === 0 ? '0%' : `${Math.round((summary.passed / summary.total) * 100)}%`}
+              </div>
+            </div>
           </div>
         </div>
 

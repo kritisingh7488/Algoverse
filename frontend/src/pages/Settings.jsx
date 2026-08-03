@@ -15,15 +15,24 @@ import Card from '../components/common/Card';
 import ThemeToggle from '../components/common/ThemeToggle';
 
 const Settings = () => {
-  const { user } = useAuthStore();
+  const { user, updateProfile, isLoading } = useAuthStore();
   const [fullName, setFullName] = useState(user?.fullName || '');
   const [email, setEmail] = useState(user?.email || '');
   const [saved, setSaved] = useState(false);
+  const [errorMsg, setErrorMsg] = useState(null);
 
-  const handleSave = (e) => {
+  const handleSave = async (e) => {
     e.preventDefault();
-    setSaved(true);
-    setTimeout(() => setSaved(false), 3000);
+    setErrorMsg(null);
+    setSaved(false);
+    
+    const res = await updateProfile({ fullName, email });
+    if (res.success) {
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
+    } else {
+      setErrorMsg(res.message);
+    }
   };
 
   return (
@@ -52,6 +61,12 @@ const Settings = () => {
                 <CheckCircle2 className="w-4 h-4 text-success" /> Settings updated successfully!
               </div>
             )}
+            
+            {errorMsg && (
+              <div className="p-4 rounded-2xl bg-danger/20 border border-danger/30 text-textPrimary text-xs font-body font-bold flex items-center gap-2">
+                <Shield className="w-4 h-4 text-danger" /> {errorMsg}
+              </div>
+            )}
 
             <div className="space-y-4">
               <h3 className="text-sm font-heading font-bold text-textPrimary border-b-2 border-borderTheme pb-2">Profile Information</h3>
@@ -74,8 +89,8 @@ const Settings = () => {
             </div>
 
             <div className="pt-4 border-t-2 border-borderTheme flex justify-end">
-              <Button type="submit" variant="primary" size="md">
-                Save Changes
+              <Button type="submit" variant="primary" size="md" disabled={isLoading}>
+                {isLoading ? 'Saving...' : 'Save Changes'}
               </Button>
             </div>
           </Card>

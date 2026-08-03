@@ -48,7 +48,41 @@ const userSchema = new mongoose.Schema({
         type: String,
         enum: ['user', 'admin'],
         default: 'user'
-    }
+    },
+    // --- Progression & Dashboard Stats ---
+    xp: {
+        type: Number,
+        default: 0
+    },
+    level: {
+        type: Number,
+        default: 1
+    },
+    streakDays: {
+        type: [Boolean],
+        default: [false, false, false, false, false, false, false]
+    },
+    streakCount: {
+        type: Number,
+        default: 0
+    },
+    dailyGoalProgress: {
+        type: Number,
+        default: 0 // e.g. 0 out of 4
+    },
+    recentActivity: [{
+        name: String,
+        type: { type: String }, // e.g., 'Sorting', 'Graphs'
+        progress: Number,
+        time: String,
+        path: String
+    }],
+    achievements: [{
+        title: String,
+        desc: String,
+        icon: String, // String identifier for lucide-react icon
+        date: String
+    }]
 }, {
     timestamps: true
 });

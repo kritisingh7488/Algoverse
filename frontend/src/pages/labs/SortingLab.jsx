@@ -3,7 +3,6 @@ import { BarChart2, AlertCircle, RefreshCw, PanelLeftClose, PanelLeftOpen } from
 import AppLayout from '../../layouts/AppLayout';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
-import MascotRole from '../../components/mascots/MascotRole';
 import api from '../../api/axios';
 
 import SortingConfigPanel from '../../components/sorting/SortingConfigPanel';
@@ -12,6 +11,8 @@ import SortingPlaybackBar from '../../components/sorting/SortingPlaybackBar';
 import SortingStatsPanel from '../../components/sorting/SortingStatsPanel';
 import SortingConceptPanel from '../../components/sorting/SortingConceptPanel';
 import SortingComparisonView from '../../components/sorting/SortingComparisonView';
+import SortingAutoVerifier from '../../components/sorting/SortingAutoVerifier';
+import { ShieldCheck } from 'lucide-react';
 
 export const SORTING_SPECS = {
   bubble: {
@@ -285,6 +286,7 @@ const SortingLab = () => {
   const [events, setEvents] = useState([]);
   const [backendStats, setBackendStats] = useState({});
   const [error, setError] = useState(null);
+  const [isVerifierOpen, setIsVerifierOpen] = useState(false);
 
   const currentSpec = SORTING_SPECS[algoKey] || SORTING_SPECS.bubble;
 
@@ -389,7 +391,7 @@ const SortingLab = () => {
 
   return (
     <AppLayout>
-      <div className="space-y-6 py-2">
+      <div className="space-y-4 py-1">
 
         {/* Top Header Card */}
         <Card className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -415,7 +417,21 @@ const SortingLab = () => {
               </p>
             </div>
           </div>
-          <MascotRole role="teacher" activity="reading" dialogue={`Executing ${currentSpec.name} in C++!`} className="w-20 h-20" />
+          <div className="flex items-center gap-3 flex-wrap">
+            <Button variant={isComparisonMode ? 'primary' : 'outline'} size="sm" onClick={() => setIsComparisonMode(!isComparisonMode)}>
+              <BarChart2 className="w-4 h-4 mr-1.5" />
+              <span>{isComparisonMode ? 'Single Visualizer' : 'Compare Algorithms'}</span>
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsVerifierOpen(true)}
+              className="border-emerald-500/50 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10"
+            >
+              <ShieldCheck className="w-4 h-4 mr-1.5 text-emerald-500" />
+              Verify Engine Reliability
+            </Button>
+          </div>
         </Card>
 
         {/* Error Alert */}
@@ -439,7 +455,7 @@ const SortingLab = () => {
             onBackToSingle={() => setIsComparisonMode(false)}
           />
         ) : (
-          <div className="space-y-6">
+          <div className="space-y-4">
 
             {/* Live Stats Dashboard */}
             <SortingStatsPanel
@@ -449,7 +465,7 @@ const SortingLab = () => {
             />
 
             {/* Collapsible Laboratory Grid Layout */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 transition-all duration-300">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 transition-all duration-300">
 
               {/* LEFT: Engine Configuration */}
               {!isSidebarCollapsed && (
@@ -523,10 +539,9 @@ const SortingLab = () => {
               </div>
 
             </div>
-
           </div>
         )}
-
+        {isVerifierOpen && <SortingAutoVerifier onClose={() => setIsVerifierOpen(false)} />}
       </div>
     </AppLayout>
   );

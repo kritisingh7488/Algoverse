@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { ZoomIn, ZoomOut, Maximize2, Minimize2, Target, Sliders, Upload, ToggleLeft, ToggleRight, Search } from 'lucide-react';
+import { ZoomIn, ZoomOut, Maximize2, Minimize2, Target, Sliders, Upload, ToggleLeft, ToggleRight, Search, Activity } from 'lucide-react';
 
 import { ArrayRenderer } from './renderers/ArrayRenderer';
 import { HashRenderer } from './renderers/HashRenderer';
@@ -43,7 +43,7 @@ export const SearchingCanvas = ({
   const canvasRef = useRef(null);
 
   const currentEvent = events[stepIndex] || {};
-  const { desc } = currentEvent;
+  const { desc, type: evType, left, right, mid, found } = currentEvent;
 
   // Determine active viewType: 'array' | 'hashtable' | 'tree' | 'trie' | 'pattern' | 'graph'
   const viewType = spec?.viewType || 'array';
@@ -327,10 +327,18 @@ export const SearchingCanvas = ({
       </div>
 
       {/* Step Event Description Banner */}
-      <div className="py-2 border-t-2 border-borderTheme text-center shrink-0">
-        <p className="text-xs sm:text-sm font-mono font-bold text-textPrimary truncate px-4 py-1.5 rounded-2xl bg-surface border border-borderTheme inline-block max-w-full">
-          {desc || 'Ready to execute C++ search algorithm.'}
-        </p>
+      <div className="w-full flex items-center gap-2 bg-primary/10 border border-primary/20 px-4 py-2 my-2 rounded-lg shadow-xs shrink-0">
+        <Activity className="w-4 h-4 text-primary shrink-0 animate-pulse" />
+        <span className="text-xs font-mono font-bold text-foreground break-words whitespace-normal flex-1">
+          Output: {desc || 'Ready to execute C++ search algorithm.'}
+        </span>
+        <div className="flex items-center gap-2 shrink-0">
+          {events && events.length > 0 && (
+            <span className="px-2 py-0.5 rounded bg-primary/20 text-primary font-bold text-[10px] border border-primary/30">
+              STEP {(stepIndex || 0) + 1} / {events.length}
+            </span>
+          )}
+        </div>
       </div>
 
       {/* EMBEDDED PLAYBACK BAR WHEN IN FULL SCREEN MODE */}

@@ -3,7 +3,7 @@ import { Layers, PanelLeftClose, PanelLeftOpen, BarChart2 } from 'lucide-react';
 import AppLayout from '../layouts/AppLayout';
 import Card from '../components/common/Card';
 import Button from '../components/common/Button';
-import MascotRole from '../components/mascots/MascotRole';
+
 import api from '../api/axios';
 
 import { STRUCTURE_SPECS, generateEngineSteps } from '../components/playground/DataStructureEngines';
@@ -160,7 +160,7 @@ const Playground = () => {
 
   return (
     <AppLayout>
-      <div className="space-y-6 py-2">
+      <div className="space-y-4 py-1">
 
         {/* Top Header Card with Mascot */}
         <Card className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -196,7 +196,7 @@ const Playground = () => {
               <BarChart2 className="w-4 h-4 mr-1.5" />
               {isComparisonMode ? 'Single Visualizer' : 'Multi-DS Comparison Studio'}
             </Button>
-            <MascotRole role="teacher" activity="reading" dialogue={`Executing ${currentSpec.name} in C++!`} className="w-20 h-20" />
+
           </div>
         </Card>
 
@@ -207,7 +207,7 @@ const Playground = () => {
           />
         ) : (
           /* Collapsible Laboratory Grid Layout */
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 transition-all duration-300">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 transition-all duration-300">
 
             {/* LEFT PANEL: Configuration & Selectors */}
             {!isSidebarCollapsed && (

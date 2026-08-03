@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Search, AlertCircle, RefreshCw, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+import { Search, AlertCircle, RefreshCw, PanelLeftClose, PanelLeftOpen, BarChart2 } from 'lucide-react';
 import AppLayout from '../../layouts/AppLayout';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
-import MascotRole from '../../components/mascots/MascotRole';
 import api from '../../api/axios';
 
 import { SEARCHING_ALGORITHMS_REGISTRY } from '../../data/searchingAlgorithmsRegistry';
@@ -14,6 +13,8 @@ import SearchingPlaybackBar from '../../components/searching/SearchingPlaybackBa
 import SearchingStatsPanel from '../../components/searching/SearchingStatsPanel';
 import SearchingConceptPanel from '../../components/searching/SearchingConceptPanel';
 import SearchingComparisonView from '../../components/searching/SearchingComparisonView';
+import SearchingAutoVerifier from '../../components/searching/SearchingAutoVerifier';
+import { ShieldCheck } from 'lucide-react';
 
 const SearchingLab = () => {
   const [algoKey, setAlgoKey] = useState('binary');
@@ -34,6 +35,7 @@ const SearchingLab = () => {
   const [events, setEvents] = useState([]);
   const [backendData, setBackendData] = useState({});
   const [error, setError] = useState(null);
+  const [isVerifierOpen, setIsVerifierOpen] = useState(false);
 
   const currentSpec = SEARCHING_ALGORITHMS_REGISTRY[algoKey] || SEARCHING_ALGORITHMS_REGISTRY.binary;
 
@@ -129,7 +131,7 @@ const SearchingLab = () => {
 
   return (
     <AppLayout>
-      <div className="space-y-6 py-2">
+      <div className="space-y-4 py-1">
 
         {/* Top Header Card */}
         <Card className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -155,7 +157,21 @@ const SearchingLab = () => {
               </p>
             </div>
           </div>
-          <MascotRole role="teacher" activity="reading" dialogue={`Searching for ${target} in C++!`} className="w-20 h-20" />
+          <div className="flex items-center gap-3 flex-wrap">
+            <Button variant={isComparisonMode ? 'primary' : 'outline'} size="sm" onClick={() => setIsComparisonMode(!isComparisonMode)}>
+              <BarChart2 className="w-4 h-4 mr-1.5" />
+              <span>{isComparisonMode ? 'Single Visualizer' : 'Compare Algorithms'}</span>
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsVerifierOpen(true)}
+              className="border-emerald-500/50 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10"
+            >
+              <ShieldCheck className="w-4 h-4 mr-1.5 text-emerald-500" />
+              Verify Engine Reliability
+            </Button>
+          </div>
         </Card>
 
         {/* Error Alert */}
@@ -192,7 +208,7 @@ const SearchingLab = () => {
             />
 
             {/* Collapsible Laboratory Grid Layout */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 transition-all duration-300">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 transition-all duration-300">
 
               {/* LEFT: Engine Configuration Sidebar */}
               {!isSidebarCollapsed && (
@@ -273,10 +289,9 @@ const SearchingLab = () => {
               </div>
 
             </div>
-
           </div>
         )}
-
+        {isVerifierOpen && <SearchingAutoVerifier onClose={() => setIsVerifierOpen(false)} />}
       </div>
     </AppLayout>
   );

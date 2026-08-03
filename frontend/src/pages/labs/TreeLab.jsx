@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import {
   GitFork, Plus, Trash2, Code, Layers, Sparkles, Search, Lightbulb, AlertTriangle,
-  BarChart2, PanelLeftClose, PanelLeftOpen, Shuffle, RotateCcw, Upload, CheckCircle2, Sliders
+  BarChart2, PanelLeftClose, PanelLeftOpen, Shuffle, RotateCcw, Upload, CheckCircle2, Sliders, Maximize2, X
 } from 'lucide-react';
 import AppLayout from '../../layouts/AppLayout';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
-import MascotRole from '../../components/mascots/MascotRole';
 import api from '../../api/axios';
 
 import TreeCanvas from '../../components/tree/TreeCanvas';
@@ -204,8 +203,10 @@ const TreeLab = () => {
   const [events, setEvents] = useState([]);
   const [traversalSequence, setTraversalSequence] = useState([]);
   const [activeHighlight, setActiveHighlight] = useState(null);
-  const [activeCodeLine, setActiveCodeLine] = useState(0);
   const [desc, setDesc] = useState('');
+  const [isVerifierOpen, setIsVerifierOpen] = useState(false);
+  const [isPseudocodeExpanded, setIsPseudocodeExpanded] = useState(false);
+  const [activeCodeLine, setActiveCodeLine] = useState(-1);
 
   const currentSpec = TREE_TYPES[treeType] || TREE_TYPES.bst;
 
@@ -288,12 +289,10 @@ const TreeLab = () => {
     return typeof val === 'string' && val.length > 0;
   };
 
-  // Build initial tree visualization on mount and when treeValues changes
   useEffect(() => {
     fetchTreeState();
   }, [treeValues]);
 
-  // Only auto-fetch when treeType changes if autoConvert is true
   useEffect(() => {
     if (autoConvert) {
       fetchTreeState();
@@ -320,7 +319,6 @@ const TreeLab = () => {
     }
   };
 
-  // Execute C++ Tree Operation and consume events properly
   const executeCppTreeOp = async (opName, val = '') => {
     setLastOpName(opName.toUpperCase() + (val !== '' && val !== undefined && val !== null ? ` (${val})` : ''));
     try {
@@ -336,11 +334,8 @@ const TreeLab = () => {
           setValidationStats(res.data.data.validation);
         }
 
-        // Apply first step immediately
         if (evts.length > 0) applyStep(evts[0]);
 
-        // After animation completes, update treeValues from final event's items
-        // For insert/delete, we need to update treeValues
         if (opName === 'insert') {
           setTreeValues(prev => [...prev, val]);
         } else if (opName === 'delete') {
@@ -356,7 +351,6 @@ const TreeLab = () => {
       console.log('C++ tree engine unavailable, using local fallback:', err.message);
     }
 
-    // Local fallback for insert/delete
     if (opName === 'insert') {
       setTreeValues(prev => [...prev, val]);
     } else if (opName === 'delete') {
@@ -364,10 +358,8 @@ const TreeLab = () => {
     }
   };
 
-  // Apply a single event step to the visualization
   const applyStep = (step) => {
     if (!step) return;
-    // Update rendered nodes from the event's node array
     if (step.nodes && step.nodes.length > 0) {
       setNodes(step.nodes);
     }
@@ -380,7 +372,6 @@ const TreeLab = () => {
     setDesc(step.desc || '');
   };
 
-  // Stepper effect
   useEffect(() => {
     let timer;
     if (isPlaying && stepIndex < events.length - 1) {
@@ -395,12 +386,10 @@ const TreeLab = () => {
     return () => clearTimeout(timer);
   }, [isPlaying, stepIndex, events, speed]);
 
-  // Manual step change (from scrubber)
   useEffect(() => {
     if (events[stepIndex]) applyStep(events[stepIndex]);
   }, [stepIndex]);
 
-  // Handlers
   const handlePreset = (preset) => {
     setIsPlaying(false);
     setEvents([]); setTraversalSequence([]); setActiveHighlight(null);
@@ -557,9 +546,8 @@ const TreeLab = () => {
 
   return (
     <AppLayout>
-      <div className="space-y-6 py-2">
+      <div className="space-y-4 py-1">
 
-        {/* Header */}
         <Card className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <Button variant="outline" size="sm" onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)} className="shrink-0">
@@ -580,26 +568,24 @@ const TreeLab = () => {
               <BarChart2 className="w-4 h-4 mr-1.5" />
               {isComparisonMode ? 'Single Visualizer' : 'Compare Trees'}
             </Button>
-            <MascotRole role="teacher" activity="reading" dialogue={`${currentSpec.name}!`} className="w-20 h-20" />
           </div>
         </Card>
 
         {isComparisonMode ? (
           <TreeComparisonView specs={TREE_TYPES} onBackToSingle={() => setIsComparisonMode(false)} />
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 transition-all duration-300">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 transition-all duration-300">
 
-            {/* LEFT: Tree Type Selector */}
             {!isSidebarCollapsed && (
               <div className="lg:col-span-3">
-                <Card className="p-5 space-y-4">
+                <Card className="p-4 space-y-3">
                   <div className="flex items-center justify-between">
                     <h3 className="text-xs font-heading font-bold text-textSecondary uppercase tracking-wider flex items-center gap-1.5">
                       <Layers className="w-4 h-4 text-primary" /> Tree Architecture
                     </h3>
                     <div className="flex items-center gap-1.5">
                       <button
-                        onClick={() => setShowVerifier(true)}
+                        onClick={() => setIsVerifierOpen(true)}
                         className="text-[10px] font-mono px-2 py-0.5 rounded-lg border border-emerald-500/40 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 font-bold transition-all flex items-center gap-1"
                         title="Run automated verification test suite across all trees and operations"
                       >
@@ -639,7 +625,6 @@ const TreeLab = () => {
               </div>
             )}
 
-            {/* CENTER: Canvas + Controls + Playback */}
             <div className={`${isSidebarCollapsed ? 'lg:col-span-8' : 'lg:col-span-6'} space-y-4`}>
 
               <TreeCanvas
@@ -668,9 +653,7 @@ const TreeLab = () => {
                 onCustomOp={handleCustomOp}
               />
 
-              {/* Operations Bar */}
               <Card className="p-4 flex flex-col gap-3">
-                {/* Input Data Type Selector Bar */}
                 <div className="flex items-center justify-between flex-wrap gap-2 border-b border-borderTheme pb-2.5">
                   <span className="text-[10px] font-mono font-bold text-primary uppercase flex items-center gap-1">
                     <Sliders className="w-3.5 h-3.5" /> Select Input Data Type:
@@ -690,7 +673,6 @@ const TreeLab = () => {
                   </div>
                 </div>
 
-                {/* Presets Bar */}
                 <div className="flex items-center justify-between flex-wrap gap-2 border-b border-borderTheme pb-2.5">
                   <span className="text-[10px] font-mono font-bold text-textSecondary uppercase">Test Presets:</span>
                   <div className="flex items-center gap-1.5 flex-wrap">
@@ -734,7 +716,6 @@ const TreeLab = () => {
                   </div>
                 </div>
 
-                {/* Type-Specific Controls (Show only when applicable) */}
                 {TYPE_SPECIFIC_CONTROLS[treeType] && TYPE_SPECIFIC_CONTROLS[treeType].length > 0 && (
                   <div className="pt-2 border-t border-borderTheme flex items-center justify-between flex-wrap gap-2 text-xs">
                     <div className="flex items-center gap-2">
@@ -766,7 +747,6 @@ const TreeLab = () => {
                   </div>
                 )}
 
-                {/* Filtered C++ Tree Traversals */}
                 {ALL_TRAVERSALS.filter(trav => isTraversalSupported(trav.key, treeType)).length > 0 && (
                   <div className="pt-2 border-t border-borderTheme flex flex-col gap-2">
                     <div className="flex items-center justify-between flex-wrap gap-2 text-xs">
@@ -782,7 +762,6 @@ const TreeLab = () => {
                   </div>
                 )}
 
-                {/* Filtered C++ Tree Algorithms */}
                 {ALL_ALGORITHMS.filter(alg => isAlgorithmSupported(alg.key, treeType)).length > 0 && (
                   <div className="pt-2 border-t border-borderTheme flex items-center justify-between flex-wrap gap-2 text-xs">
                     <div className="flex items-center gap-2">
@@ -817,22 +796,30 @@ const TreeLab = () => {
                 onRestart={() => { setStepIndex(0); if (events[0]) applyStep(events[0]); }} />
             </div>
 
-            {/* RIGHT: Pseudocode & Info */}
             <div className={`${isSidebarCollapsed ? 'lg:col-span-4' : 'lg:col-span-3'} space-y-4`}>
-              <Card className="p-5 space-y-3">
-                <h3 className="text-xs font-heading font-bold text-textSecondary uppercase tracking-wider flex items-center gap-1.5">
-                  <Code className="w-4 h-4 text-primary" /> Live Pseudocode
-                </h3>
+              <Card className="p-4 space-y-2.5">
+                <div className="flex items-center justify-between gap-2 pb-2 border-b border-borderTheme">
+                  <div className="flex items-center gap-2">
+                    <Code className="w-4 h-4 text-primary" />
+                    <h3 className="text-sm font-bold text-textPrimary">
+                      C++ Native {currentSpec.name} Pseudocode
+                    </h3>
+                  </div>
+                  <button onClick={() => setIsPseudocodeExpanded(true)} className="hover:text-primary transition-colors text-textSecondary" title="Expand Pseudocode">
+                    <Maximize2 className="w-4 h-4" />
+                  </button>
+                </div>
                 <div className="bg-slate-900 rounded-2xl p-4 font-mono text-[11px] text-slate-300 space-y-1 overflow-x-auto">
-                  {currentSpec.pseudocode.map((line, idx) => (
+                  {currentSpec.pseudocode.slice(0, 5).map((line, idx) => (
                     <div key={idx} className={`px-2 py-1 rounded transition-colors ${activeCodeLine === idx ? 'bg-primary/40 text-white font-bold border-l-2 border-primary' : 'opacity-70'}`}>
                       {line}
                     </div>
                   ))}
+                  {currentSpec.pseudocode.length > 5 && <div className="text-[10px] text-slate-500 italic pt-1">... and {currentSpec.pseudocode.length - 5} more lines</div>}
                 </div>
               </Card>
 
-              <Card className="p-5 space-y-3">
+              <Card className="p-4 space-y-2.5">
                 <h3 className="text-xs font-heading font-bold text-warning uppercase tracking-wider flex items-center gap-1.5">
                   <Lightbulb className="w-4 h-4" /> Intuition
                 </h3>
@@ -847,8 +834,7 @@ const TreeLab = () => {
                 </div>
               </Card>
 
-              {/* Information Panel */}
-              <Card className="p-5 space-y-3">
+              <Card className="p-4 space-y-2.5">
                 <div className="flex items-center justify-between border-b border-borderTheme pb-2">
                   <h3 className="text-xs font-heading font-bold text-textSecondary uppercase tracking-wider">Information Panel</h3>
                   <span className="text-[10px] font-mono font-bold text-primary px-2 py-0.5 rounded bg-primary/10">
@@ -885,8 +871,7 @@ const TreeLab = () => {
                 </div>
               </Card>
 
-              {/* Validation Panel */}
-              <Card className="p-5 space-y-3">
+              <Card className="p-4 space-y-2.5">
                 <div className="flex items-center justify-between border-b border-borderTheme pb-2">
                   <h3 className="text-xs font-heading font-bold text-textSecondary uppercase tracking-wider flex items-center gap-1.5">
                     <CheckCircle2 className="w-4 h-4 text-success" /> Validation Panel
@@ -941,7 +926,32 @@ const TreeLab = () => {
         )}
       </div>
 
-      {showVerifier && <TreeAutoVerifier onClose={() => setShowVerifier(false)} />}
+      {isVerifierOpen && <TreeAutoVerifier onClose={() => setIsVerifierOpen(false)} />}
+
+      {/* Fullscreen Pseudocode Modal */}
+      {isPseudocodeExpanded && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 md:p-8">
+          <div className="bg-card w-full max-w-4xl max-h-full rounded-2xl border-2 border-borderTheme shadow-2xl flex flex-col overflow-hidden">
+            <div className="p-4 border-b-2 border-borderTheme flex items-center justify-between bg-surface">
+              <h2 className="text-lg font-heading font-bold text-textPrimary flex items-center gap-2">
+                <Code className="w-5 h-5 text-primary" />
+                {currentSpec.name} Detailed C++ Implementation
+              </h2>
+              <button onClick={() => setIsPseudocodeExpanded(false)} className="p-2 rounded-xl hover:bg-card text-textSecondary hover:text-danger transition-colors">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-6 overflow-y-auto bg-slate-950 font-mono text-sm text-slate-300 leading-relaxed space-y-1">
+               {currentSpec.pseudocode.map((line, idx) => (
+                  <div key={idx} className={`py-1.5 px-3 rounded-lg flex items-start gap-4 transition-colors ${activeCodeLine === idx ? 'bg-primary/30 text-white font-bold border-l-4 border-primary' : 'hover:bg-white/5 border-l-4 border-transparent'}`}>
+                    <span className="text-slate-600 select-none shrink-0 w-6 text-right">{idx}</span>
+                    <span className="whitespace-pre-wrap">{line}</span>
+                  </div>
+               ))}
+            </div>
+          </div>
+        </div>
+      )}
     </AppLayout>
   );
 };

@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { ZoomIn, ZoomOut, Maximize2, Minimize2, BarChart2, Sliders, Upload, Search, GitBranch, Hash, Layers } from 'lucide-react';
+import { ZoomIn, ZoomOut, Maximize2, Minimize2, BarChart2, Sliders, Upload, Search, GitBranch, Hash, Layers, Activity } from 'lucide-react';
 import { SortingPlaybackBar } from './SortingPlaybackBar';
 import Button from '../common/Button';
 
@@ -326,7 +326,7 @@ export const SortingCanvas = ({
                 <GitBranch className="w-4 h-4" /> Binary Max Heap Tree Topology
               </div>
               <div className="w-full flex justify-center py-2 min-w-max">
-                {heapRoot && <RenderHeapNode node={heapRoot} currentEvent={currentEvent} />}
+                <HeapTreeRenderer currentArr={currentArr} currentEvent={currentEvent} />
               </div>
             </div>
           )}
@@ -526,10 +526,18 @@ export const SortingCanvas = ({
       </div>
 
       {/* Step Event Description Bar */}
-      <div className="py-2 border-t-2 border-borderTheme text-center shrink-0">
-        <p className="text-xs sm:text-sm font-mono font-bold text-textPrimary truncate px-4 py-1.5 rounded-2xl bg-surface border border-borderTheme inline-block max-w-full">
-          {desc || 'Ready to execute C++ sorting algorithm.'}
-        </p>
+      <div className="w-full flex items-center gap-2 bg-primary/10 border border-primary/20 px-4 py-2 my-2 rounded-lg shadow-xs shrink-0">
+        <Activity className="w-4 h-4 text-primary shrink-0 animate-pulse" />
+        <span className="text-xs font-mono font-bold text-foreground break-words whitespace-normal flex-1">
+          Output: {desc || 'Ready to execute C++ sorting algorithm.'}
+        </span>
+        <div className="flex items-center gap-2 shrink-0">
+          {events && events.length > 0 && (
+            <span className="px-2 py-0.5 rounded bg-primary/20 text-primary font-bold text-[10px] border border-primary/30">
+              STEP {(stepIndex || 0) + 1} / {events.length}
+            </span>
+          )}
+        </div>
       </div>
 
     </div>
@@ -537,38 +545,94 @@ export const SortingCanvas = ({
 };
 
 // Heap Tree Node Helper Component
-const RenderHeapNode = ({ node, currentEvent }) => {
-  if (!node) return null;
-  const { type, i, j } = currentEvent;
-  const isCurrent = i === node.idx || j === node.idx;
-  const isSwap = (type === 'heap_swap' || type === 'swap') && (i === node.idx || j === node.idx);
+const HeapTreeRenderer = ({ currentArr, currentEvent }) => {
+  if (!currentArr || currentArr.length === 0) return null;
+  const N = currentArr.length;
+  
+  const maxDepth = Math.floor(Math.log2(N || 1));
+  const levelHeight = 60;
+  
+  const positions = new Array(N);
+  const leafCount = Math.pow(2, maxDepth);
+  // Ensure a minimum width so nodes don't overlap on small heaps
+  const totalWidth = Math.max(leafCount * 45, 300);
+  
+  const computePositions = (idx, depth, minX, maxX) => {
+    if (idx >= N) return;
+    const x = (minX + maxX) / 2;
+    positions[idx] = { x, y: depth * levelHeight };
+    computePositions(2 * idx + 1, depth + 1, minX, x);
+    computePositions(2 * idx + 2, depth + 1, x, maxX);
+  };
+  
+  computePositions(0, 0, 0, totalWidth);
+  
+  const minX = 0;
+  const maxX = totalWidth;
+  const maxY = maxDepth * levelHeight;
+  
+  const width = maxX + 100;
+  const height = maxY + 80;
+  const offsetX = 50;
+  const offsetY = 40;
 
-  let style = 'bg-card border-borderTheme text-textPrimary';
-  if (isSwap) style = 'bg-accent text-white border-accent scale-110 shadow-md';
-  else if (isCurrent) style = 'bg-warning text-textPrimary border-warning scale-110 shadow-md';
-
+  const { type, i, j } = currentEvent || {};
+  
   return (
-    <div className="flex flex-col items-center relative">
-      <motion.div
-        layout
-        className={`w-11 h-11 rounded-full border-2 flex items-center justify-center font-bold text-xs shadow-soft z-10 transition-all ${style}`}
-      >
-        {node.val}
-      </motion.div>
-      {(node.left || node.right) && (
-        <div className="relative pt-6 mt-1 flex justify-center gap-6 w-full">
-          <svg className="absolute top-0 left-0 w-full h-6 pointer-events-none stroke-borderTheme stroke-2">
-            {node.left && <line x1="50%" y1="0" x2="25%" y2="100%" strokeDasharray="3 3" />}
-            {node.right && <line x1="50%" y1="0" x2="75%" y2="100%" strokeDasharray="3 3" />}
-          </svg>
-          <div className="flex flex-col items-center">
-            {node.left && <RenderHeapNode node={node.left} currentEvent={currentEvent} />}
-          </div>
-          <div className="flex flex-col items-center">
-            {node.right && <RenderHeapNode node={node.right} currentEvent={currentEvent} />}
-          </div>
-        </div>
-      )}
+    <div className="w-full overflow-x-auto flex justify-center py-4 scrollbar-thin scrollbar-thumb-primary/20">
+      <div style={{ width: `${width}px`, height: `${height}px`, position: 'relative' }}>
+        <svg width="100%" height="100%" style={{ position: 'absolute', top: 0, left: 0 }} className="pointer-events-none">
+          {currentArr.map((_, idx) => {
+            const left = 2 * idx + 1;
+            const right = 2 * idx + 2;
+            const res = [];
+            if (left < N) {
+              res.push(
+                <line key={`edge-${idx}-${left}`} 
+                      x1={positions[idx].x + offsetX} y1={positions[idx].y + offsetY} 
+                      x2={positions[left].x + offsetX} y2={positions[left].y + offsetY} 
+                      className="stroke-borderTheme stroke-2" />
+              );
+            }
+            if (right < N) {
+              res.push(
+                <line key={`edge-${idx}-${right}`} 
+                      x1={positions[idx].x + offsetX} y1={positions[idx].y + offsetY} 
+                      x2={positions[right].x + offsetX} y2={positions[right].y + offsetY} 
+                      className="stroke-borderTheme stroke-2" />
+              );
+            }
+            return res;
+          })}
+        </svg>
+        
+        {currentArr.map((val, idx) => {
+          const isCurrent = i === idx || j === idx;
+          const isSwap = (type === 'heap_swap' || type === 'swap') && (i === idx || j === idx);
+          let style = 'bg-card border-borderTheme text-textPrimary';
+          if (isSwap) style = 'bg-accent text-white border-accent scale-110 shadow-md ring-4 ring-accent/30';
+          else if (isCurrent) style = 'bg-warning text-textPrimary border-warning scale-110 shadow-md';
+
+          return (
+            <motion.div
+              key={`node-${val}-${idx}`}
+              layout
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              style={{
+                position: 'absolute',
+                left: positions[idx].x + offsetX,
+                top: positions[idx].y + offsetY,
+                transform: 'translate(-50%, -50%)'
+              }}
+              className={`w-11 h-11 rounded-full border-2 flex flex-col items-center justify-center font-bold text-xs shadow-soft z-10 transition-colors duration-200 ${style}`}
+            >
+              <span>{val}</span>
+              <span className="text-[8px] opacity-60 -mt-1 font-mono">[{idx}]</span>
+            </motion.div>
+          );
+        })}
+      </div>
     </div>
   );
 };

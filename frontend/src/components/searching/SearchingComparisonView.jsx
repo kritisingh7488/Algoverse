@@ -31,6 +31,9 @@ export const SearchingComparisonView = ({
   const [stepIndex, setStepIndex] = useState(0);
   const [speed, setSpeed] = useState(1);
 
+  // Summary Tab State
+  const [summaryTab, setSummaryTab] = useState('theory');
+
   const toggleAlgo = (key) => {
     if (selectedAlgos.includes(key)) {
       if (selectedAlgos.length > 2) {
@@ -439,11 +442,82 @@ export const SearchingComparisonView = ({
         })}
       </div>
 
-      {/* COMPARISON SUMMARY TABLE */}
+      {/* COMPARISON SUMMARY TABLE & THEORETICAL REFERENCE */}
       <Card className="p-5 space-y-4">
-        <h4 className="text-xs font-heading font-bold text-textPrimary uppercase tracking-wider flex items-center gap-2">
-          <Trophy className="w-4 h-4 text-warning" /> C++ Multi-Search Comparison Summary Matrix
-        </h4>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-borderTheme pb-3">
+          <h4 className="text-xs font-heading font-bold text-textPrimary uppercase tracking-wider flex items-center gap-2">
+            <Trophy className="w-4 h-4 text-warning" /> Searching Benchmark Summary Table
+          </h4>
+          <div className="flex bg-surface rounded-lg p-1 border border-borderTheme shrink-0 overflow-x-auto max-w-full">
+            <button
+              onClick={() => setSummaryTab('theory')}
+              className={`text-xs px-3 py-1 rounded font-bold transition-colors whitespace-nowrap ${
+                summaryTab === 'theory'
+                  ? 'bg-primary text-primary-foreground shadow-sm'
+                  : 'text-muted hover:text-foreground'
+              }`}
+            >
+              Searching Algorithm Theory Reference
+            </button>
+            <button
+              onClick={() => setSummaryTab('live')}
+              className={`text-xs px-3 py-1 rounded font-bold transition-colors whitespace-nowrap ${
+                summaryTab === 'live'
+                  ? 'bg-primary text-primary-foreground shadow-sm'
+                  : 'text-muted hover:text-foreground'
+              }`}
+            >
+              Live Algorithm Benchmark ({selectedAlgos.length})
+            </button>
+          </div>
+        </div>
+
+        {summaryTab === 'theory' ? (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse font-body">
+              <thead>
+                <tr className="border-b-2 border-borderTheme text-[11px] font-bold text-muted uppercase tracking-wider bg-surface/60">
+                  <th className="py-2.5 px-3">Algorithm</th>
+                  <th className="py-2.5 px-3">Category</th>
+                  <th className="py-2.5 px-3">Time Complexity (Best / Avg / Worst)</th>
+                  <th className="py-2.5 px-3">Space Complexity</th>
+                  <th className="py-2.5 px-3">Requires Sorted Data</th>
+                  <th className="py-2.5 px-3">Best Applications & Notes</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-borderTheme/50 text-xs">
+                {Object.entries(algorithms).map(([key, algoSpec]) => {
+                  const isSelected = selectedAlgos.includes(key);
+                  return (
+                    <tr
+                      key={key}
+                      onClick={() => toggleAlgo(key)}
+                      className={`cursor-pointer transition-colors ${
+                        isSelected ? 'bg-primary/10 font-medium' : 'hover:bg-surface/50'
+                      }`}
+                    >
+                      <td className="py-2.5 px-3 font-bold text-foreground flex items-center gap-2">
+                        {algoSpec.name}
+                        {isSelected && (
+                          <span className="text-[10px] bg-primary text-primary-foreground px-1.5 py-0.5 rounded font-mono uppercase">
+                            Active
+                          </span>
+                        )}
+                      </td>
+                      <td className="py-2.5 px-3 text-muted">{algoSpec.category}</td>
+                      <td className="py-2.5 px-3 font-mono font-bold text-accent text-[11px]">
+                        {algoSpec.best} / {algoSpec.avg} / {algoSpec.worst}
+                      </td>
+                      <td className="py-2.5 px-3 font-mono font-bold text-info text-[11px]">{algoSpec.space}</td>
+                      <td className="py-2.5 px-3 text-textSecondary">{algoSpec.requiresSorted ? 'Yes' : 'No'}</td>
+                      <td className="py-2.5 px-3 text-muted">{algoSpec.interviewTip}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        ) : (
 
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs font-mono border-collapse">
@@ -513,6 +587,7 @@ export const SearchingComparisonView = ({
             </tbody>
           </table>
         </div>
+        )}
       </Card>
 
     </div>

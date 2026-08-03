@@ -19,16 +19,16 @@ export const Button = ({
     primary: 'bg-primary hover:bg-primary-hover text-white shadow-soft shadow-primary/20',
     secondary: 'bg-secondary hover:bg-secondary-hover text-white shadow-soft shadow-secondary/20',
     accent: 'bg-accent hover:bg-accent/90 text-textPrimary shadow-soft',
-    outline: 'bg-card border-2 border-borderTheme text-textPrimary hover:border-primary hover:bg-surface shadow-xs',
+    outline: 'bg-card border-[1.5px] border-borderTheme text-textPrimary hover:border-primary hover:bg-surface shadow-xs',
     ghost: 'bg-transparent text-textPrimary hover:bg-surface',
     danger: 'bg-danger text-white hover:bg-danger/90 shadow-soft',
-    google: 'bg-card border-2 border-borderTheme text-textPrimary hover:border-primary hover:bg-surface shadow-xs',
+    google: 'bg-card border-[1.5px] border-borderTheme text-textPrimary hover:border-primary hover:bg-surface shadow-xs',
   };
 
   const sizes = {
-    sm: 'px-3 py-1.5 text-xs gap-1.5',
-    md: 'px-4 py-2.5 text-sm gap-2',
-    lg: 'px-6 py-3.5 text-base gap-2.5',
+    sm: 'px-2.5 py-1.5 text-xs gap-1.5',
+    md: 'px-3.5 py-2 text-sm gap-2',
+    lg: 'px-5 py-2.5 text-sm gap-2',
   };
 
   const isDisabled = disabled || isLoading;
@@ -38,7 +38,7 @@ export const Button = ({
       type={type}
       onClick={onClick}
       disabled={isDisabled}
-      whileHover={isDisabled ? {} : { y: -2 }}
+      whileHover={isDisabled ? {} : { y: -1 }}
       whileTap={isDisabled ? {} : { scale: 0.97 }}
       className={`${baseStyles} ${variants[variant] || variants.primary} ${sizes[size] || sizes.md} ${className}`}
       {...props}

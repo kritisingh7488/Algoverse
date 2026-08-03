@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { ZoomIn, ZoomOut, Maximize2, Minimize2, Sliders, Upload, Search, Shuffle, Trash2 } from 'lucide-react';
+import { ZoomIn, ZoomOut, Maximize2, Minimize2, Sliders, Upload, Search, Shuffle, Trash2, Activity } from 'lucide-react';
 import TreePlaybackBar from './TreePlaybackBar';
 import Button from '../common/Button';
 import { isTraversalSupported, isAlgorithmSupported, isOperationSupported, TYPE_SPECIFIC_CONTROLS } from './treeFilters';
@@ -47,7 +47,39 @@ export const TreeCanvas = ({
   const [showFullControls, setShowFullControls] = useState(true);
   const [csvInput, setCsvInput] = useState('');
   const [opInput, setOpInput] = useState('');
+  // Draggable node positions (overrides C++ layout when user drags)
+  const [draggablePositions, setDraggablePositions] = useState({});
+  const [draggingNode, setDraggingNode] = useState(null);
+  const svgRef = useRef(null);
   const canvasRef = useRef(null);
+
+  // Reset drag positions when nodes array changes significantly
+  useEffect(() => {
+    setDraggablePositions({});
+  }, [nodes.length]);
+
+  // Pointer-capture based node drag — works correctly with SVG viewBox transforms
+  const handleNodePointerDown = (e, nodeId) => {
+    e.stopPropagation();
+    e.currentTarget.setPointerCapture(e.pointerId);
+    setDraggingNode(nodeId);
+  };
+
+  const handleNodePointerMove = (e, nodeId) => {
+    if (draggingNode !== nodeId || !svgRef.current) return;
+    e.stopPropagation();
+    const svg = svgRef.current;
+    const pt = svg.createSVGPoint();
+    pt.x = e.clientX;
+    pt.y = e.clientY;
+    const svgP = pt.matrixTransform(svg.getScreenCTM().inverse());
+    setDraggablePositions((prev) => ({ ...prev, [nodeId]: { x: svgP.x, y: svgP.y } }));
+  };
+
+  const handleNodePointerUp = (e) => {
+    e.currentTarget.releasePointerCapture(e.pointerId);
+    setDraggingNode(null);
+  };
 
   const toggleFullscreen = () => {
     if (!canvasRef.current) return;
@@ -185,19 +217,20 @@ export const TreeCanvas = ({
         </div>
       </div>
 
-      {/* Live C++ Execution Action & Diagnostic Banner (shows what is happening every time!) */}
-      <div className="w-full bg-slate-950 text-slate-100 border-b-2 border-primary/40 px-4 py-2.5 flex items-center justify-between text-xs font-mono shadow-md z-10">
-        <div className="flex items-center gap-2.5 overflow-hidden">
-          <span className="px-2.5 py-0.5 rounded bg-primary text-white font-bold uppercase text-[10px] tracking-wider shrink-0 shadow">
-            {lastOpName || 'READY'}
-          </span>
-          <span className="text-slate-200 font-medium truncate">
-            {desc || 'Select any operation, traversal, or algorithm to see native C++ step-by-step execution details.'}
-          </span>
-        </div>
-        <div className="flex items-center gap-2 shrink-0 ml-2">
-          <span className="px-2 py-0.5 rounded bg-slate-800 text-warning font-bold text-[10px] border border-warning/40">
-            DATA TYPE: {inputType || 'Integer'}
+      {/* Live Output Line Bar */}
+      <div className="w-full flex items-center gap-2 bg-primary/10 border border-primary/20 px-4 py-2 my-2 rounded-lg shadow-xs z-10">
+        <Activity className="w-4 h-4 text-primary shrink-0 animate-pulse" />
+        <span className="text-xs font-mono font-bold text-foreground break-words whitespace-normal flex-1">
+          Output: {desc || 'Select any operation, traversal, or algorithm to see native C++ step-by-step execution.'}
+        </span>
+        <div className="flex items-center gap-2 shrink-0">
+          {totalSteps > 0 && (
+            <span className="px-2 py-0.5 rounded bg-primary/20 text-primary font-bold text-[10px] border border-primary/30">
+              STEP {(stepIndex || 0) + 1} / {totalSteps}
+            </span>
+          )}
+          <span className="px-2 py-0.5 rounded bg-surface border border-borderTheme text-textSecondary font-bold text-[10px]">
+            {nodes.length} NODES
           </span>
         </div>
       </div>
@@ -214,6 +247,7 @@ export const TreeCanvas = ({
             >
               {nodes.length > 0 ? (
                 <svg
+                  ref={svgRef}
                   width="100%"
                   height="100%"
                   viewBox={`${minX} ${minY} ${spanX} ${spanY}`}
@@ -231,9 +265,13 @@ export const TreeCanvas = ({
                       const target = nodes.find(n => n.id === ed.to);
                       if (!source || !target) return null;
                       const isHighlightEdge = ed.highlight || activeHighlight === ed.to;
+                      const sx = draggablePositions[ed.from]?.x ?? source.x;
+                      const sy = draggablePositions[ed.from]?.y ?? source.y;
+                      const tx = draggablePositions[ed.to]?.x ?? target.x;
+                      const ty = draggablePositions[ed.to]?.y ?? target.y;
                       return (
                         <line key={`ed-${idx}-${ed.from}-${ed.to}`}
-                          x1={source.x} y1={source.y} x2={target.x} y2={target.y}
+                          x1={sx} y1={sy} x2={tx} y2={ty}
                           stroke={isHighlightEdge ? 'var(--color-warning, #f59e0b)' : 'var(--color-borderTheme, #e5e7eb)'}
                           strokeWidth={isHighlightEdge ? 3 : 2}
                           strokeDasharray={isHighlightEdge ? '6 3' : 'none'}
@@ -246,9 +284,13 @@ export const TreeCanvas = ({
                       const parent = nodes.find(n => n.id === node.pid);
                       if (!parent) return null;
                       const isHighlightEdge = activeHighlight === node.id;
+                      const px = draggablePositions[node.pid]?.x ?? parent.x;
+                      const py = draggablePositions[node.pid]?.y ?? parent.y;
+                      const nx = draggablePositions[node.id]?.x ?? node.x;
+                      const ny = draggablePositions[node.id]?.y ?? node.y;
                       return (
                         <line key={`e-${node.id}`}
-                          x1={parent.x} y1={parent.y} x2={node.x} y2={node.y}
+                          x1={px} y1={py} x2={nx} y2={ny}
                           stroke={isHighlightEdge ? 'var(--color-warning, #f59e0b)' : 'var(--color-borderTheme, #e5e7eb)'}
                           strokeWidth={isHighlightEdge ? 3 : 2}
                           strokeDasharray={isHighlightEdge ? '6 3' : 'none'}
@@ -262,12 +304,18 @@ export const TreeCanvas = ({
                     const isHL = activeHighlight === node.id;
                     const isRB = treeType === 'redblack';
                     const isRed = isRB && node.clr === 'red';
+                    const isDragging = draggingNode === node.id;
+                    // Use user-dragged position if available, otherwise C++ layout
+                    const nodeX = draggablePositions[node.id]?.x ?? node.x;
+                    const nodeY = draggablePositions[node.id]?.y ?? node.y;
 
                     let fill = 'var(--color-card, white)';
                     let stroke = 'var(--color-primary, #6366f1)';
                     let textFill = 'var(--color-primary, #6366f1)';
 
-                    if (isHL) {
+                    if (isDragging) {
+                      fill = '#f59e0b'; stroke = '#d97706'; textFill = 'white';
+                    } else if (isHL) {
                       fill = 'var(--color-warning, #f59e0b)';
                       stroke = 'var(--color-warning, #f59e0b)';
                       textFill = 'white';
@@ -282,30 +330,38 @@ export const TreeCanvas = ({
                     const rVal = node.displayRadius ? node.displayRadius : 18;
 
                     return (
-                      <g key={`n-${node.id}`} className="transition-all duration-300">
+                      <g
+                        key={`n-${node.id}`}
+                        className={isDragging ? "cursor-grabbing" : "transition-all duration-150 cursor-grab"}
+                        onPointerDown={(e) => handleNodePointerDown(e, node.id)}
+                        onPointerMove={(e) => handleNodePointerMove(e, node.id)}
+                        onPointerUp={(e) => handleNodePointerUp(e)}
+                      >
                         <circle
-                          cx={node.x} cy={node.y} r={rVal}
-                          fill={fill} stroke={stroke} strokeWidth="2.5"
-                          className="shadow-sm hover:scale-110 transition-transform cursor-pointer"
+                          cx={nodeX} cy={nodeY} r={isDragging ? rVal + 3 : rVal}
+                          fill={fill} stroke={stroke} strokeWidth={isDragging ? 3.5 : 2.5}
+                          style={{ filter: isDragging ? 'drop-shadow(0 0 8px rgba(245,158,11,0.7))' : 'none' }}
                         />
                         <text
-                          x={node.x} y={node.y + 4}
+                          x={nodeX} y={nodeY + 4}
                           textAnchor="middle" fill={textFill}
                           fontSize={fontSize} fontWeight="bold" fontFamily="monospace"
+                          className="select-none pointer-events-none"
                         >
                           {labelStr}
                         </text>
                         {/* Balance factor label for AVL */}
                         {(treeType === 'avl') && (
-                          <text x={node.x + rVal + 4} y={node.y - 16} textAnchor="start" fontSize="9"
+                          <text x={nodeX + rVal + 4} y={nodeY - 16} textAnchor="start" fontSize="9"
                             fill={Math.abs(node.bf) > 1 ? '#ef4444' : 'var(--color-textSecondary, #6b7280)'}
-                            fontFamily="monospace" fontWeight="bold">
+                            fontFamily="monospace" fontWeight="bold" className="pointer-events-none">
                             bf:{node.bf}
                           </text>
                         )}
                         {/* Height label */}
-                        <text x={node.x - rVal - 4} y={node.y - 16} textAnchor="end" fontSize="8"
-                          fill="var(--color-textSecondary, #9ca3af)" fontFamily="monospace">
+                        <text x={nodeX - rVal - 4} y={nodeY - 16} textAnchor="end" fontSize="8"
+                          fill="var(--color-textSecondary, #9ca3af)" fontFamily="monospace"
+                          className="pointer-events-none">
                           h:{node.h}
                         </text>
                       </g>

@@ -98,6 +98,24 @@ const useAuthStore = create((set) => ({
     }
   },
 
+  updateProfile: async (userData) => {
+    set({ isLoading: true, error: null });
+    try {
+      const response = await api.put('/user/profile', userData);
+      const payload = response.data?.data || response.data;
+      const user = payload?.user || payload;
+      set({ user, isLoading: false });
+      return { success: true };
+    } catch (error) {
+      let errorMessage = 'Failed to update profile.';
+      if (error.response) {
+        errorMessage = error.response.data?.message || errorMessage;
+      }
+      set({ error: errorMessage, isLoading: false });
+      return { success: false, message: errorMessage };
+    }
+  },
+
   clearError: () => set({ error: null }),
 }));
 

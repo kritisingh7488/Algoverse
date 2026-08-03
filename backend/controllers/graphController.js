@@ -42,7 +42,22 @@ const runGraphOperation = async (req, res) => {
                 }
             );
 
-            const inputString = typeof input === 'string' ? input : JSON.stringify(input);
+            let inputString = "";
+            if (input && input.vertices && input.edges) {
+                inputString += "CUSTOM_GRAPH\n";
+                inputString += input.vertices.length + "\n";
+                input.vertices.forEach(v => {
+                    inputString += `${v.id} ${v.label ? v.label.replace(/\s+/g, '_') : 'V'} ${v.x || 0} ${v.y || 0}\n`;
+                });
+                inputString += input.edges.length + "\n";
+                input.edges.forEach(e => {
+                    inputString += `${e.id} ${e.from} ${e.to} ${e.weight || 1} ${e.directed ? 1 : 0}\n`;
+                });
+            } else if (typeof input === 'string') {
+                inputString = input;
+            } else {
+                inputString = JSON.stringify(input);
+            }
             child.stdin.write(inputString);
             child.stdin.end();
             return;
