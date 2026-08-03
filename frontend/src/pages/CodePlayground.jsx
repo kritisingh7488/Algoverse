@@ -1,10 +1,16 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Play, RotateCcw, Download, TerminalSquare, Maximize2, Minimize2, Code2, Copy, CheckCircle2, Settings2, Loader2, AlertCircle, Trash2 } from 'lucide-react';
+import { Play, RotateCcw, Download, TerminalSquare, Maximize2, Minimize2, Code2, Copy, CheckCircle2, Settings2, Loader2, AlertCircle, Trash2, StopCircle } from 'lucide-react';
 import Editor from '@monaco-editor/react';
 import AppLayout from '../layouts/AppLayout';
 import Card from '../components/common/Card';
 import Button from '../components/common/Button';
-import api from '../api/axios';
+import { Terminal } from 'xterm';
+import { FitAddon } from 'xterm-addon-fit';
+import 'xterm/css/xterm.css';
+import { io } from 'socket.io-client';
+
+const apiBase = import.meta.env.VITE_API_URL || 
+  (import.meta.env.VITE_BACKEND_URL ? `${import.meta.env.VITE_BACKEND_URL}` : 'http://localhost:5000');
 
 // Language templates and configuration
 const LANGUAGE_CONFIG = {
@@ -14,14 +20,15 @@ const LANGUAGE_CONFIG = {
     pistonLanguage: 'javascript',
     defaultCode: `// Welcome to the AlgoVerse JavaScript Playground!
 
-function fibonacci(n) {
-  if (n <= 1) return n;
-  return fibonacci(n - 1) + fibonacci(n - 2);
-}
+const readline = require('readline').createInterface({
+  input: process.stdin,
+  output: process.stdout
+});
 
-console.log("Calculating Fibonacci(10)...");
-const result = fibonacci(10);
-console.log("Result:", result);
+readline.question('Enter your name: ', name => {
+  console.log(\`Hello, \${name}! Welcome to the interactive terminal.\`);
+  readline.close();
+});
 `
   },
   python: {
@@ -30,14 +37,8 @@ console.log("Result:", result);
     pistonLanguage: 'python',
     defaultCode: `# Welcome to the AlgoVerse Python Playground!
 
-def fibonacci(n):
-    if n <= 1:
-        return n
-    return fibonacci(n-1) + fibonacci(n-2)
-
-print("Calculating Fibonacci(10)...")
-result = fibonacci(10)
-print(f"Result: {result}")
+name = input("Enter your name: ")
+print(f"Hello, {name}! Welcome to the interactive terminal.")
 `
   },
   cpp: {
@@ -46,17 +47,14 @@ print(f"Result: {result}")
     pistonLanguage: 'c++',
     defaultCode: `// Welcome to the AlgoVerse C++ Playground!
 #include <iostream>
+#include <string>
 using namespace std;
 
-int fibonacci(int n) {
-    if (n <= 1) return n;
-    return fibonacci(n-1) + fibonacci(n-2);
-}
-
 int main() {
-    cout << "Calculating Fibonacci(10)..." << endl;
-    int result = fibonacci(10);
-    cout << "Result: " << result << endl;
+    string name;
+    cout << "Enter your name: ";
+    getline(cin, name);
+    cout << "Hello, " << name << "! Welcome to the interactive terminal." << endl;
     return 0;
 }
 `
@@ -68,16 +66,14 @@ int main() {
     defaultCode: `// Welcome to the AlgoVerse Java Playground!
 // Note: Class must be named Main
 
+import java.util.Scanner;
+
 public class Main {
-    public static int fibonacci(int n) {
-        if (n <= 1) return n;
-        return fibonacci(n-1) + fibonacci(n-2);
-    }
-    
     public static void main(String[] args) {
-        System.out.println("Calculating Fibonacci(10)...");
-        int result = fibonacci(10);
-        System.out.println("Result: " + result);
+        Scanner scanner = new Scanner(System.in);
+        System.out.print("Enter your name: ");
+        String name = scanner.nextLine();
+        System.out.println("Hello, " + name + "! Welcome to the interactive terminal.");
     }
 }
 `
@@ -89,19 +85,19 @@ public class Main {
     defaultCode: `// Welcome to the AlgoVerse Go Playground!
 package main
 
-import "fmt"
-
-func fibonacci(n int) int {
-    if n <= 1 {
-        return n
-    }
-    return fibonacci(n-1) + fibonacci(n-2)
-}
+import (
+    "bufio"
+    "fmt"
+    "os"
+    "strings"
+)
 
 func main() {
-    fmt.Println("Calculating Fibonacci(10)...")
-    result := fibonacci(10)
-    fmt.Printf("Result: %d\\n", result)
+    reader := bufio.NewReader(os.Stdin)
+    fmt.Print("Enter your name: ")
+    name, _ := reader.ReadString('\\n')
+    name = strings.TrimSpace(name)
+    fmt.Printf("Hello, %s! Welcome to the interactive terminal.\\n", name)
 }
 `
   },
@@ -110,19 +106,15 @@ func main() {
     monacoLanguage: 'rust',
     pistonLanguage: 'rust',
     defaultCode: `// Welcome to the AlgoVerse Rust Playground!
-
-fn fibonacci(n: u32) -> u32 {
-    match n {
-        0 => 0,
-        1 => 1,
-        _ => fibonacci(n - 1) + fibonacci(n - 2),
-    }
-}
+use std::io::{self, Write};
 
 fn main() {
-    println!("Calculating Fibonacci(10)...");
-    let result = fibonacci(10);
-    println!("Result: {}", result);
+    print!("Enter your name: ");
+    io::stdout().flush().unwrap();
+    let mut name = String::new();
+    io::stdin().read_line(&mut name).unwrap();
+    let name = name.trim();
+    println!("Hello, {}! Welcome to the interactive terminal.", name);
 }
 `
   }
@@ -139,8 +131,6 @@ const FONT_SIZES = [12, 14, 16, 18, 20];
 const CodePlayground = () => {
   const [selectedLanguage, setSelectedLanguage] = useState('javascript');
   const [code, setCode] = useState(LANGUAGE_CONFIG['javascript'].defaultCode);
-  const [input, setInput] = useState('');
-  const [output, setOutput] = useState([]);
   const [isRunning, setIsRunning] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
   const [isFullScreen, setIsFullScreen] = useState(false);
@@ -154,29 +144,41 @@ const CodePlayground = () => {
   const [editorWidth, setEditorWidth] = useState(50); // percentage
   const [isDragging, setIsDragging] = useState(false);
 
+  // Terminal & Socket refs
+  const terminalRef = useRef(null);
+  const xtermRef = useRef(null);
+  const fitAddonRef = useRef(null);
+  const socketRef = useRef(null);
+
   const handleMouseDown = useCallback(() => {
     setIsDragging(true);
   }, []);
 
   const handleMouseMove = useCallback((e) => {
     if (isDragging) {
-      const containerWidth = window.innerWidth; // Approximate, but good enough for percentage calculation
+      const containerWidth = window.innerWidth;
       let newWidth = (e.clientX / containerWidth) * 100;
       if (newWidth < 20) newWidth = 20;
       if (newWidth > 80) newWidth = 80;
       setEditorWidth(newWidth);
+      if (fitAddonRef.current) {
+        fitAddonRef.current.fit();
+      }
     }
   }, [isDragging]);
 
   const handleMouseUp = useCallback(() => {
     setIsDragging(false);
+    if (fitAddonRef.current) {
+      setTimeout(() => fitAddonRef.current.fit(), 100);
+    }
   }, []);
 
   useEffect(() => {
     if (isDragging) {
       document.addEventListener('mousemove', handleMouseMove);
       document.addEventListener('mouseup', handleMouseUp);
-      document.body.style.userSelect = 'none'; // Prevent text selection while dragging
+      document.body.style.userSelect = 'none';
     } else {
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
@@ -189,6 +191,75 @@ const CodePlayground = () => {
     };
   }, [isDragging, handleMouseMove, handleMouseUp]);
 
+  useEffect(() => {
+    // Initialize xterm
+    xtermRef.current = new Terminal({
+      cursorBlink: true,
+      theme: {
+        background: '#0D0D0D',
+        foreground: '#D4D4D4',
+      },
+      fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
+      fontSize: 13,
+    });
+    fitAddonRef.current = new FitAddon();
+    xtermRef.current.loadAddon(fitAddonRef.current);
+    
+    if (terminalRef.current) {
+      xtermRef.current.open(terminalRef.current);
+      fitAddonRef.current.fit();
+    }
+
+    xtermRef.current.writeln('\\x1b[90mWelcome to AlgoVerse Interactive Terminal!\\x1b[0m');
+    xtermRef.current.writeln('\\x1b[90mWaiting for execution...\\x1b[0m');
+
+    // Connect Socket
+    socketRef.current = io(apiBase);
+
+    socketRef.current.on('connect', () => {
+      console.log('Terminal connected to server');
+    });
+
+    socketRef.current.on('terminal_data', (data) => {
+      if (xtermRef.current) {
+        xtermRef.current.write(data);
+      }
+    });
+
+    socketRef.current.on('process_exit', (code) => {
+      setIsRunning(false);
+    });
+
+    // Handle user input in terminal
+    xtermRef.current.onData((data) => {
+      if (isRunning && socketRef.current) {
+        socketRef.current.emit('terminal_input', data);
+      }
+    });
+
+    const resizeObserver = new ResizeObserver(() => {
+      if (fitAddonRef.current && xtermRef.current?.element) {
+        try {
+          fitAddonRef.current.fit();
+        } catch (e) {}
+      }
+    });
+
+    if (terminalRef.current) {
+      resizeObserver.observe(terminalRef.current);
+    }
+
+    return () => {
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+      }
+      resizeObserver.disconnect();
+      if (xtermRef.current) {
+        xtermRef.current.dispose();
+      }
+    };
+  }, []);
+
   const handleEditorDidMount = (editor, monaco) => {
     editorRef.current = editor;
   };
@@ -197,61 +268,48 @@ const CodePlayground = () => {
     const newLang = e.target.value;
     setSelectedLanguage(newLang);
     setCode(LANGUAGE_CONFIG[newLang].defaultCode);
-    setOutput([]);
+    if (xtermRef.current) {
+      xtermRef.current.clear();
+      xtermRef.current.writeln('\\x1b[90mSwitched to ' + LANGUAGE_CONFIG[newLang].name + '\\x1b[0m');
+    }
   };
 
-  const handleRunCode = async () => {
-    if (!code.trim()) return;
+  const handleRunCode = () => {
+    if (!code.trim() || !socketRef.current) return;
     
     setIsRunning(true);
-    setOutput([{ type: 'system', message: 'Executing code via AlgoVerse Secure Backend Container...' }]);
+    if (xtermRef.current) {
+      xtermRef.current.clear();
+      xtermRef.current.writeln('\\x1b[36mRunning code via AlgoVerse Secure Backend Container...\\x1b[0m\\r\\n');
+      xtermRef.current.focus();
+    }
     
     const langConfig = LANGUAGE_CONFIG[selectedLanguage];
-    const backendLang = langConfig.pistonLanguage;
+    
+    socketRef.current.emit('run_code', {
+      language: langConfig.pistonLanguage,
+      code: code
+    });
+  };
 
-    try {
-      const response = await api.post('/execute', {
-        language: backendLang,
-        code: code,
-        input: input
-      });
-
-      const data = response.data;
-      const newOutput = [];
-      
-      if (data.run) {
-        if (data.run.stdout) {
-          newOutput.push({ type: 'info', message: data.run.stdout });
-        }
-        if (data.run.stderr) {
-          newOutput.push({ type: 'error', message: data.run.stderr });
-        }
-        
-        if (data.run.code !== 0) {
-           newOutput.push({ type: 'error', message: `\nProcess exited with code ${data.run.code}` });
-        } else if (!data.run.stdout && !data.run.stderr) {
-           newOutput.push({ type: 'system', message: 'Process finished successfully with no output.' });
-        }
-      } else if (data.error) {
-        newOutput.push({ type: 'error', message: data.error });
-      } else {
-        newOutput.push({ type: 'error', message: 'Failed to execute: ' + JSON.stringify(data) });
-      }
-
-      setOutput(newOutput);
-    } catch (err) {
-      setOutput([{ type: 'error', message: 'Execution failed: ' + (err.response?.data?.error || err.response?.data?.run?.stderr || err.toString()) }]);
-    } finally {
+  const handleKillProcess = () => {
+    if (socketRef.current && isRunning) {
+      socketRef.current.emit('kill_process');
       setIsRunning(false);
     }
   };
 
   const handleReset = () => {
     setCode(LANGUAGE_CONFIG[selectedLanguage].defaultCode);
-    setOutput([]);
   };
 
-  const handleClear = () => {
+  const handleClearTerminal = () => {
+    if (xtermRef.current) {
+      xtermRef.current.clear();
+    }
+  };
+
+  const handleClearCode = () => {
     setCode('');
     editorRef.current?.focus();
   };
@@ -299,11 +357,11 @@ const CodePlayground = () => {
                   Code Playground IDE
                 </h1>
                 <span className="px-2 py-0.5 rounded text-[11px] font-mono font-bold uppercase bg-emerald-500/10 text-emerald-500 border border-emerald-500/30">
-                  Native Execution
+                  Interactive TTY
                 </span>
               </div>
               <p className="text-sm font-body text-textSecondary mt-0.5">
-                Write and execute code in Python, C++, and JS natively on our servers.
+                Write and execute code interactively in Python, C++, and JS natively on our servers.
               </p>
             </div>
           </div>
@@ -354,14 +412,23 @@ const CodePlayground = () => {
               <RotateCcw className="w-4 h-4 mr-1.5" />
               Reset
             </Button>
-            <Button variant="outline" size="sm" onClick={handleClear} title="Clear All Code" className="text-red-500 hover:bg-red-500/10 hover:text-red-600 border-red-500/20">
+            <Button variant="outline" size="sm" onClick={handleClearCode} title="Clear All Code" className="text-red-500 hover:bg-red-500/10 hover:text-red-600 border-red-500/20">
               <Trash2 className="w-4 h-4 mr-1.5" />
               Clear
             </Button>
-            <Button variant="primary" size="sm" onClick={handleRunCode} isLoading={isRunning}>
-              <Play className="w-4 h-4 mr-1.5" />
-              Run Code
-            </Button>
+            
+            {isRunning ? (
+              <Button variant="outline" size="sm" onClick={handleKillProcess} className="bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white border-red-500/50">
+                <StopCircle className="w-4 h-4 mr-1.5" />
+                Stop
+              </Button>
+            ) : (
+              <Button variant="primary" size="sm" onClick={handleRunCode}>
+                <Play className="w-4 h-4 mr-1.5" />
+                Run Code
+              </Button>
+            )}
+            
           </div>
         </Card>
 
@@ -422,62 +489,22 @@ const CodePlayground = () => {
             className="flex flex-col border border-borderTheme overflow-hidden rounded-xl shadow-large bg-[#0D0D0D]"
             style={{ width: `${100 - editorWidth}%` }}
           >
-            {/* Standard Input Section */}
-            <div className="flex-shrink-0 border-b border-[#2A2A2A] h-[35%] flex flex-col">
-              <div className="flex items-center px-4 py-2 bg-[#1A1A1A] border-b border-[#2A2A2A]">
-                <div className="flex items-center gap-2 text-gray-300">
-                  <TerminalSquare className="w-4 h-4" />
-                  <span className="text-xs font-mono uppercase font-bold tracking-wider text-gray-400">Standard Input (stdin)</span>
-                </div>
-              </div>
-              <textarea
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                placeholder="Enter input here..."
-                className="flex-1 w-full bg-[#0D0D0D] text-gray-300 font-mono text-[13px] p-4 focus:outline-none resize-none scrollbar-thin scrollbar-thumb-[#333] scrollbar-track-transparent placeholder-gray-600"
-              />
-            </div>
-
-            {/* Terminal Output Section */}
             <div className="flex items-center justify-between px-4 py-2 bg-[#1A1A1A] border-b border-[#2A2A2A] flex-shrink-0">
               <div className="flex items-center gap-2 text-gray-300">
                 <TerminalSquare className="w-4 h-4" />
-                <span className="text-xs font-mono uppercase font-bold tracking-wider text-gray-400">Terminal Output</span>
+                <span className="text-xs font-mono uppercase font-bold tracking-wider text-gray-400">Interactive Terminal</span>
               </div>
               <Button 
                 variant="ghost" 
                 size="sm" 
-                onClick={() => setOutput([])}
+                onClick={handleClearTerminal}
                 className="text-gray-400 hover:text-white hover:bg-white/10 h-7 text-xs"
               >
                 Clear
               </Button>
             </div>
-            <div className="flex-1 p-4 overflow-y-auto font-mono text-[13px] leading-relaxed scrollbar-thin scrollbar-thumb-[#333] scrollbar-track-transparent">
-              {output.length === 0 ? (
-                <div className="h-full flex flex-col items-center justify-center text-gray-600 gap-3">
-                  <TerminalSquare className="w-10 h-10 opacity-20" />
-                  <p className="font-mono text-sm">Waiting for execution...</p>
-                  <p className="text-xs text-gray-700 max-w-xs text-center mt-2">
-                    Code is executed natively on our backend servers.
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  {output.map((log, index) => (
-                    <div 
-                      key={index} 
-                      className={`flex gap-3 ${
-                        log.type === 'error' ? 'text-red-400 bg-red-400/10 p-3 rounded font-bold' : 
-                        log.type === 'system' ? 'text-emerald-400/80 italic text-xs' : 
-                        'text-gray-300'
-                      }`}
-                    >
-                      <span className="whitespace-pre-wrap break-words">{log.message}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
+            <div className="flex-1 w-full h-full overflow-hidden p-2" ref={terminalRef}>
+              {/* xterm.js will attach here */}
             </div>
           </Card>
         </div>
