@@ -1046,6 +1046,14 @@ export default function GraphLab() {
               <BarChart2 className="w-4 h-4 mr-1.5" />
               <span>{mode === 'compare' ? 'Interactive Studio' : 'Compare Algorithms'}</span>
             </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowVerifier(true)}
+              className="border-emerald-500/50 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10"
+            >
+              Verify Engine Reliability
+            </Button>
           </div>
         </Card>
 
@@ -1132,16 +1140,6 @@ export default function GraphLab() {
                     })}
                   </div>
 
-                  {/* Verify Engine Suite Button */}
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setShowVerifier(true)}
-                    className="w-full border-emerald-500/50 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 justify-center"
-                  >
-                    <ShieldCheck className="w-4 h-4 mr-1.5 text-emerald-500" />
-                    <span>Verify Engine (126 Tests)</span>
-                  </Button>
                 </Card>
               </div>
             )}

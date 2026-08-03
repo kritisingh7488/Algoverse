@@ -568,6 +568,15 @@ const TreeLab = () => {
               <BarChart2 className="w-4 h-4 mr-1.5" />
               {isComparisonMode ? 'Single Visualizer' : 'Compare Trees'}
             </Button>
+            
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsVerifierOpen(true)}
+              className="border-emerald-500/50 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10"
+            >
+              Verify Engine Reliability
+            </Button>
           </div>
         </Card>
 
@@ -584,13 +593,6 @@ const TreeLab = () => {
                       <Layers className="w-4 h-4 text-primary" /> Tree Architecture
                     </h3>
                     <div className="flex items-center gap-1.5">
-                      <button
-                        onClick={() => setIsVerifierOpen(true)}
-                        className="text-[10px] font-mono px-2 py-0.5 rounded-lg border border-emerald-500/40 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 font-bold transition-all flex items-center gap-1"
-                        title="Run automated verification test suite across all trees and operations"
-                      >
-                        <span>Verify Engine</span>
-                      </button>
                       <button
                         onClick={() => setAutoConvert(!autoConvert)}
                         className={`text-[10px] font-mono px-2 py-0.5 rounded-lg border transition-all flex items-center gap-1 ${
