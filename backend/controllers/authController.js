@@ -145,7 +145,6 @@ const googleLogin = async (req, res) => {
         googleId,
         avatar: avatar || '',
         username: email.split('@')[0] + '_' + Math.random().toString(36).substr(2, 5),
-        password: '', // OAuth users don't have passwords
         isEmailVerified: true
       });
     } else if (!user.googleId) {
