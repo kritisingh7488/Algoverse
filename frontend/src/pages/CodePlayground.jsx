@@ -424,7 +424,7 @@ const CodePlayground = () => {
               Clear
             </Button>
             
-            {isRunningState ? (
+            {isRunning ? (
               <Button variant="outline" size="sm" onClick={handleKillProcess} className="bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white border-red-500/50">
                 <StopCircle className="w-4 h-4 mr-1.5" />
                 Stop
