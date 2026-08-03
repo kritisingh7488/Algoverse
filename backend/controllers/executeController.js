@@ -4,7 +4,7 @@ const { exec } = require('child_process');
 const crypto = require('crypto');
 
 exports.executeCode = async (req, res) => {
-  const { language, code } = req.body;
+  const { language, code, input } = req.body;
   
   if (!code) {
     return res.status(400).json({ error: 'Code is required' });
@@ -18,23 +18,32 @@ exports.executeCode = async (req, res) => {
   const fileId = crypto.randomBytes(8).toString('hex');
   let filePath = '';
   let command = '';
+  
+  // Handle stdin
+  let inputPath = '';
+  let inputRedirect = '';
+  if (input !== undefined && input !== null) {
+    inputPath = path.join(tempDir, `main_${fileId}_in.txt`);
+    fs.writeFileSync(inputPath, String(input));
+    inputRedirect = ` < ${inputPath}`;
+  }
 
   if (language === 'javascript') {
     filePath = path.join(tempDir, `main_${fileId}.js`);
     fs.writeFileSync(filePath, code);
-    command = `node ${filePath}`;
+    command = `node ${filePath}${inputRedirect}`;
   } else if (language === 'python') {
     filePath = path.join(tempDir, `main_${fileId}.py`);
     fs.writeFileSync(filePath, code);
     const pythonCmd = process.platform === 'win32' ? 'python' : 'python3';
-    command = `${pythonCmd} ${filePath}`;
+    command = `${pythonCmd} ${filePath}${inputRedirect}`;
   } else if (language === 'c++' || language === 'cpp') {
     filePath = path.join(tempDir, `main_${fileId}.cpp`);
     const outPath = process.platform === 'win32' 
       ? path.join(tempDir, `main_${fileId}.exe`) 
       : path.join(tempDir, `main_${fileId}.out`);
     fs.writeFileSync(filePath, code);
-    command = `g++ ${filePath} -o ${outPath} && ${process.platform === 'win32' ? outPath : `./${path.basename(outPath)}`}`;
+    command = `g++ ${filePath} -o ${outPath} && ${process.platform === 'win32' ? outPath : `./${path.basename(outPath)}`}${inputRedirect}`;
   } else {
     // For java, rust, go, just mock it or return error
     return res.status(400).json({ 
@@ -50,6 +59,7 @@ exports.executeCode = async (req, res) => {
     // Cleanup files
     try {
       if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+      if (inputPath && fs.existsSync(inputPath)) fs.unlinkSync(inputPath);
       if (language === 'c++' || language === 'cpp') {
         const outPath = process.platform === 'win32' 
           ? path.join(tempDir, `main_${fileId}.exe`) 

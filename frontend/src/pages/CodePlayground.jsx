@@ -139,6 +139,7 @@ const FONT_SIZES = [12, 14, 16, 18, 20];
 const CodePlayground = () => {
   const [selectedLanguage, setSelectedLanguage] = useState('javascript');
   const [code, setCode] = useState(LANGUAGE_CONFIG['javascript'].defaultCode);
+  const [input, setInput] = useState('');
   const [output, setOutput] = useState([]);
   const [isRunning, setIsRunning] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
@@ -211,7 +212,8 @@ const CodePlayground = () => {
     try {
       const response = await api.post('/execute', {
         language: backendLang,
-        code: code
+        code: code,
+        input: input
       });
 
       const data = response.data;
@@ -420,7 +422,24 @@ const CodePlayground = () => {
             className="flex flex-col border border-borderTheme overflow-hidden rounded-xl shadow-large bg-[#0D0D0D]"
             style={{ width: `${100 - editorWidth}%` }}
           >
-            <div className="flex items-center justify-between px-4 py-2 bg-[#1A1A1A] border-b border-[#2A2A2A]">
+            {/* Standard Input Section */}
+            <div className="flex-shrink-0 border-b border-[#2A2A2A] h-[35%] flex flex-col">
+              <div className="flex items-center px-4 py-2 bg-[#1A1A1A] border-b border-[#2A2A2A]">
+                <div className="flex items-center gap-2 text-gray-300">
+                  <TerminalSquare className="w-4 h-4" />
+                  <span className="text-xs font-mono uppercase font-bold tracking-wider text-gray-400">Standard Input (stdin)</span>
+                </div>
+              </div>
+              <textarea
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                placeholder="Enter input here..."
+                className="flex-1 w-full bg-[#0D0D0D] text-gray-300 font-mono text-[13px] p-4 focus:outline-none resize-none scrollbar-thin scrollbar-thumb-[#333] scrollbar-track-transparent placeholder-gray-600"
+              />
+            </div>
+
+            {/* Terminal Output Section */}
+            <div className="flex items-center justify-between px-4 py-2 bg-[#1A1A1A] border-b border-[#2A2A2A] flex-shrink-0">
               <div className="flex items-center gap-2 text-gray-300">
                 <TerminalSquare className="w-4 h-4" />
                 <span className="text-xs font-mono uppercase font-bold tracking-wider text-gray-400">Terminal Output</span>
