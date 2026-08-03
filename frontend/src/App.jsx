@@ -30,10 +30,22 @@ import useAuthStore from './store/authStore';
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
-  const { isAuthenticated } = useAuthStore();
+  const { isAuthenticated, user, isLoading } = useAuthStore();
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
+  
+  if (isAuthenticated && !user) {
+    return (
+      <div className="flex h-screen w-screen items-center justify-center bg-background">
+        <div className="flex flex-col items-center gap-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+          <p className="text-textSecondary font-mono text-sm animate-pulse">Loading AlgoVerse...</p>
+        </div>
+      </div>
+    );
+  }
+  
   return children;
 };
 

@@ -94,9 +94,13 @@ const Navbar = ({ onToggleSidebar, isSidebarOpen }) => {
                     onClick={() => setIsProfileOpen(!isProfileOpen)}
                     className="flex items-center gap-2 p-1 rounded-xl hover:bg-surface focus:outline-none transition-colors border border-borderTheme"
                   >
-                    <div className="w-7 h-7 rounded-full bg-primary flex items-center justify-center text-white text-xs font-bold shadow-xs">
-                      {user?.fullName?.charAt(0) || 'U'}
-                    </div>
+                    {user?.avatar ? (
+                      <img src={user.avatar} alt="Avatar" className="w-7 h-7 rounded-full object-cover shadow-xs border border-borderTheme" />
+                    ) : (
+                      <div className="w-7 h-7 rounded-full bg-primary flex items-center justify-center text-white text-xs font-bold shadow-xs">
+                        {user?.fullName?.charAt(0) || 'U'}
+                      </div>
+                    )}
                     <span className="hidden sm:inline-block text-sm font-heading font-bold text-textPrimary max-w-[100px] truncate">
                       {user?.fullName || 'User'}
                     </span>

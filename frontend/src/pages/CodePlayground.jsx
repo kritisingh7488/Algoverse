@@ -131,7 +131,14 @@ const FONT_SIZES = [12, 14, 16, 18, 20];
 const CodePlayground = () => {
   const [selectedLanguage, setSelectedLanguage] = useState('javascript');
   const [code, setCode] = useState(LANGUAGE_CONFIG['javascript'].defaultCode);
-  const [isRunning, setIsRunning] = useState(false);
+  const [isRunning, setIsRunningState] = useState(false);
+  const isRunningRef = useRef(false);
+  
+  const setIsRunning = (val) => {
+    setIsRunningState(val);
+    isRunningRef.current = val;
+  };
+
   const [isCopied, setIsCopied] = useState(false);
   const [isFullScreen, setIsFullScreen] = useState(false);
   
@@ -232,7 +239,7 @@ const CodePlayground = () => {
 
     // Handle user input in terminal
     xtermRef.current.onData((data) => {
-      if (isRunning && socketRef.current) {
+      if (isRunningRef.current && socketRef.current) {
         socketRef.current.emit('terminal_input', data);
       }
     });
@@ -417,7 +424,7 @@ const CodePlayground = () => {
               Clear
             </Button>
             
-            {isRunning ? (
+            {isRunningState ? (
               <Button variant="outline" size="sm" onClick={handleKillProcess} className="bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white border-red-500/50">
                 <StopCircle className="w-4 h-4 mr-1.5" />
                 Stop
