@@ -148,6 +148,7 @@ module.exports = (io) => {
               filePaths = [];
             });
           }
+        }
 
       } catch (err) {
         socket.emit('terminal_data', '\\x1b[31mExecution Error:\\x1b[0m\\r\\n' + err.message + '\\r\\n');
