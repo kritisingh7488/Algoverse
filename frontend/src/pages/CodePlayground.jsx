@@ -1,9 +1,10 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Play, RotateCcw, Download, TerminalSquare, Maximize2, Minimize2, Code2, Copy, CheckCircle2, Settings2, Loader2, AlertCircle } from 'lucide-react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { Play, RotateCcw, Download, TerminalSquare, Maximize2, Minimize2, Code2, Copy, CheckCircle2, Settings2, Loader2, AlertCircle, Trash2 } from 'lucide-react';
 import Editor from '@monaco-editor/react';
 import AppLayout from '../layouts/AppLayout';
 import Card from '../components/common/Card';
 import Button from '../components/common/Button';
+import api from '../api/axios';
 
 // Language templates and configuration
 const LANGUAGE_CONFIG = {
@@ -146,40 +147,46 @@ const CodePlayground = () => {
   // Settings
   const [theme, setTheme] = useState('vs-dark');
   const [fontSize, setFontSize] = useState(14);
-  const [runtimes, setRuntimes] = useState({});
-  const [isFetchingRuntimes, setIsFetchingRuntimes] = useState(true);
-
   const editorRef = useRef(null);
 
-  // Fetch Piston runtimes on mount to get exact versions
-  useEffect(() => {
-    const fetchRuntimes = async () => {
-      try {
-        const response = await fetch('https://emkc.org/api/v2/piston/runtimes');
-        const data = await response.json();
-        
-        // Create a map of language name to highest version
-        const runtimeMap = {};
-        data.forEach(runtime => {
-          runtimeMap[runtime.language] = runtime.version;
-          // also map aliases
-          if (runtime.aliases) {
-            runtime.aliases.forEach(alias => {
-              runtimeMap[alias] = runtime.version;
-            });
-          }
-        });
-        
-        setRuntimes(runtimeMap);
-      } catch (err) {
-        console.error("Failed to fetch Piston runtimes:", err);
-      } finally {
-        setIsFetchingRuntimes(false);
-      }
-    };
-    
-    fetchRuntimes();
+  // Resize logic
+  const [editorWidth, setEditorWidth] = useState(50); // percentage
+  const [isDragging, setIsDragging] = useState(false);
+
+  const handleMouseDown = useCallback(() => {
+    setIsDragging(true);
   }, []);
+
+  const handleMouseMove = useCallback((e) => {
+    if (isDragging) {
+      const containerWidth = window.innerWidth; // Approximate, but good enough for percentage calculation
+      let newWidth = (e.clientX / containerWidth) * 100;
+      if (newWidth < 20) newWidth = 20;
+      if (newWidth > 80) newWidth = 80;
+      setEditorWidth(newWidth);
+    }
+  }, [isDragging]);
+
+  const handleMouseUp = useCallback(() => {
+    setIsDragging(false);
+  }, []);
+
+  useEffect(() => {
+    if (isDragging) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+      document.body.style.userSelect = 'none'; // Prevent text selection while dragging
+    } else {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+      document.body.style.userSelect = '';
+    }
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+      document.body.style.userSelect = '';
+    };
+  }, [isDragging, handleMouseMove, handleMouseUp]);
 
   const handleEditorDidMount = (editor, monaco) => {
     editorRef.current = editor;
@@ -196,39 +203,21 @@ const CodePlayground = () => {
     if (!code.trim()) return;
     
     setIsRunning(true);
-    setOutput([{ type: 'system', message: 'Running code securely in cloud container...' }]);
+    setOutput([{ type: 'system', message: 'Executing code via AlgoVerse Secure Backend Container...' }]);
     
     const langConfig = LANGUAGE_CONFIG[selectedLanguage];
-    const pistonLang = langConfig.pistonLanguage;
-    const version = runtimes[pistonLang] || '*';
+    const backendLang = langConfig.pistonLanguage;
 
     try {
-      const response = await fetch('https://emkc.org/api/v2/piston/execute', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          language: pistonLang,
-          version: version,
-          files: [
-            {
-              name: `main.${pistonLang}`,
-              content: code
-            }
-          ],
-          compile_timeout: 10000,
-          run_timeout: 10000,
-          compile_memory_limit: -1,
-          run_memory_limit: -1,
-        })
+      const response = await api.post('/execute', {
+        language: backendLang,
+        code: code
       });
 
-      const data = await response.json();
-      
+      const data = response.data;
       const newOutput = [];
       
-      if (data.compile && data.compile.code !== 0) {
-        newOutput.push({ type: 'error', message: `Compilation Error (Exit Code ${data.compile.code}):\n${data.compile.stderr || data.compile.output}` });
-      } else if (data.run) {
+      if (data.run) {
         if (data.run.stdout) {
           newOutput.push({ type: 'info', message: data.run.stdout });
         }
@@ -241,13 +230,15 @@ const CodePlayground = () => {
         } else if (!data.run.stdout && !data.run.stderr) {
            newOutput.push({ type: 'system', message: 'Process finished successfully with no output.' });
         }
+      } else if (data.error) {
+        newOutput.push({ type: 'error', message: data.error });
       } else {
-        newOutput.push({ type: 'error', message: 'Failed to execute: ' + (data.message || JSON.stringify(data)) });
+        newOutput.push({ type: 'error', message: 'Failed to execute: ' + JSON.stringify(data) });
       }
 
       setOutput(newOutput);
     } catch (err) {
-      setOutput([{ type: 'error', message: 'Network error or execution failed: ' + err.toString() }]);
+      setOutput([{ type: 'error', message: 'Execution failed: ' + (err.response?.data?.error || err.response?.data?.run?.stderr || err.toString()) }]);
     } finally {
       setIsRunning(false);
     }
@@ -256,6 +247,11 @@ const CodePlayground = () => {
   const handleReset = () => {
     setCode(LANGUAGE_CONFIG[selectedLanguage].defaultCode);
     setOutput([]);
+  };
+
+  const handleClear = () => {
+    setCode('');
+    editorRef.current?.focus();
   };
 
   const handleCopyCode = () => {
@@ -287,10 +283,10 @@ const CodePlayground = () => {
 
   return (
     <AppLayout>
-      <div className={`space-y-4 py-1 font-body ${isFullScreen ? 'fixed inset-0 z-50 bg-background overflow-y-auto p-4' : ''}`}>
+      <div className={`flex flex-col space-y-4 py-1 font-body ${isFullScreen ? 'fixed inset-0 z-50 bg-background overflow-hidden p-4' : ''}`}>
         
         {/* Header bar */}
-        <Card className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-4 border-[1.5px] border-borderTheme p-4">
+        <Card className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-4 border-[1.5px] border-borderTheme p-4 flex-shrink-0">
           <div className="flex items-center gap-3">
             <span className="p-2 rounded-2xl bg-primary/15 text-primary border border-primary/30">
               <Code2 className="w-5 h-5" />
@@ -301,11 +297,11 @@ const CodePlayground = () => {
                   Code Playground IDE
                 </h1>
                 <span className="px-2 py-0.5 rounded text-[11px] font-mono font-bold uppercase bg-emerald-500/10 text-emerald-500 border border-emerald-500/30">
-                  Multi-Language
+                  Native Execution
                 </span>
               </div>
               <p className="text-sm font-body text-textSecondary mt-0.5">
-                Write and execute code in Python, C++, Java, JS, Go, and Rust natively.
+                Write and execute code in Python, C++, and JS natively on our servers.
               </p>
             </div>
           </div>
@@ -356,18 +352,25 @@ const CodePlayground = () => {
               <RotateCcw className="w-4 h-4 mr-1.5" />
               Reset
             </Button>
-            <Button variant="primary" size="sm" onClick={handleRunCode} isLoading={isRunning || isFetchingRuntimes}>
+            <Button variant="outline" size="sm" onClick={handleClear} title="Clear All Code" className="text-red-500 hover:bg-red-500/10 hover:text-red-600 border-red-500/20">
+              <Trash2 className="w-4 h-4 mr-1.5" />
+              Clear
+            </Button>
+            <Button variant="primary" size="sm" onClick={handleRunCode} isLoading={isRunning}>
               <Play className="w-4 h-4 mr-1.5" />
-              {isFetchingRuntimes ? 'Initializing Engine...' : 'Run Code'}
+              Run Code
             </Button>
           </div>
         </Card>
 
-        {/* Editor & Output Container */}
-        <div className={`grid grid-cols-1 ${isFullScreen ? 'lg:grid-cols-2 h-[calc(100vh-120px)]' : 'lg:grid-cols-2 h-[650px]'} gap-4`}>
+        {/* Resizable Editor & Output Container */}
+        <div className={`flex flex-col lg:flex-row gap-2 ${isFullScreen ? 'flex-1' : 'h-[650px]'}`}>
           
           {/* Editor Side */}
-          <Card className="flex flex-col border border-borderTheme overflow-hidden rounded-xl shadow-large">
+          <Card 
+            className="flex flex-col border border-borderTheme overflow-hidden rounded-xl shadow-large"
+            style={{ width: `${editorWidth}%` }}
+          >
             <div className="flex items-center justify-between px-4 py-2 bg-surface border-b border-borderTheme">
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 rounded-full bg-red-500/80"></div>
@@ -404,8 +407,19 @@ const CodePlayground = () => {
             </div>
           </Card>
 
+          {/* Draggable Divider (Only visible on large screens) */}
+          <div 
+            className="hidden lg:flex w-2 bg-transparent hover:bg-primary/20 cursor-col-resize items-center justify-center rounded-full transition-colors active:bg-primary/40 group"
+            onMouseDown={handleMouseDown}
+          >
+            <div className="w-0.5 h-12 bg-borderTheme group-hover:bg-primary/50 rounded-full"></div>
+          </div>
+
           {/* Terminal / Output Side */}
-          <Card className="flex flex-col border border-borderTheme overflow-hidden rounded-xl shadow-large bg-[#0D0D0D]">
+          <Card 
+            className="flex flex-col border border-borderTheme overflow-hidden rounded-xl shadow-large bg-[#0D0D0D]"
+            style={{ width: `${100 - editorWidth}%` }}
+          >
             <div className="flex items-center justify-between px-4 py-2 bg-[#1A1A1A] border-b border-[#2A2A2A]">
               <div className="flex items-center gap-2 text-gray-300">
                 <TerminalSquare className="w-4 h-4" />
@@ -426,7 +440,7 @@ const CodePlayground = () => {
                   <TerminalSquare className="w-10 h-10 opacity-20" />
                   <p className="font-mono text-sm">Waiting for execution...</p>
                   <p className="text-xs text-gray-700 max-w-xs text-center mt-2">
-                    Code is executed securely via the Piston API open-source execution engine.
+                    Code is executed natively on our backend servers.
                   </p>
                 </div>
               ) : (
