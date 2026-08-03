@@ -68,14 +68,26 @@ const useAuthStore = create((set) => ({
     }
   },
 
-  googleLogin: async (token, userData) => {
+  googleLogin: async (credential, userData) => {
     set({ isLoading: true, error: null });
     try {
+      const response = await api.post('/auth/google-login', userData);
+      const payload = response.data?.data || response.data;
+      const { user, token } = payload || {};
+      
+      if (!token) {
+        throw new Error('Invalid Google authentication response from server.');
+      }
+      
       localStorage.setItem('algoverse_token', token);
-      set({ user: userData, token, isAuthenticated: true, isLoading: false });
+      set({ user, token, isAuthenticated: true, isLoading: false });
       return true;
     } catch (error) {
-      set({ error: 'Google login failed', isLoading: false });
+      let errorMessage = 'Google login failed';
+      if (error.response) {
+        errorMessage = error.response.data?.message || errorMessage;
+      }
+      set({ error: errorMessage, isLoading: false });
       return false;
     }
   },
@@ -108,6 +120,22 @@ const useAuthStore = create((set) => ({
       return { success: true };
     } catch (error) {
       let errorMessage = 'Failed to update profile.';
+      if (error.response) {
+        errorMessage = error.response.data?.message || errorMessage;
+      }
+      set({ error: errorMessage, isLoading: false });
+      return { success: false, message: errorMessage };
+    }
+  },
+
+  updatePassword: async (passwordData) => {
+    set({ isLoading: true, error: null });
+    try {
+      const response = await api.put('/user/password', passwordData);
+      set({ isLoading: false });
+      return { success: true, message: response.data?.message || 'Password updated' };
+    } catch (error) {
+      let errorMessage = 'Failed to update password.';
       if (error.response) {
         errorMessage = error.response.data?.message || errorMessage;
       }

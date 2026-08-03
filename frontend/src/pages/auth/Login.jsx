@@ -38,6 +38,7 @@ const Login = () => {
 
       const decoded = JSON.parse(atob(response.credential.split('.')[1]));
       const { success } = await googleLogin(response.credential, {
+        googleId: decoded.sub,
         fullName: decoded.name,
         email: decoded.email,
         avatar: decoded.picture,

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { 
   User, 
@@ -9,17 +9,23 @@ import {
   Sparkles, 
   Layers, 
   BarChart2, 
-  Edit 
+  Edit,
+  CheckCircle2,
+  X,
+  RefreshCw
 } from 'lucide-react';
 import AppLayout from '../layouts/AppLayout';
 import useAuthStore from '../store/authStore';
 import Button from '../components/common/Button';
+import Input from '../components/common/Input';
 import Card from '../components/common/Card';
 import Badge from '../components/common/Badge';
 
-
 const Profile = () => {
-  const { user } = useAuthStore();
+  const { user, updateProfile, isLoading } = useAuthStore();
+  const [isEditing, setIsEditing] = useState(false);
+  const [editName, setEditName] = useState(user?.fullName || '');
+  const [editAvatar, setEditAvatar] = useState(user?.avatar || '');
 
   const xp = user?.xp || 0;
   const level = user?.level || 1;
@@ -27,6 +33,18 @@ const Profile = () => {
   const achievements = user?.achievements?.length > 0 ? user.achievements : [
     { title: 'Welcome to AlgoVerse!', desc: 'Started your algorithm journey', icon: Sparkles, date: 'Today' }
   ];
+
+  const handleRandomizeAvatar = () => {
+    const seed = Math.random().toString(36).substring(7);
+    setEditAvatar(`https://api.dicebear.com/7.x/avataaars/svg?seed=${seed}`);
+  };
+
+  const handleSaveProfile = async () => {
+    const res = await updateProfile({ fullName: editName, avatar: editAvatar });
+    if (res.success) {
+      setIsEditing(false);
+    }
+  };
 
   return (
     <AppLayout>
@@ -37,24 +55,68 @@ const Profile = () => {
           <div className="h-36 bg-cardAccent relative" />
           <div className="p-8 relative pt-0 flex flex-col sm:flex-row items-start sm:items-end justify-between gap-6">
             <div className="flex flex-col sm:flex-row items-start sm:items-end gap-5 -mt-14">
-              <div className="w-24 h-24 rounded-card bg-card p-1.5 shadow-medium border-[1.5px] border-borderTheme">
-                <div className="w-full h-full rounded-2xl bg-primary text-white text-3xl font-heading font-bold flex items-center justify-center">
-                  {user?.fullName?.charAt(0) || 'U'}
+              <div className="relative group">
+                <div className="w-24 h-24 rounded-card bg-card p-1.5 shadow-medium border-[1.5px] border-borderTheme overflow-hidden flex items-center justify-center">
+                  {(isEditing ? editAvatar : user?.avatar) ? (
+                    <img 
+                      src={isEditing ? editAvatar : user?.avatar} 
+                      alt="Avatar" 
+                      className="w-full h-full rounded-2xl object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full rounded-2xl bg-primary text-white text-3xl font-heading font-bold flex items-center justify-center">
+                      {user?.fullName?.charAt(0) || 'U'}
+                    </div>
+                  )}
                 </div>
+                {isEditing && (
+                  <button 
+                    onClick={handleRandomizeAvatar}
+                    className="absolute -right-2 -bottom-2 bg-primary text-white p-2 rounded-xl shadow-medium border border-primary/30 hover:scale-105 transition-transform"
+                    title="Randomize Avatar"
+                  >
+                    <RefreshCw className="w-4 h-4" />
+                  </button>
+                )}
               </div>
-              <div className="space-y-1">
-                <h1 className="text-2xl font-heading font-bold text-textPrimary">{user?.fullName || 'User Profile'}</h1>
+              
+              <div className="space-y-2 w-full max-w-xs">
+                {isEditing ? (
+                  <Input
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                    placeholder="Display Name"
+                    className="font-heading font-bold"
+                  />
+                ) : (
+                  <h1 className="text-2xl font-heading font-bold text-textPrimary">{user?.fullName || 'User Profile'}</h1>
+                )}
+                
                 <p className="text-xs font-body text-textSecondary flex items-center gap-2">
                   <Mail className="w-3.5 h-3.5 text-textSecondary" /> {user?.email}
                 </p>
               </div>
             </div>
 
-            <div className="flex items-center gap-4">
-
-              <Button variant="outline" size="sm">
-                <Edit className="w-3.5 h-3.5 mr-1.5" /> Edit Profile
-              </Button>
+            <div className="flex items-center gap-2 mt-4 sm:mt-0">
+              {isEditing ? (
+                <>
+                  <Button variant="outline" size="sm" onClick={() => {
+                    setIsEditing(false);
+                    setEditName(user?.fullName || '');
+                    setEditAvatar(user?.avatar || '');
+                  }}>
+                    <X className="w-3.5 h-3.5 mr-1.5" /> Cancel
+                  </Button>
+                  <Button variant="primary" size="sm" onClick={handleSaveProfile} isLoading={isLoading}>
+                    <CheckCircle2 className="w-3.5 h-3.5 mr-1.5" /> Save
+                  </Button>
+                </>
+              ) : (
+                <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>
+                  <Edit className="w-3.5 h-3.5 mr-1.5" /> Edit Profile
+                </Button>
+              )}
             </div>
           </div>
         </Card>

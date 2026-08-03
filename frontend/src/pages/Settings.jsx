@@ -5,7 +5,8 @@ import {
   User, 
   Mail, 
   CheckCircle2, 
-  Shield 
+  Shield,
+  Key
 } from 'lucide-react';
 import AppLayout from '../layouts/AppLayout';
 import useAuthStore from '../store/authStore';
@@ -15,23 +16,63 @@ import Card from '../components/common/Card';
 import ThemeToggle from '../components/common/ThemeToggle';
 
 const Settings = () => {
-  const { user, updateProfile, isLoading } = useAuthStore();
+  const { user, updateProfile, updatePassword, isLoading } = useAuthStore();
+  
+  // Profile state
   const [fullName, setFullName] = useState(user?.fullName || '');
   const [email, setEmail] = useState(user?.email || '');
-  const [saved, setSaved] = useState(false);
-  const [errorMsg, setErrorMsg] = useState(null);
+  const [profileSaved, setProfileSaved] = useState(false);
+  const [profileError, setProfileError] = useState(null);
 
-  const handleSave = async (e) => {
+  // Password state
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [pwdSaved, setPwdSaved] = useState(false);
+  const [pwdError, setPwdError] = useState(null);
+  const [isPwdLoading, setIsPwdLoading] = useState(false);
+
+  const handleProfileSave = async (e) => {
     e.preventDefault();
-    setErrorMsg(null);
-    setSaved(false);
+    setProfileError(null);
+    setProfileSaved(false);
     
     const res = await updateProfile({ fullName, email });
     if (res.success) {
-      setSaved(true);
-      setTimeout(() => setSaved(false), 3000);
+      setProfileSaved(true);
+      setTimeout(() => setProfileSaved(false), 3000);
     } else {
-      setErrorMsg(res.message);
+      setProfileError(res.message);
+    }
+  };
+
+  const handlePasswordSave = async (e) => {
+    e.preventDefault();
+    setPwdError(null);
+    setPwdSaved(false);
+
+    if (newPassword !== confirmPassword) {
+      setPwdError("New passwords don't match");
+      return;
+    }
+
+    if (newPassword.length < 8) {
+      setPwdError("New password must be at least 8 characters");
+      return;
+    }
+
+    setIsPwdLoading(true);
+    const res = await updatePassword({ currentPassword, newPassword });
+    setIsPwdLoading(false);
+
+    if (res.success) {
+      setPwdSaved(true);
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+      setTimeout(() => setPwdSaved(false), 3000);
+    } else {
+      setPwdError(res.message);
     }
   };
 
@@ -53,18 +94,18 @@ const Settings = () => {
           <ThemeToggle />
         </Card>
 
-        {/* Form Box */}
-        <form onSubmit={handleSave}>
+        {/* Profile Information Form */}
+        <form onSubmit={handleProfileSave}>
           <Card className="space-y-6">
-            {saved && (
+            {profileSaved && (
               <div className="p-4 rounded-2xl bg-success/20 border border-success/30 text-textPrimary text-xs font-body font-bold flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-success" /> Settings updated successfully!
+                <CheckCircle2 className="w-4 h-4 text-success" /> Profile updated successfully!
               </div>
             )}
             
-            {errorMsg && (
+            {profileError && (
               <div className="p-4 rounded-2xl bg-danger/20 border border-danger/30 text-textPrimary text-xs font-body font-bold flex items-center gap-2">
-                <Shield className="w-4 h-4 text-danger" /> {errorMsg}
+                <Shield className="w-4 h-4 text-danger" /> {profileError}
               </div>
             )}
 
@@ -89,8 +130,63 @@ const Settings = () => {
             </div>
 
             <div className="pt-4 border-t-2 border-borderTheme flex justify-end">
-              <Button type="submit" variant="primary" size="md" disabled={isLoading}>
-                {isLoading ? 'Saving...' : 'Save Changes'}
+              <Button type="submit" variant="primary" size="md" isLoading={isLoading}>
+                Save Changes
+              </Button>
+            </div>
+          </Card>
+        </form>
+
+        {/* Change Password Form */}
+        <form onSubmit={handlePasswordSave}>
+          <Card className="space-y-6">
+            {pwdSaved && (
+              <div className="p-4 rounded-2xl bg-success/20 border border-success/30 text-textPrimary text-xs font-body font-bold flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-success" /> Password updated successfully!
+              </div>
+            )}
+            
+            {pwdError && (
+              <div className="p-4 rounded-2xl bg-danger/20 border border-danger/30 text-textPrimary text-xs font-body font-bold flex items-center gap-2">
+                <Shield className="w-4 h-4 text-danger" /> {pwdError}
+              </div>
+            )}
+
+            <div className="space-y-4">
+              <h3 className="text-sm font-heading font-bold text-textPrimary border-b-2 border-borderTheme pb-2 flex items-center gap-2">
+                <Key className="w-4 h-4" /> Security
+              </h3>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="sm:col-span-2">
+                  <Input
+                    label="Current Password"
+                    type="password"
+                    placeholder="Leave blank if signed in with Google only"
+                    value={currentPassword}
+                    onChange={(e) => setCurrentPassword(e.target.value)}
+                  />
+                </div>
+                <Input
+                  label="New Password"
+                  type="password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  required
+                />
+                <Input
+                  label="Confirm New Password"
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="pt-4 border-t-2 border-borderTheme flex justify-end">
+              <Button type="submit" variant="primary" size="md" isLoading={isPwdLoading}>
+                Update Password
               </Button>
             </div>
           </Card>
