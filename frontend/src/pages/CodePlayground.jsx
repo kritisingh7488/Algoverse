@@ -1,12 +1,17 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Play, RotateCcw, Download, TerminalSquare, Maximize2, Minimize2, Code2, Copy, CheckCircle2 } from 'lucide-react';
+import { Play, RotateCcw, Download, TerminalSquare, Maximize2, Minimize2, Code2, Copy, CheckCircle2, Settings2, Loader2, AlertCircle } from 'lucide-react';
 import Editor from '@monaco-editor/react';
 import AppLayout from '../layouts/AppLayout';
 import Card from '../components/common/Card';
 import Button from '../components/common/Button';
 
-const DEFAULT_CODE = `// Welcome to the AlgoVerse JavaScript Playground!
-// Write your code below and hit "Run Code"
+// Language templates and configuration
+const LANGUAGE_CONFIG = {
+  javascript: {
+    name: 'JavaScript (Node.js)',
+    monacoLanguage: 'javascript',
+    pistonLanguage: 'javascript',
+    defaultCode: `// Welcome to the AlgoVerse JavaScript Playground!
 
 function fibonacci(n) {
   if (n <= 1) return n;
@@ -16,92 +21,240 @@ function fibonacci(n) {
 console.log("Calculating Fibonacci(10)...");
 const result = fibonacci(10);
 console.log("Result:", result);
+`
+  },
+  python: {
+    name: 'Python 3',
+    monacoLanguage: 'python',
+    pistonLanguage: 'python',
+    defaultCode: `# Welcome to the AlgoVerse Python Playground!
 
-// Try creating your own classes and algorithms!
-class Node {
-  constructor(val) {
-    this.val = val;
-    this.next = null;
-  }
+def fibonacci(n):
+    if n <= 1:
+        return n
+    return fibonacci(n-1) + fibonacci(n-2)
+
+print("Calculating Fibonacci(10)...")
+result = fibonacci(10)
+print(f"Result: {result}")
+`
+  },
+  cpp: {
+    name: 'C++ (GCC)',
+    monacoLanguage: 'cpp',
+    pistonLanguage: 'c++',
+    defaultCode: `// Welcome to the AlgoVerse C++ Playground!
+#include <iostream>
+using namespace std;
+
+int fibonacci(int n) {
+    if (n <= 1) return n;
+    return fibonacci(n-1) + fibonacci(n-2);
 }
 
-const head = new Node(42);
-console.log("Linked List Head:", head);
-`;
+int main() {
+    cout << "Calculating Fibonacci(10)..." << endl;
+    int result = fibonacci(10);
+    cout << "Result: " << result << endl;
+    return 0;
+}
+`
+  },
+  java: {
+    name: 'Java (OpenJDK)',
+    monacoLanguage: 'java',
+    pistonLanguage: 'java',
+    defaultCode: `// Welcome to the AlgoVerse Java Playground!
+// Note: Class must be named Main
+
+public class Main {
+    public static int fibonacci(int n) {
+        if (n <= 1) return n;
+        return fibonacci(n-1) + fibonacci(n-2);
+    }
+    
+    public static void main(String[] args) {
+        System.out.println("Calculating Fibonacci(10)...");
+        int result = fibonacci(10);
+        System.out.println("Result: " + result);
+    }
+}
+`
+  },
+  go: {
+    name: 'Go',
+    monacoLanguage: 'go',
+    pistonLanguage: 'go',
+    defaultCode: `// Welcome to the AlgoVerse Go Playground!
+package main
+
+import "fmt"
+
+func fibonacci(n int) int {
+    if n <= 1 {
+        return n
+    }
+    return fibonacci(n-1) + fibonacci(n-2)
+}
+
+func main() {
+    fmt.Println("Calculating Fibonacci(10)...")
+    result := fibonacci(10)
+    fmt.Printf("Result: %d\\n", result)
+}
+`
+  },
+  rust: {
+    name: 'Rust',
+    monacoLanguage: 'rust',
+    pistonLanguage: 'rust',
+    defaultCode: `// Welcome to the AlgoVerse Rust Playground!
+
+fn fibonacci(n: u32) -> u32 {
+    match n {
+        0 => 0,
+        1 => 1,
+        _ => fibonacci(n - 1) + fibonacci(n - 2),
+    }
+}
+
+fn main() {
+    println!("Calculating Fibonacci(10)...");
+    let result = fibonacci(10);
+    println!("Result: {}", result);
+}
+`
+  }
+};
+
+const THEMES = [
+  { id: 'vs-dark', name: 'VS Dark' },
+  { id: 'light', name: 'Light' },
+  { id: 'hc-black', name: 'High Contrast' }
+];
+
+const FONT_SIZES = [12, 14, 16, 18, 20];
 
 const CodePlayground = () => {
-  const [code, setCode] = useState(DEFAULT_CODE);
+  const [selectedLanguage, setSelectedLanguage] = useState('javascript');
+  const [code, setCode] = useState(LANGUAGE_CONFIG['javascript'].defaultCode);
   const [output, setOutput] = useState([]);
   const [isRunning, setIsRunning] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
   const [isFullScreen, setIsFullScreen] = useState(false);
   
+  // Settings
+  const [theme, setTheme] = useState('vs-dark');
+  const [fontSize, setFontSize] = useState(14);
+  const [runtimes, setRuntimes] = useState({});
+  const [isFetchingRuntimes, setIsFetchingRuntimes] = useState(true);
+
   const editorRef = useRef(null);
+
+  // Fetch Piston runtimes on mount to get exact versions
+  useEffect(() => {
+    const fetchRuntimes = async () => {
+      try {
+        const response = await fetch('https://emkc.org/api/v2/piston/runtimes');
+        const data = await response.json();
+        
+        // Create a map of language name to highest version
+        const runtimeMap = {};
+        data.forEach(runtime => {
+          runtimeMap[runtime.language] = runtime.version;
+          // also map aliases
+          if (runtime.aliases) {
+            runtime.aliases.forEach(alias => {
+              runtimeMap[alias] = runtime.version;
+            });
+          }
+        });
+        
+        setRuntimes(runtimeMap);
+      } catch (err) {
+        console.error("Failed to fetch Piston runtimes:", err);
+      } finally {
+        setIsFetchingRuntimes(false);
+      }
+    };
+    
+    fetchRuntimes();
+  }, []);
 
   const handleEditorDidMount = (editor, monaco) => {
     editorRef.current = editor;
   };
 
-  const handleRunCode = async () => {
-    setIsRunning(true);
+  const handleLanguageChange = (e) => {
+    const newLang = e.target.value;
+    setSelectedLanguage(newLang);
+    setCode(LANGUAGE_CONFIG[newLang].defaultCode);
     setOutput([]);
-    
-    // Simulate slight delay for effect
-    await new Promise(resolve => setTimeout(resolve, 300));
-    
-    const logs = [];
-    
-    // Override console.log temporarily to capture output
-    const originalConsoleLog = console.log;
-    const originalConsoleError = console.error;
-    const originalConsoleWarn = console.warn;
-    const originalConsoleInfo = console.info;
+  };
 
-    const captureLog = (type, ...args) => {
-      const formattedArgs = args.map(arg => {
-        if (typeof arg === 'object') {
-          try {
-            return JSON.stringify(arg, null, 2);
-          } catch (e) {
-            return String(arg);
-          }
-        }
-        return String(arg);
-      }).join(' ');
-      
-      logs.push({ type, message: formattedArgs, timestamp: new Date().toLocaleTimeString() });
-    };
-
-    console.log = (...args) => captureLog('log', ...args);
-    console.error = (...args) => captureLog('error', ...args);
-    console.warn = (...args) => captureLog('warn', ...args);
-    console.info = (...args) => captureLog('info', ...args);
+  const handleRunCode = async () => {
+    if (!code.trim()) return;
+    
+    setIsRunning(true);
+    setOutput([{ type: 'system', message: 'Running code securely in cloud container...' }]);
+    
+    const langConfig = LANGUAGE_CONFIG[selectedLanguage];
+    const pistonLang = langConfig.pistonLanguage;
+    const version = runtimes[pistonLang] || '*';
 
     try {
-      // Create a secure function context
-      // Note: In a real production environment, you should use Web Workers or a sandbox iframe
-      const executeCode = new Function(code);
-      executeCode();
-    } catch (err) {
-      captureLog('error', err.toString());
-    } finally {
-      // Restore console
-      console.log = originalConsoleLog;
-      console.error = originalConsoleError;
-      console.warn = originalConsoleWarn;
-      console.info = originalConsoleInfo;
+      const response = await fetch('https://emkc.org/api/v2/piston/execute', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          language: pistonLang,
+          version: version,
+          files: [
+            {
+              name: `main.${pistonLang}`,
+              content: code
+            }
+          ],
+          compile_timeout: 10000,
+          run_timeout: 10000,
+          compile_memory_limit: -1,
+          run_memory_limit: -1,
+        })
+      });
+
+      const data = await response.json();
       
-      if (logs.length === 0) {
-        logs.push({ type: 'info', message: 'Code executed successfully with no output.', timestamp: new Date().toLocaleTimeString() });
+      const newOutput = [];
+      
+      if (data.compile && data.compile.code !== 0) {
+        newOutput.push({ type: 'error', message: `Compilation Error (Exit Code ${data.compile.code}):\n${data.compile.stderr || data.compile.output}` });
+      } else if (data.run) {
+        if (data.run.stdout) {
+          newOutput.push({ type: 'info', message: data.run.stdout });
+        }
+        if (data.run.stderr) {
+          newOutput.push({ type: 'error', message: data.run.stderr });
+        }
+        
+        if (data.run.code !== 0) {
+           newOutput.push({ type: 'error', message: `\nProcess exited with code ${data.run.code}` });
+        } else if (!data.run.stdout && !data.run.stderr) {
+           newOutput.push({ type: 'system', message: 'Process finished successfully with no output.' });
+        }
+      } else {
+        newOutput.push({ type: 'error', message: 'Failed to execute: ' + (data.message || JSON.stringify(data)) });
       }
-      
-      setOutput(logs);
+
+      setOutput(newOutput);
+    } catch (err) {
+      setOutput([{ type: 'error', message: 'Network error or execution failed: ' + err.toString() }]);
+    } finally {
       setIsRunning(false);
     }
   };
 
   const handleReset = () => {
-    setCode(DEFAULT_CODE);
+    setCode(LANGUAGE_CONFIG[selectedLanguage].defaultCode);
     setOutput([]);
   };
 
@@ -112,11 +265,20 @@ const CodePlayground = () => {
   };
 
   const handleDownload = () => {
-    const blob = new Blob([code], { type: 'text/javascript' });
+    const extensionMap = {
+      javascript: 'js',
+      python: 'py',
+      cpp: 'cpp',
+      java: 'java',
+      go: 'go',
+      rust: 'rs'
+    };
+    
+    const blob = new Blob([code], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'algoverse_script.js';
+    a.download = `algoverse_script.${extensionMap[selectedLanguage]}`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -128,21 +290,59 @@ const CodePlayground = () => {
       <div className={`space-y-4 py-1 font-body ${isFullScreen ? 'fixed inset-0 z-50 bg-background overflow-y-auto p-4' : ''}`}>
         
         {/* Header bar */}
-        <Card className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-[1.5px] border-borderTheme p-4">
+        <Card className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-4 border-[1.5px] border-borderTheme p-4">
           <div className="flex items-center gap-3">
             <span className="p-2 rounded-2xl bg-primary/15 text-primary border border-primary/30">
               <Code2 className="w-5 h-5" />
             </span>
             <div>
-              <h1 className="text-2xl font-heading font-bold text-textPrimary">
-                Code Playground
-              </h1>
+              <div className="flex items-center gap-2">
+                <h1 className="text-2xl font-heading font-bold text-textPrimary">
+                  Code Playground IDE
+                </h1>
+                <span className="px-2 py-0.5 rounded text-[11px] font-mono font-bold uppercase bg-emerald-500/10 text-emerald-500 border border-emerald-500/30">
+                  Multi-Language
+                </span>
+              </div>
               <p className="text-sm font-body text-textSecondary mt-0.5">
-                Write, test, and execute JavaScript algorithms directly in your browser.
+                Write and execute code in Python, C++, Java, JS, Go, and Rust natively.
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          
+          <div className="flex items-center gap-2 flex-wrap">
+            
+            {/* Language Selector */}
+            <select 
+              value={selectedLanguage}
+              onChange={handleLanguageChange}
+              className="bg-surface border border-borderTheme text-foreground text-xs rounded-lg px-3 py-1.5 focus:outline-none focus:border-primary font-semibold"
+            >
+              {Object.entries(LANGUAGE_CONFIG).map(([key, config]) => (
+                <option key={key} value={key}>{config.name}</option>
+              ))}
+            </select>
+
+            {/* Theme Selector */}
+            <select 
+              value={theme}
+              onChange={(e) => setTheme(e.target.value)}
+              className="bg-surface border border-borderTheme text-foreground text-xs rounded-lg px-3 py-1.5 focus:outline-none focus:border-primary"
+            >
+              {THEMES.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+            </select>
+
+            {/* Font Size Selector */}
+            <select 
+              value={fontSize}
+              onChange={(e) => setFontSize(Number(e.target.value))}
+              className="bg-surface border border-borderTheme text-foreground text-xs rounded-lg px-3 py-1.5 focus:outline-none focus:border-primary"
+            >
+              {FONT_SIZES.map(s => <option key={s} value={s}>{s}px</option>)}
+            </select>
+
+            <div className="w-px h-6 bg-borderTheme mx-1"></div>
+
             <Button variant="outline" size="sm" onClick={() => setIsFullScreen(!isFullScreen)} title={isFullScreen ? "Exit Fullscreen" : "Fullscreen"}>
               {isFullScreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
             </Button>
@@ -152,13 +352,13 @@ const CodePlayground = () => {
             <Button variant="outline" size="sm" onClick={handleCopyCode} title="Copy Code">
               {isCopied ? <CheckCircle2 className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />}
             </Button>
-            <Button variant="outline" size="sm" onClick={handleReset} title="Reset to Default">
+            <Button variant="outline" size="sm" onClick={handleReset} title="Reset to Default Boilerplate">
               <RotateCcw className="w-4 h-4 mr-1.5" />
               Reset
             </Button>
-            <Button variant="primary" size="sm" onClick={handleRunCode} isLoading={isRunning}>
+            <Button variant="primary" size="sm" onClick={handleRunCode} isLoading={isRunning || isFetchingRuntimes}>
               <Play className="w-4 h-4 mr-1.5" />
-              Run Code
+              {isFetchingRuntimes ? 'Initializing Engine...' : 'Run Code'}
             </Button>
           </div>
         </Card>
@@ -173,25 +373,27 @@ const CodePlayground = () => {
                 <div className="w-3 h-3 rounded-full bg-red-500/80"></div>
                 <div className="w-3 h-3 rounded-full bg-amber-500/80"></div>
                 <div className="w-3 h-3 rounded-full bg-emerald-500/80"></div>
-                <span className="ml-2 text-xs font-mono text-muted uppercase font-bold tracking-wider">script.js</span>
+                <span className="ml-2 text-xs font-mono text-muted uppercase font-bold tracking-wider">
+                  main.{selectedLanguage === 'javascript' ? 'js' : selectedLanguage === 'python' ? 'py' : selectedLanguage === 'rust' ? 'rs' : selectedLanguage}
+                </span>
               </div>
               <span className="text-[10px] bg-primary/10 text-primary border border-primary/20 px-2 py-0.5 rounded font-mono font-bold">
-                JavaScript
+                {LANGUAGE_CONFIG[selectedLanguage].name}
               </span>
             </div>
-            <div className="flex-1 w-full bg-[#1e1e1e]">
+            <div className={`flex-1 w-full ${theme === 'vs-dark' || theme === 'hc-black' ? 'bg-[#1e1e1e]' : 'bg-[#fffffe]'}`}>
               <Editor
                 height="100%"
-                defaultLanguage="javascript"
-                theme="vs-dark"
+                language={LANGUAGE_CONFIG[selectedLanguage].monacoLanguage}
+                theme={theme}
                 value={code}
                 onChange={(value) => setCode(value || '')}
                 onMount={handleEditorDidMount}
                 options={{
                   minimap: { enabled: false },
-                  fontSize: 14,
+                  fontSize: fontSize,
                   fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
-                  lineHeight: 24,
+                  lineHeight: fontSize * 1.5,
                   padding: { top: 16, bottom: 16 },
                   smoothScrolling: true,
                   cursorBlinking: "smooth",
@@ -223,6 +425,9 @@ const CodePlayground = () => {
                 <div className="h-full flex flex-col items-center justify-center text-gray-600 gap-3">
                   <TerminalSquare className="w-10 h-10 opacity-20" />
                   <p className="font-mono text-sm">Waiting for execution...</p>
+                  <p className="text-xs text-gray-700 max-w-xs text-center mt-2">
+                    Code is executed securely via the Piston API open-source execution engine.
+                  </p>
                 </div>
               ) : (
                 <div className="space-y-2">
@@ -230,12 +435,11 @@ const CodePlayground = () => {
                     <div 
                       key={index} 
                       className={`flex gap-3 ${
-                        log.type === 'error' ? 'text-red-400 bg-red-400/10 p-2 rounded' : 
-                        log.type === 'warn' ? 'text-amber-400' : 
-                        log.type === 'info' ? 'text-blue-400' : 'text-gray-300'
+                        log.type === 'error' ? 'text-red-400 bg-red-400/10 p-3 rounded font-bold' : 
+                        log.type === 'system' ? 'text-emerald-400/80 italic text-xs' : 
+                        'text-gray-300'
                       }`}
                     >
-                      <span className="text-gray-600 select-none shrink-0 text-[11px] mt-0.5">{log.timestamp}</span>
                       <span className="whitespace-pre-wrap break-words">{log.message}</span>
                     </div>
                   ))}
