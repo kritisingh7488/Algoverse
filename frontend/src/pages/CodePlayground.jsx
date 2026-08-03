@@ -125,7 +125,7 @@ const CodePlayground = () => {
 
   return (
     <AppLayout>
-      <div className={\`space-y-4 py-1 font-body \${isFullScreen ? 'fixed inset-0 z-50 bg-background overflow-y-auto p-4' : ''}\`}>
+      <div className={`space-y-4 py-1 font-body ${isFullScreen ? 'fixed inset-0 z-50 bg-background overflow-y-auto p-4' : ''}`}>
         
         {/* Header bar */}
         <Card className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-[1.5px] border-borderTheme p-4">
@@ -164,7 +164,7 @@ const CodePlayground = () => {
         </Card>
 
         {/* Editor & Output Container */}
-        <div className={\`grid grid-cols-1 \${isFullScreen ? 'lg:grid-cols-2 h-[calc(100vh-120px)]' : 'lg:grid-cols-2 h-[650px]'} gap-4\`}>
+        <div className={`grid grid-cols-1 ${isFullScreen ? 'lg:grid-cols-2 h-[calc(100vh-120px)]' : 'lg:grid-cols-2 h-[650px]'} gap-4`}>
           
           {/* Editor Side */}
           <Card className="flex flex-col border border-borderTheme overflow-hidden rounded-xl shadow-large">
@@ -229,11 +229,11 @@ const CodePlayground = () => {
                   {output.map((log, index) => (
                     <div 
                       key={index} 
-                      className={\`flex gap-3 \${
+                      className={`flex gap-3 ${
                         log.type === 'error' ? 'text-red-400 bg-red-400/10 p-2 rounded' : 
                         log.type === 'warn' ? 'text-amber-400' : 
                         log.type === 'info' ? 'text-blue-400' : 'text-gray-300'
-                      }\`}
+                      }`}
                     >
                       <span className="text-gray-600 select-none shrink-0 text-[11px] mt-0.5">{log.timestamp}</span>
                       <span className="whitespace-pre-wrap break-words">{log.message}</span>
