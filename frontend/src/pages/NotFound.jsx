@@ -1,11 +1,18 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Compass, Home } from 'lucide-react';
 import AppLayout from '../layouts/AppLayout';
 import Button from '../components/common/Button';
+import useAuthStore from '../store/authStore';
 
 const NotFound = () => {
+  const { isAuthenticated } = useAuthStore();
+
+  if (!isAuthenticated) {
+    return <Navigate to="/" replace />;
+  }
+
   return (
     <AppLayout showSidebar={false}>
       <div className="min-h-[60vh] flex flex-col items-center justify-center text-center py-8 px-4">
