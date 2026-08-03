@@ -2,7 +2,8 @@ const { execFile } = require('child_process');
 const path = require('path');
 const fs = require('fs');
 
-const CPP_BINARY_PATH = path.join(__dirname, '../cpp/ds_engine.exe');
+const ext = process.platform === 'win32' ? '.exe' : '.out';
+const CPP_BINARY_PATH = path.join(__dirname, `../cpp/ds_engine${ext}`);
 
 // C++ Data Structures Engine Controller
 const runDSOperation = async (req, res) => {

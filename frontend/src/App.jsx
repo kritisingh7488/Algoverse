@@ -47,6 +47,14 @@ const PublicRoute = ({ children }) => {
 };
 
 function App() {
+  const { isAuthenticated, user, fetchUserProfile } = useAuthStore();
+
+  React.useEffect(() => {
+    if (isAuthenticated && !user) {
+      fetchUserProfile();
+    }
+  }, [isAuthenticated, user, fetchUserProfile]);
+
   return (
     <ThemeProvider>
       <Router>
