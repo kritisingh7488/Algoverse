@@ -217,8 +217,8 @@ const CodePlayground = () => {
       fitAddonRef.current.fit();
     }
 
-    xtermRef.current.writeln('\\x1b[90mWelcome to AlgoVerse Interactive Terminal!\\x1b[0m');
-    xtermRef.current.writeln('\\x1b[90mWaiting for execution...\\x1b[0m');
+    xtermRef.current.writeln('\x1b[90mWelcome to AlgoVerse Interactive Terminal!\x1b[0m');
+    xtermRef.current.writeln('\x1b[90mWaiting for execution...\x1b[0m');
 
     // Connect Socket
     socketRef.current = io(apiBase);
@@ -277,7 +277,7 @@ const CodePlayground = () => {
     setCode(LANGUAGE_CONFIG[newLang].defaultCode);
     if (xtermRef.current) {
       xtermRef.current.clear();
-      xtermRef.current.writeln('\\x1b[90mSwitched to ' + LANGUAGE_CONFIG[newLang].name + '\\x1b[0m');
+      xtermRef.current.writeln('\x1b[90mSwitched to ' + LANGUAGE_CONFIG[newLang].name + '\x1b[0m');
     }
   };
 
@@ -287,7 +287,7 @@ const CodePlayground = () => {
     setIsRunning(true);
     if (xtermRef.current) {
       xtermRef.current.clear();
-      xtermRef.current.writeln('\\x1b[36mRunning code via AlgoVerse Secure Backend Container...\\x1b[0m\\r\\n');
+      xtermRef.current.writeln('\x1b[36mRunning code via AlgoVerse Secure Backend Container...\x1b[0m\r\n');
       xtermRef.current.focus();
     }
     

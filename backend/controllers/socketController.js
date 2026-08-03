@@ -53,22 +53,22 @@ module.exports = (io) => {
           filePaths.push(cppPath);
           filePaths.push(outPath);
           
-          socket.emit('terminal_data', '\\x1b[33mCompiling...\\x1b[0m\\r\\n');
+          socket.emit('terminal_data', '\x1b[33mCompiling...\x1b[0m\r\n');
           
           // Async compile so we don't block the Node event loop!
           const { exec } = require('child_process');
           exec(`g++ "${cppPath}" -o "${outPath}"`, (error, stdout, stderr) => {
             if (error) {
-              socket.emit('terminal_data', '\\x1b[31mCompilation Error:\\x1b[0m\\r\\n' + stderr.replace(/\\n/g, '\\r\\n'));
+              socket.emit('terminal_data', '\x1b[31mCompilation Error:\x1b[0m\r\n' + stderr.replace(/\n/g, '\r\n'));
               socket.emit('process_exit', 1);
               return;
             }
-            socket.emit('terminal_data', '\\x1b[32mCompilation successful! Running...\\x1b[0m\\r\\n');
+            socket.emit('terminal_data', '\x1b[32mCompilation successful! Running...\x1b[0m\r\n');
             spawnPty(outPath, []);
           });
           return; // Return early, spawnPty is called inside the callback
         } else {
-          socket.emit('terminal_data', '\\x1b[31mLanguage not supported for interactive execution.\\x1b[0m\\r\\n');
+          socket.emit('terminal_data', '\x1b[31mLanguage not supported for interactive execution.\x1b[0m\r\n');
           socket.emit('process_exit', 1);
           return;
         }
@@ -93,7 +93,7 @@ module.exports = (io) => {
 
             ptyProcess.onExit(({ exitCode, signal }) => {
               ptyProcess = null;
-              socket.emit('terminal_data', `\\r\\n\\x1b[90m[Process exited with code ${exitCode}]\\x1b[0m\\r\\n`);
+              socket.emit('terminal_data', `\r\n\x1b[90m[Process exited with code ${exitCode}]\x1b[0m\r\n`);
               socket.emit('process_exit', exitCode);
               
               // Cleanup
@@ -136,7 +136,7 @@ module.exports = (io) => {
 
             ptyProcess.on('close', (exitCode) => {
               ptyProcess = null;
-              socket.emit('terminal_data', `\\r\\n\\x1b[90m[Process exited with code ${exitCode}]\\x1b[0m\\r\\n`);
+              socket.emit('terminal_data', `\r\n\x1b[90m[Process exited with code ${exitCode}]\x1b[0m\r\n`);
               socket.emit('process_exit', exitCode);
               
               // Cleanup
@@ -151,7 +151,7 @@ module.exports = (io) => {
         }
 
       } catch (err) {
-        socket.emit('terminal_data', '\\x1b[31mExecution Error:\\x1b[0m\\r\\n' + err.message + '\\r\\n');
+        socket.emit('terminal_data', '\x1b[31mExecution Error:\x1b[0m\r\n' + err.message + '\r\n');
         socket.emit('process_exit', 1);
       }
     });
@@ -165,7 +165,7 @@ module.exports = (io) => {
     socket.on('kill_process', () => {
       if (ptyProcess) {
         ptyProcess.kill();
-        socket.emit('terminal_data', '\\r\\n\\x1b[31m[Process killed by user]\\x1b[0m\\r\\n');
+        socket.emit('terminal_data', '\r\n\x1b[31m[Process killed by user]\x1b[0m\r\n');
         ptyProcess = null;
       }
     });
