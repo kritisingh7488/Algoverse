@@ -13,6 +13,7 @@ import DsControls from '../components/playground/DsControls';
 import DsPlaybackBar from '../components/playground/DsPlaybackBar';
 import DsConceptPanel from '../components/playground/DsConceptPanel';
 import DsComparisonView from '../components/playground/DsComparisonView';
+import DsAutoVerifier from '../components/playground/DsAutoVerifier';
 
 const Playground = () => {
   const [structureKey, setStructureKey] = useState('array');
@@ -24,6 +25,7 @@ const Playground = () => {
 
   const [isComparisonMode, setIsComparisonMode] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isVerifierOpen, setIsVerifierOpen] = useState(false);
 
   // Playback & Stepper State
   const [isPlaying, setIsPlaying] = useState(false);
@@ -196,6 +198,15 @@ const Playground = () => {
               <BarChart2 className="w-4 h-4 mr-1.5" />
               {isComparisonMode ? 'Single Visualizer' : 'Multi-DS Comparison Studio'}
             </Button>
+            
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsVerifierOpen(true)}
+              className="border-emerald-500/50 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10"
+            >
+              Verify Engine Reliability
+            </Button>
 
           </div>
         </Card>
@@ -287,6 +298,7 @@ const Playground = () => {
           </div>
         )}
 
+        {isVerifierOpen && <DsAutoVerifier onClose={() => setIsVerifierOpen(false)} />}
       </div>
     </AppLayout>
   );
