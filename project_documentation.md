@@ -145,3 +145,40 @@ AlgoVerse is an interactive, real-time algorithm learning and visualization plat
 58. **DevOps**: Explain the process of setting up continuous integration (CI) for this repository.
 59. **Product**: If you had one week to improve user retention on AlgoVerse, what feature would you build and why?
 60. **Self-Reflection**: What was the most technically challenging part of building the interactive terminal, and how was it solved?
+
+---
+
+## 6. Advanced Feature Deep-Dive & Specifics
+
+### 6.1 Engine Verifiers (Testing UI)
+* **Working**: Engine Verifiers are testing interfaces built directly into the Labs (e.g., Tree Lab and Graph Lab) that allow users to validate their custom algorithms against the internal C++ engines.
+* **Architecture**: The UI features quick-action buttons (like "Test BFS", "Test DFS", "Verify BST") positioned at the top of the lab. Clicking these sends the current data structure's state (as a serialized adjacency list or edge list) to a specialized `/verify` endpoint on the Node.js backend. The backend executes a hidden C++ verifier engine that runs the strict, correct algorithm, capturing the exact traversal order or validation boolean, and returns it to the frontend to compare against the user's manual step-by-step result.
+
+### 6.2 Multi-Comparisons (Comparing Algorithms)
+* **Working**: Users can compare two algorithms side-by-side in real-time (e.g., Bubble Sort vs Quick Sort).
+* **Architecture**: The frontend maintains an independent `stepIndex`, `isPlaying` state, and playback interval for each algorithm. When the "Run Comparison" button is clicked, the React application maps over the selected algorithms and fires parallel asynchronous API requests to the Node.js backend. The backend spins up multiple C++ processes concurrently. Once all JSON streams are returned, the React components render two separate SVG/Framer-Motion canvas views side-by-side, synchronizing their `setTimeout` playback loops so the user can visually race them against each other.
+
+### 6.3 Post-Execution Summary Tables
+* **Working**: After an algorithm finishes playing its animation steps, a highly detailed summary table fades in.
+* **Features**: It displays the total number of operations, theoretical Time/Space Complexity (Big O), and the exact execution time (in milliseconds) captured by the C++ engine. This provides students with an immediate, tangible understanding of algorithm efficiency.
+
+### 6.4 Random Data Generation (Graphs & Trees)
+* **Working**: Users can click "Generate Random Graph" or "Generate Random Tree" to instantly populate the canvas.
+* **Architecture**: 
+  * **Trees**: The frontend generates a random array of integers, randomly shuffles them using a Fisher-Yates algorithm, and iteratively calls the BST `insert` function to build a valid Binary Search Tree structure in memory before rendering.
+  * **Graphs**: The frontend generates a random number of vertices (e.g., 5-10) and then iterates through all possible pairs, using a random probability threshold (e.g., 30%) to decide whether to add an edge. It ensures the graph remains connected by building a minimum spanning tree first, then randomly adding the remaining edges.
+
+### 6.5 Visualization & Draggable Nodes
+* **Working**: Data structures are not static; users can click and drag individual nodes around the canvas to re-arrange the visual layout without breaking the underlying logical structure.
+* **Architecture**: 
+  * **SVG over Canvas**: We use SVG (Scalable Vector Graphics) rather than HTML5 `<canvas>` because SVG elements are treated as DOM nodes. This allows us to attach standard React `onMouseDown`, `onMouseMove`, and `onMouseUp` event listeners directly to the individual circles (nodes).
+  * **Drag Physics**: When a node is dragged, React updates a `draggedPositions` state dictionary with the new `(x, y)` coordinates relative to the SVG container. 
+  * **Framer Motion vs SVG**: For linear structures (Sorting Arrays), we use `framer-motion` layout animations. For complex, connected structures (Trees/Graphs), we map over the node array to render `<circle>` elements, and map over the edge array to render `<line>` elements that dynamically connect the `(x,y)` coordinates of the nodes in real-time.
+
+---
+
+### Additional Interview Specifics
+
+61. **Architecture**: How did you implement Draggable Nodes in the Graph/Tree visualizers without causing massive re-rendering lag?
+62. **Testing**: How does the Engine Verifier guarantee that the user's graph traversal exactly matches the standard C++ output?
+63. **Concurrency**: When running a Multi-Comparison (e.g., racing 3 sorting algorithms), how does the Node backend handle the concurrent execution without blocking?

@@ -214,3 +214,12 @@ I would build a "Daily Challenge" feature integrated directly with the Gamificat
 
 **60. Self-Reflection: What was the most technically challenging part of building the interactive terminal, and how was it solved?**
 The hardest part was managing the complex interplay between React lifecycle closures, WebSockets, and native Node.js process streams. specifically, ensuring the terminal didn't capture stale state (`isRunning` false) preventing input, while simultaneously handling the fact that cloud servers often fail to build `node-pty` native bindings. I solved this by engineering a highly resilient fallback mechanism that mimics PTY behavior via standard `spawn` streams with local echoing.
+
+**61. Architecture: How did you implement Draggable Nodes in the Graph/Tree visualizers without causing massive re-rendering lag?**
+By detaching the drag coordinate state from the heavy overall Graph state. Instead of recalculating the entire graph layout on every pixel move, the React component uses a separate, lightweight `draggedPositions` state object mapped to Node IDs. Only the specific node (and its attached `<line>` SVG edges) re-render during the mouse movement, keeping the framerate smooth at 60fps.
+
+**62. Testing: How does the Engine Verifier guarantee that the user's graph traversal exactly matches the standard C++ output?**
+The frontend serializes the exact same user-constructed graph (adjacency list) and sends it via HTTP to the backend `/verify` endpoint. The Node server feeds this identical data to the secure, internal C++ Engine. The engine performs a strict mathematical execution of the traversal (e.g. DFS) and returns the definitive array of visited nodes. The React app then performs a deep equality check between the user's manual traversal steps and the C++ engine's strict output.
+
+**63. Concurrency: When running a Multi-Comparison (e.g., racing 3 sorting algorithms), how does the Node backend handle the concurrent execution without blocking?**
+The Node backend leverages the asynchronous `child_process.exec` (or `spawn`) for each algorithm request. Because Node.js offloads the actual OS-level process execution to the background C++ libuv thread pool, it does not block the main Event Loop. Thus, the backend can effortlessly spin up 3, 5, or even 10 independent C++ sorting engines simultaneously, streaming their JSON stdout results back over parallel HTTP responses or WebSockets completely concurrently.
