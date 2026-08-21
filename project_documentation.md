@@ -74,83 +74,10 @@ AlgoVerse is an interactive, real-time algorithm learning and visualization plat
 2. **Multiplayer/Collaborative Rooms**: Allowing two users to share a code playground via WebRTC or Socket.io.
 3. **Advanced AI Integration**: Integrating an LLM to analyze user code, explain algorithmic complexities (Big O), or suggest optimizations in real-time.
 
----
 
-## 5. Interview Questions (Basic to Advanced)
+## 5. Advanced Feature Deep-Dive & Specifics
 
-### Basic (React, Node, JS)
-1. What is the Virtual DOM in React and why is it fast?
-2. What is the difference between `let`, `const`, and `var`?
-3. How does Node.js handle asynchronous operations despite being single-threaded?
-4. What is Middleware in Express.js? Can you give an example?
-5. Why did we use Tailwind CSS instead of traditional CSS files?
-6. Explain the purpose of `useEffect` in React.
-7. What is a JWT and how does it authenticate users?
-8. What is the purpose of `bcrypt`? Why not just encrypt passwords?
-9. Explain the difference between SQL (PostgreSQL) and NoSQL (MongoDB).
-10. What is CORS and why is it necessary for this project?
-11. How does React Router handle navigation without reloading the page?
-12. What is an API interceptor in Axios?
-13. What is the difference between local storage and session storage?
-14. What does the `package.json` file do?
-15. What is the difference between `npm install` and `npm install --save-dev`?
-
-### Intermediate (Architecture, State, Mongoose)
-16. Why did we choose Zustand over Redux for state management?
-17. Explain how the C++ Engine communicates with the Node.js backend.
-18. What is `child_process.spawn` vs `child_process.exec` in Node.js?
-19. How did you prevent the Node.js event loop from blocking while compiling C++ code?
-20. What is a Pseudo-Terminal (PTY) and why was `node-pty` needed for the playground?
-21. How do you handle schema validation in Mongoose?
-22. Explain the flow of a WebSocket connection using Socket.io.
-23. What happens if a user submits an infinite loop in the Code Playground? How is this handled?
-24. How did you resolve the "Flash of Unstyled Content" (FOUC) when managing the dark/light theme?
-25. Describe how Framer Motion handles layout animations in the algorithm visualizers.
-26. How do you manage secrets and API keys in the deployment environment?
-27. What is standard input (`stdin`) and standard output (`stdout`)?
-28. Explain how the React `useRef` hook solved the stale state closure bug in the terminal input handler.
-29. Why use Vite over Create React App (CRA)?
-30. How does token expiration work, and what happens when a JWT expires?
-31. What are Mongoose Hooks (pre/post middleware) and how could they be used for hashing passwords?
-32. What is a reverse proxy? Does Render use one?
-33. Explain the difference between Long Polling and WebSockets.
-34. How would you optimize the React components to prevent unnecessary re-renders during fast algorithm animations?
-35. How does Vercel serve the frontend application compared to a traditional Node server?
-
-### Advanced (System Design, Security, Edge Cases)
-36. If 1,000 users run C++ code simultaneously, what bottleneck will the backend hit first? How would you scale it?
-37. How can you securely sandbox user-submitted C++ code to prevent them from reading backend `.env` files?
-38. Explain how you would implement a load balancer for the WebSocket connections. What is "sticky sessions"?
-39. If `node-pty` fails to build in the production environment, how does the system degrade gracefully?
-40. How would you migrate the backend to use WebAssembly (WASM) to run C++ entirely in the user's browser?
-41. What is Cross-Site Scripting (XSS), and how does React protect against it when displaying code output?
-42. How do you mitigate Denial of Service (DoS) attacks on the `/compile` endpoint?
-43. Explain how D3.js or SVG calculates node coordinates dynamically for a changing Binary Tree.
-44. If the database goes down, how should the backend respond to the frontend?
-45. How does Socket.io handle dropped connections and reconnections?
-46. What are the memory implications of storing terminal history in the React frontend?
-47. How would you implement rate-limiting on the backend?
-48. Explain the algorithmic time complexity of the backend's JSON parsing when receiving data from the C++ engine.
-49. How would you design a schema to store a user's code snippet history efficiently?
-50. What is the difference between Horizontal and Vertical scaling? Which applies better to our Node execution backend?
-
-### Scenario & Interview Specific
-51. **Scenario**: A user reports that the terminal freezes only when they run Python code requiring input. Walk me through your debugging process.
-52. **Scenario**: You notice the MongoDB database CPU is at 100%. What queries do you check first?
-53. **Design**: How would you implement a "Collaborative Coding" feature like Google Docs into the Playground?
-54. **Architecture**: Why decouple the C++ algorithm logic from the Node.js API instead of writing the algorithms directly in JavaScript?
-55. **Code Review**: If you saw a developer using `execSync` to run user code, how would you explain why it's a critical error?
-56. **Security**: How would you prevent a user from executing `system("rm -rf /")` in the C++ playground?
-57. **Performance**: How do you handle rendering a graph with 10,000 nodes without freezing the browser?
-58. **DevOps**: Explain the process of setting up continuous integration (CI) for this repository.
-59. **Product**: If you had one week to improve user retention on AlgoVerse, what feature would you build and why?
-60. **Self-Reflection**: What was the most technically challenging part of building the interactive terminal, and how was it solved?
-
----
-
-## 6. Advanced Feature Deep-Dive & Specifics
-
-### 6.1 Engine Verifiers (Testing UI)
+### 5.1 Engine Verifiers (Testing UI)
 * **Working**: Engine Verifiers are testing interfaces built directly into the Labs (e.g., Tree Lab and Graph Lab) that allow users to validate their custom algorithms against the internal C++ engines.
 * **Architecture**: The UI features quick-action buttons (like "Test BFS", "Test DFS", "Verify BST") positioned at the top of the lab. Clicking these sends the current data structure's state (as a serialized adjacency list or edge list) to a specialized `/verify` endpoint on the Node.js backend. The backend executes a hidden C++ verifier engine that runs the strict, correct algorithm, capturing the exact traversal order or validation boolean, and returns it to the frontend to compare against the user's manual step-by-step result.
 
@@ -176,9 +103,3 @@ AlgoVerse is an interactive, real-time algorithm learning and visualization plat
   * **Framer Motion vs SVG**: For linear structures (Sorting Arrays), we use `framer-motion` layout animations. For complex, connected structures (Trees/Graphs), we map over the node array to render `<circle>` elements, and map over the edge array to render `<line>` elements that dynamically connect the `(x,y)` coordinates of the nodes in real-time.
 
 ---
-
-### Additional Interview Specifics
-
-61. **Architecture**: How did you implement Draggable Nodes in the Graph/Tree visualizers without causing massive re-rendering lag?
-62. **Testing**: How does the Engine Verifier guarantee that the user's graph traversal exactly matches the standard C++ output?
-63. **Concurrency**: When running a Multi-Comparison (e.g., racing 3 sorting algorithms), how does the Node backend handle the concurrent execution without blocking?

@@ -7,12 +7,13 @@ const CPP_BINARY_PATH = path.join(__dirname, `../cpp/dp_engine${ext}`);
 
 const runDPAlgorithm = async (req, res) => {
     try {
-        const { algorithm = 'fibonacci', n = 5 } = req.body;
+        const { algorithm = 'fibonacci', approach = 'tabulation', n = 5 } = req.body;
 
         if (fs.existsSync(CPP_BINARY_PATH)) {
             const env = { ...process.env, PATH: `${process.env.PATH};C:\\msys64\\ucrt64\\bin` };
             
-            const child = execFile(CPP_BINARY_PATH, [algorithm], { env }, (error, stdout, stderr) => {
+            // Pass algorithm and approach as command line parameters
+            const child = execFile(CPP_BINARY_PATH, [algorithm, approach], { env }, (error, stdout, stderr) => {
                 if (!error && stdout) {
                     try {
                         const parsed = JSON.parse(stdout);
