@@ -142,25 +142,34 @@ export const DPRecursionTree = ({ events, currentStep }) => {
       const ev = events[i];
       if (!ev) continue;
 
-      if (ev.desc && ev.desc.includes('Computing dp[')) {
-        // Mocking recursive calls for visual demo
-        const match = ev.desc.match(/dp\[(\d+)\]/);
-        if (match) {
-          const nVal = parseInt(match[1]);
-          const nodeId = idCounter++;
-          const parent = stack[stack.length - 1];
+      const desc = ev.desc || "";
+      const match = desc.match(/solve\((\d+)\)/) || 
+                    desc.match(/dp\[(\d+)\]/) || 
+                    desc.match(/cell\s+(\d+)/) || 
+                    desc.match(/position\s+(\d+)/) || 
+                    desc.match(/index\s+(\d+)/) ||
+                    desc.match(/step\s+(\d+)/);
 
-          nodes.push({ id: nodeId, label: `solve(${nVal})`, val: nVal, active: i === currentStep });
-          if (parent !== undefined) {
-            relations.push({ parent, child: nodeId });
+      if (match) {
+        const nVal = parseInt(match[1]);
+        
+        // Simulating standard stack framing: pop until top value is larger than the incoming child subproblem
+        while (stack.length > 0) {
+          const topNode = nodes.find(n => n.id === stack[stack.length - 1]);
+          if (topNode && topNode.val > nVal) {
+            break;
           }
-          stack.push(nodeId);
+          stack.pop();
         }
-      }
-      
-      // simulate returns if stack gets deep
-      if (stack.length > 3) {
-        stack.pop();
+
+        const nodeId = idCounter++;
+        const parent = stack[stack.length - 1];
+
+        nodes.push({ id: nodeId, label: `solve(${nVal})`, val: nVal, active: i === currentStep });
+        if (parent !== undefined) {
+          relations.push({ parent, child: nodeId });
+        }
+        stack.push(nodeId);
       }
     }
 
