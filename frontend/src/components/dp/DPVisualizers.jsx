@@ -10,56 +10,35 @@ export const DPTableVisualizer = ({ problem, events, currentStep, spaceOptimized
   const activeIndex = currentEvent.active !== undefined ? currentEvent.active : -1;
   const is2D = problem.id === 'unique-paths' || problem.id === 'lcs' || problem.id === '01-knapsack';
 
-  // For 2D Tables
-  const rows = 5;
-  const cols = 5;
-
+  // For Space Optimized, render the variables dynamically
   if (spaceOptimized) {
-    // Space Optimized view: shows only two rows
+    const vars = currentEvent.vars || { prev2: -1, prev: -1, curr: -1 };
     return (
       <div className="w-full flex flex-col items-center justify-center p-6 space-y-6">
         <div className="text-xs font-mono text-textSecondary uppercase tracking-wider">
-          Space Optimized State (O(N) or O(1) Space)
+          Space Optimized State (O(1) Auxiliary Space)
         </div>
-        <div className="flex flex-col gap-3 w-full max-w-md">
-          {/* Previous Row */}
-          <div className="flex items-center gap-3">
-            <div className="w-24 text-right text-xs font-bold text-textSecondary font-mono">PREV_ROW:</div>
-            <div className="flex gap-2 flex-1">
-              {[0, 1, 2, 3, 4].map((colIndex) => {
-                const val = tableData[colIndex] !== undefined ? tableData[colIndex] : -1;
-                return (
-                  <div
-                    key={colIndex}
-                    className="w-10 h-10 rounded-lg flex items-center justify-center font-mono text-sm border border-borderTheme bg-cardAccent text-textPrimary"
-                  >
-                    {val === -1 ? '0' : val}
-                  </div>
-                );
-              })}
-            </div>
+        <div className="grid grid-cols-3 gap-6 w-full max-w-sm">
+          {/* prev2 */}
+          <div className="flex flex-col items-center p-3 rounded-xl border border-borderTheme bg-card">
+            <span className="text-[10px] text-textSecondary font-bold font-mono">prev2</span>
+            <span className="text-lg font-black font-mono text-textPrimary">
+              {vars.prev2 === -1 ? 'N/A' : vars.prev2}
+            </span>
           </div>
-          {/* Current Row */}
-          <div className="flex items-center gap-3">
-            <div className="w-24 text-right text-xs font-bold text-primary font-mono">CURR_ROW:</div>
-            <div className="flex gap-2 flex-1">
-              {[0, 1, 2, 3, 4].map((colIndex) => {
-                const isActive = activeIndex === colIndex;
-                const val = tableData[colIndex] !== undefined ? tableData[colIndex] : -1;
-                return (
-                  <div
-                    key={colIndex}
-                    className={`w-10 h-10 rounded-lg flex items-center justify-center font-mono text-sm border transition-all duration-300 ${
-                      isActive
-                        ? 'border-primary bg-primary/20 text-primary scale-105 shadow-md shadow-primary/20 animate-pulse'
-                        : 'border-borderTheme bg-card text-textSecondary'
-                    }`}
-                  >
-                    {val === -1 ? '?' : val}
-                  </div>
-                );
-              })}
-            </div>
+          {/* prev */}
+          <div className="flex flex-col items-center p-3 rounded-xl border border-borderTheme bg-card">
+            <span className="text-[10px] text-textSecondary font-bold font-mono">prev</span>
+            <span className="text-lg font-black font-mono text-textPrimary">
+              {vars.prev === -1 ? 'N/A' : vars.prev}
+            </span>
+          </div>
+          {/* curr */}
+          <div className="flex flex-col items-center p-3 rounded-xl border border-primary/40 bg-primary/10 shadow-lg shadow-primary/5">
+            <span className="text-[10px] text-primary font-bold font-mono">curr</span>
+            <span className="text-lg font-black font-mono text-primary animate-pulse">
+              {vars.curr === -1 ? 'N/A' : vars.curr}
+            </span>
           </div>
         </div>
       </div>
@@ -67,7 +46,8 @@ export const DPTableVisualizer = ({ problem, events, currentStep, spaceOptimized
   }
 
   if (is2D) {
-    // 2D Table View
+    const rows = 5;
+    const cols = 5;
     return (
       <div className="w-full h-full flex flex-col items-center justify-center overflow-auto p-4">
         <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}>
@@ -131,49 +111,50 @@ export const DPTableVisualizer = ({ problem, events, currentStep, spaceOptimized
 // 2. RECURSION TREE VISUALIZER (SVG Nodes & Connections)
 // ----------------------------------------------------
 export const DPRecursionTree = ({ events, currentStep }) => {
-  // Construct tree nodes from call history
   const treeData = useMemo(() => {
     const nodes = [];
     const relations = [];
-    const stack = [];
+    const nodeMap = new Map();
     let idCounter = 0;
 
     for (let i = 0; i <= currentStep; i++) {
       const ev = events[i];
-      if (!ev) continue;
+      if (!ev || !ev.stack || ev.stack.length === 0) continue;
 
-      const desc = ev.desc || "";
-      const match = desc.match(/solve\((\d+)\)/) || 
-                    desc.match(/dp\[(\d+)\]/) || 
-                    desc.match(/cell\s+(\d+)/) || 
-                    desc.match(/position\s+(\d+)/) || 
-                    desc.match(/index\s+(\d+)/) ||
-                    desc.match(/step\s+(\d+)/);
-
-      if (match) {
-        const nVal = parseInt(match[1]);
-        
-        // Simulating standard stack framing: pop until top value is larger than the incoming child subproblem
-        while (stack.length > 0) {
-          const topNode = nodes.find(n => n.id === stack[stack.length - 1]);
-          if (topNode && topNode.val > nVal) {
-            break;
-          }
-          stack.pop();
-        }
-
+      const pathKey = ev.stack.join('->');
+      if (!nodeMap.has(pathKey)) {
         const nodeId = idCounter++;
-        const parent = stack[stack.length - 1];
+        const label = `solve(${ev.active})`;
+        const parentKey = ev.stack.slice(0, -1).join('->');
+        const parentId = nodeMap.get(parentKey);
 
-        nodes.push({ id: nodeId, label: `solve(${nVal})`, val: nVal, active: i === currentStep });
-        if (parent !== undefined) {
-          relations.push({ parent, child: nodeId });
+        nodes.push({ 
+          id: nodeId, 
+          label, 
+          val: ev.active, 
+          active: i === currentStep, 
+          type: ev.type, 
+          result: ev.val 
+        });
+        nodeMap.set(pathKey, nodeId);
+
+        if (parentId !== undefined) {
+          relations.push({ parent: parentId, child: nodeId });
         }
-        stack.push(nodeId);
+      } else {
+        const existingId = nodeMap.get(pathKey);
+        const nodeIndex = nodes.findIndex(n => n.id === existingId);
+        if (nodeIndex !== -1) {
+          nodes[nodeIndex].active = (i === currentStep);
+          nodes[nodeIndex].type = ev.type;
+          if (ev.val !== undefined && ev.val !== 0) {
+            nodes[nodeIndex].result = ev.val;
+          }
+        }
       }
     }
 
-    // Set default coordinates
+    // Coordinates layout generator
     const layoutNodes = (rootId, depth = 0, minX = 50, maxX = 750) => {
       const rootNode = nodes.find(n => n.id === rootId);
       if (!rootNode) return;
@@ -227,27 +208,44 @@ export const DPRecursionTree = ({ events, currentStep }) => {
             />
           );
         })}
-        {treeData.nodes.map((node) => (
-          <g key={node.id} transform={`translate(${node.x || 0}, ${node.y || 0})`}>
-            <circle
-              r="22"
-              className={`transition-all duration-300 ${
-                node.active 
-                  ? 'fill-primary stroke-primary/30 stroke-[8px]' 
-                  : 'fill-card stroke-borderTheme stroke-[2px]'
-              }`}
-            />
-            <text
-              textAnchor="middle"
-              dy="4"
-              className={`text-xs font-mono font-bold select-none ${
-                node.active ? 'fill-white' : 'fill-textPrimary'
-              }`}
-            >
-              {node.label}
-            </text>
-          </g>
-        ))}
+        {treeData.nodes.map((node) => {
+          const isMemoHit = node.type === 'memo_hit';
+          const isBase = node.type === 'base_case';
+          return (
+            <g key={node.id} transform={`translate(${node.x || 0}, ${node.y || 0})`}>
+              <circle
+                r="22"
+                className={`transition-all duration-300 ${
+                  node.active 
+                    ? 'fill-primary stroke-primary/30 stroke-[8px]' 
+                    : isMemoHit 
+                    ? 'fill-amber-500/10 stroke-amber-500 stroke-[2px] shadow-sm'
+                    : isBase
+                    ? 'fill-emerald-500/10 stroke-emerald-500 stroke-[2px]'
+                    : 'fill-card stroke-borderTheme stroke-[2px]'
+                }`}
+              />
+              <text
+                textAnchor="middle"
+                dy="4"
+                className={`text-[10px] font-mono font-bold select-none ${
+                  node.active ? 'fill-white' : 'fill-textPrimary'
+                }`}
+              >
+                {node.label}
+              </text>
+              {node.result !== undefined && node.result !== 0 && (
+                <text
+                  x="20"
+                  y="-15"
+                  className="text-[9px] font-bold font-mono fill-emerald-500 bg-card px-1"
+                >
+                  ={node.result}
+                </text>
+              )}
+            </g>
+          );
+        })}
       </g>
     </svg>
   );
@@ -272,12 +270,15 @@ export const DPCacheVisualizer = ({ events, currentStep }) => {
         {tableData.map((val, idx) => {
           const hasValue = val !== -1 && val !== null;
           const isActive = idx === activeIndex;
+          const isHit = currentEvent.type === 'memo_hit' && isActive;
 
           return (
             <div
               key={idx}
               className={`p-3 rounded-xl border flex items-center justify-between font-mono text-xs transition-all ${
-                isActive
+                isHit
+                  ? 'border-amber-500 bg-amber-500/10 text-amber-500 scale-105 font-bold shadow-md shadow-amber-500/10 animate-pulse'
+                  : isActive
                   ? 'border-primary bg-primary/10 text-primary scale-105 font-bold shadow-md shadow-primary/10'
                   : hasValue
                   ? 'border-emerald-500/20 bg-emerald-500/5 text-emerald-600 dark:text-emerald-400'
@@ -307,12 +308,10 @@ export const DPStateGraph = ({ events, currentStep }) => {
   const currentEvent = events[currentStep] || {};
   const activeIndex = currentEvent.active !== undefined ? currentEvent.active : -1;
 
-  // Render a fixed sequence graph of states for visualization
   const graphNodes = useMemo(() => {
     const nodes = [];
     const links = [];
     
-    // Create nodes from active calculation step
     for (let i = 0; i <= Math.min(activeIndex, 6); i++) {
       nodes.push({ id: i, label: `dp[${i}]`, x: 80 + i * 110, y: 150 + (i % 2 === 0 ? -40 : 40) });
       if (i >= 1) {

@@ -7,7 +7,15 @@ const CPP_BINARY_PATH = path.join(__dirname, `../cpp/dp_engine${ext}`);
 
 const runDPAlgorithm = async (req, res) => {
     try {
-        const { algorithm = 'fibonacci', approach = 'tabulation', n = 5 } = req.body;
+        const { 
+            algorithm = 'fibonacci', 
+            approach = 'tabulation', 
+            n = 5, 
+            array = [2, 7, 9, 3, 1],
+            coins = [1, 2, 5],
+            target = 11,
+            str = "226"
+        } = req.body;
 
         if (fs.existsSync(CPP_BINARY_PATH)) {
             const env = { ...process.env, PATH: `${process.env.PATH};C:\\msys64\\ucrt64\\bin` };
@@ -32,8 +40,24 @@ const runDPAlgorithm = async (req, res) => {
                 return res.status(500).json({ success: false, message: 'Engine execution failed.' });
             });
 
-            // Write inputs to stdin
-            child.stdin.write(n.toString() + '\n');
+            // Write custom inputs sequentially based on the algorithm type
+            let inputString = "";
+            if (algorithm === 'fibonacci' || algorithm === 'climbing-stairs' || algorithm === 'climbing' || algorithm === 'perfect-squares' || algorithm === 'integer-break') {
+                inputString = `${n}\n`;
+            } 
+            else if (algorithm === 'house-robber-i' || algorithm === 'house-robber-ii' || algorithm === 'frog-jump') {
+                const arr = Array.isArray(array) ? array : array.split(',').map(Number);
+                inputString = `${arr.length}\n${arr.join(' ')}\n`;
+            } 
+            else if (algorithm === 'decode-ways') {
+                inputString = `${str}\n`;
+            } 
+            else if (algorithm === 'coin-change' || algorithm === 'minimum-coins') {
+                const coinArr = Array.isArray(coins) ? coins : coins.split(',').map(Number);
+                inputString = `${target}\n${coinArr.length}\n${coinArr.join(' ')}\n`;
+            }
+
+            child.stdin.write(inputString);
             child.stdin.end();
             return;
         }
