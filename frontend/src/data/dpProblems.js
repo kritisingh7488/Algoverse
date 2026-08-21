@@ -40,6 +40,20 @@ export const dpCategories = [
           memoization: { time: "O(N)", space: "O(N)" },
           tabulation: { time: "O(N)", space: "O(N)" },
           spaceOptimized: { time: "O(N)", space: "O(1)" }
+        },
+        code: {
+          cpp: {
+            recursive: `int climb(int n) {\n  if (n <= 1) return n;\n  return climb(n - 1) + climb(n - 2);\n}`,
+            memoization: `int climb(int n, vector<int>& dp) {\n  if (n <= 1) return n;\n  if (dp[n] != -1) return dp[n];\n  return dp[n] = climb(n - 1, dp) + climb(n - 2, dp);\n}`,
+            tabulation: `int climb(int n) {\n  vector<int> dp(n + 1);\n  dp[0] = 0; dp[1] = 1;\n  for (int i = 2; i <= n; i++) {\n    dp[i] = dp[i-1] + dp[i-2];\n  }\n  return dp[n];\n}`,
+            spaceOptimized: `int climb(int n) {\n  int prev2 = 0, prev = 1;\n  for (int i = 2; i <= n; i++) {\n    int curr = prev + prev2;\n    prev2 = prev;\n    prev = curr;\n  }\n  return prev;\n}`
+          },
+          python: {
+            recursive: `def climb(n):\n    if n <= 1: return n\n    return climb(n - 1) + climb(n - 2)`,
+            memoization: `def climb(n, dp):\n    if n <= 1: return n\n    if dp[n] != -1: return dp[n]\n    dp[n] = climb(n - 1, dp) + climb(n - 2, dp)\n    return dp[n]`,
+            tabulation: `def climb(n):\n    dp = [0] * (n + 1)\n    dp[1] = 1\n    for i in range(2, n + 1):\n        dp[i] = dp[i-1] + dp[i-2]\n    return dp[n]`,
+            spaceOptimized: `def climb(n):\n    prev2, prev = 0, 1\n    for i in range(2, n + 1):\n        curr = prev + prev2\n        prev2 = prev\n        prev = curr\n    return prev`
+          }
         }
       },
       { id: "house-robber-i", name: "House Robber I", difficulty: "Medium", formula: "dp[i] = max(dp[i-1], val[i] + dp[i-2])" },
