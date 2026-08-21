@@ -165,18 +165,21 @@ DPResult run_fibonacci(int n, string approach) {
     } 
     else if (approach == "tabulation") {
         table[0] = 0;
-        table[1] = 1;
-        res.updates = 2;
+        res.updates = 1;
         
         Event ev1;
         ev1.type = "table_update"; ev1.active = 0; ev1.line = 1; ev1.val = 0; ev1.table = table;
         ev1.desc = "Initialized base case dp[0] = 0";
         res.events.push_back(ev1);
 
-        Event ev2;
-        ev2.type = "table_update"; ev2.active = 1; ev2.line = 2; ev2.val = 1; ev2.table = table;
-        ev2.desc = "Initialized base case dp[1] = 1";
-        res.events.push_back(ev2);
+        if (n >= 1) {
+            table[1] = 1;
+            res.updates = 2;
+            Event ev2;
+            ev2.type = "table_update"; ev2.active = 1; ev2.line = 2; ev2.val = 1; ev2.table = table;
+            ev2.desc = "Initialized base case dp[1] = 1";
+            res.events.push_back(ev2);
+        }
 
         for (int i = 2; i <= n; i++) {
             table[i] = table[i - 1] + table[i - 2];
@@ -206,6 +209,21 @@ DPResult run_fibonacci(int n, string approach) {
         }
     }
 
+    int final_val = 0;
+    if (approach == "space-optimized") {
+        if (n == 0) final_val = 0;
+        else if (n == 1) final_val = 1;
+        else final_val = res.events.back().prev;
+    } else {
+        final_val = table[n];
+    }
+
+    Event ev_final;
+    ev_final.type = "solution_complete";
+    ev_final.val = final_val;
+    ev_final.desc = "Calculation complete. Final Fibonacci value: " + to_string(final_val);
+    res.events.push_back(ev_final);
+
     return res;
 }
 
@@ -213,14 +231,140 @@ DPResult run_fibonacci(int n, string approach) {
 // 2. CLIMBING STAIRS
 // ----------------------------------------------------
 DPResult run_climbing_stairs(int n, string approach) {
-    DPResult res = run_fibonacci(n, approach);
+    DPResult res;
     res.algorithm = "climbing-stairs";
-    // Adapt description texts to Stairs terminology
-    for (auto& ev : res.events) {
-        size_t pos;
-        while ((pos = ev.desc.find("solve")) != string::npos) ev.desc.replace(pos, 5, "climb");
-        while ((pos = ev.desc.find("dp")) != string::npos) ev.desc.replace(pos, 2, "stairs");
+    res.approach = approach;
+    vector<int> table(n + 1, -1);
+    vector<int> callStack;
+    int updates = 0;
+
+    if (approach == "recursive") {
+        auto run_rec = [&](auto self, int i) -> int {
+            callStack.push_back(i);
+            Event ev1;
+            ev1.type = "call"; ev1.active = i; ev1.line = 1; ev1.stack = callStack;
+            ev1.desc = "climb(" + to_string(i) + ") called recursively.";
+            res.events.push_back(ev1);
+
+            if (i <= 1) {
+                Event ev2;
+                ev2.type = "base_case"; ev2.active = i; ev2.line = 2; ev2.val = 1; ev2.stack = callStack;
+                ev2.desc = "climb(" + to_string(i) + ") reached base case -> 1 way";
+                res.events.push_back(ev2);
+                callStack.pop_back();
+                return 1;
+            }
+
+            int val = self(self, i - 1) + self(self, i - 2);
+            callStack.pop_back();
+
+            Event ev3;
+            ev3.type = "return"; ev3.active = i; ev3.line = 3; ev3.val = val; ev3.stack = callStack;
+            ev3.desc = "climb(" + to_string(i) + ") returned " + to_string(val);
+            res.events.push_back(ev3);
+            return val;
+        };
+        run_rec(run_rec, n);
     }
+    else if (approach == "memoization") {
+        auto run_memo = [&](auto self, int i) -> int {
+            callStack.push_back(i);
+            Event ev1;
+            ev1.type = "memo_lookup"; ev1.active = i; ev1.line = 1; ev1.stack = callStack;
+            ev1.desc = "Checking cache for stair " + to_string(i);
+            res.events.push_back(ev1);
+
+            if (i <= 1) {
+                table[i] = 1;
+                Event ev2;
+                ev2.type = "base_case"; ev2.active = i; ev2.line = 2; ev2.val = 1; ev2.table = table; ev2.stack = callStack;
+                ev2.desc = "Base case: memo[" + to_string(i) + "] = 1";
+                res.events.push_back(ev2);
+                callStack.pop_back();
+                return 1;
+            }
+
+            if (table[i] != -1) {
+                Event ev2;
+                ev2.type = "memo_hit"; ev2.active = i; ev2.line = 3; ev2.val = table[i]; ev2.table = table; ev2.stack = callStack;
+                ev2.desc = "Cache hit! climb(" + to_string(i) + ") = " + to_string(table[i]);
+                res.events.push_back(ev2);
+                callStack.pop_back();
+                return table[i];
+            }
+
+            int val = self(self, i - 1) + self(self, i - 2);
+            table[i] = val;
+            updates++;
+            callStack.pop_back();
+
+            Event ev3;
+            ev3.type = "memo_store"; ev3.active = i; ev3.line = 4; ev3.val = val; ev3.table = table; ev3.stack = callStack;
+            ev3.desc = "Storing memo[" + to_string(i) + "] = " + to_string(val);
+            res.events.push_back(ev3);
+            return val;
+        };
+        run_memo(run_memo, n);
+    }
+    else if (approach == "tabulation") {
+        table[0] = 1;
+        table[1] = 1;
+        updates = 2;
+
+        Event ev1;
+        ev1.type = "table_update"; ev1.active = 0; ev1.line = 1; ev1.val = 1; ev1.table = table;
+        ev1.desc = "Base case dp[0] = 1 way (start step)";
+        res.events.push_back(ev1);
+
+        Event ev2;
+        ev2.type = "table_update"; ev2.active = 1; ev2.line = 2; ev2.val = 1; ev2.table = table;
+        ev2.desc = "Base case dp[1] = 1 way to step 1";
+        res.events.push_back(ev2);
+
+        for (int i = 2; i <= n; i++) {
+            table[i] = table[i - 1] + table[i - 2];
+            updates++;
+            Event ev;
+            ev.type = "table_update"; ev.active = i; ev.line = 4; ev.val = table[i]; ev.table = table;
+            ev.desc = "dp[" + to_string(i) + "] = dp[" + to_string(i-1) + "] + dp[" + to_string(i-2) + "] = " + to_string(table[i]);
+            res.events.push_back(ev);
+        }
+    }
+    else if (approach == "space-optimized") {
+        int prev2 = 1, prev = 1;
+        Event ev1;
+        ev1.type = "variable_update"; ev1.line = 1; ev1.prev2 = prev2; ev1.prev = prev; ev1.curr = 0;
+        ev1.desc = "Space optimized climb initialized: prev2 = 1, prev = 1";
+        res.events.push_back(ev1);
+
+        for (int i = 2; i <= n; i++) {
+            int curr = prev + prev2;
+            prev2 = prev;
+            prev = curr;
+            updates++;
+            Event ev;
+            ev.type = "variable_update"; ev.line = 4; ev.prev2 = prev2; ev.prev = prev; ev.curr = curr;
+            ev.desc = "Step i = " + to_string(i) + " resolved: curr = " + to_string(curr);
+            res.events.push_back(ev);
+        }
+    }
+
+    int final_val = 0;
+    if (approach == "space-optimized") {
+        if (n == 0) final_val = 1;
+        else if (n == 1) final_val = 1;
+        else final_val = res.events.back().prev;
+    } else {
+        final_val = table[n];
+    }
+
+    Event ev_final;
+    ev_final.type = "solution_complete";
+    ev_final.val = final_val;
+    ev_final.desc = "Calculation complete. Total ways to climb: " + to_string(final_val);
+    res.events.push_back(ev_final);
+
+    res.updates = updates;
     return res;
 }
 
@@ -622,23 +766,32 @@ DPResult run_coin_change(const vector<int>& coins, int amount, string approach, 
         ev1.desc = "Base case dp[0] = " + to_string(table[0]) + " initialized.";
         res.events.push_back(ev1);
 
-        for (int i = 1; i <= amount; i++) {
-            for (int coin : coins) {
-                if (i >= coin) {
-                    if (findMin) {
+        if (findMin) {
+            for (int i = 1; i <= amount; i++) {
+                for (int coin : coins) {
+                    if (i >= coin) {
                         if (table[i - coin] != 1e9) {
                             table[i] = min(table[i], 1 + table[i - coin]);
                         }
-                    } else {
-                        table[i] += table[i - coin];
                     }
                 }
+                res.updates++;
+                Event ev;
+                ev.type = "table_update"; ev.active = i; ev.line = 4; ev.val = table[i]; ev.table = table;
+                ev.desc = "dp[" + to_string(i) + "] computed minimum coins: " + to_string(table[i]);
+                res.events.push_back(ev);
             }
-            res.updates++;
-            Event ev;
-            ev.type = "table_update"; ev.active = i; ev.line = 4; ev.val = table[i]; ev.table = table;
-            ev.desc = "dp[" + to_string(i) + "] computed: " + to_string(table[i]);
-            res.events.push_back(ev);
+        } else {
+            for (int coin : coins) {
+                for (int i = coin; i <= amount; i++) {
+                    table[i] += table[i - coin];
+                    res.updates++;
+                    Event ev;
+                    ev.type = "table_update"; ev.active = i; ev.line = 4; ev.val = table[i]; ev.table = table;
+                    ev.desc = "Using coin " + to_string(coin) + ": dp[" + to_string(i) + "] updated to " + to_string(table[i]) + " combinations";
+                    res.events.push_back(ev);
+                }
+            }
         }
     } 
     else if (approach == "space-optimized") {
@@ -1044,7 +1197,7 @@ int main(int argc, char* argv[]) {
     else if (algorithm == "integer-break") {
         int n = 5;
         cin >> n;
-        result = run_perfect_squares(n, approach);
+        result = run_integer_break(n, approach);
     } 
     else if (algorithm == "frog-jump") {
         int s = 0;

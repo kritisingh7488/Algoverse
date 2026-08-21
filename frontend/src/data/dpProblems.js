@@ -59,8 +59,42 @@ export const dpCategories = [
       { id: "house-robber-i", name: "House Robber I", difficulty: "Medium", formula: "dp[i] = max(dp[i-1], val[i] + dp[i-2])" },
       { id: "house-robber-ii", name: "House Robber II", difficulty: "Medium", formula: "dp[i] = max(rob(0, n-2), rob(1, n-1))" },
       { id: "decode-ways", name: "Decode Ways", difficulty: "Medium", formula: "dp[i] = dp[i-1] + (valid ? dp[i-2] : 0)" },
-      { id: "coin-change", name: "Coin Change", difficulty: "Medium", formula: "dp[i] = min(dp[i], 1 + dp[i - coin])" },
-      { id: "minimum-coins", name: "Minimum Coins", difficulty: "Medium", formula: "dp[i] = min(dp[i - coin]) + 1" },
+      { 
+        id: "coin-change", 
+        name: "Coin Change", 
+        difficulty: "Medium", 
+        formula: "dp[i] += dp[i - coin]",
+        complexities: {
+          recursive: { time: "O(2^N)", space: "O(N)" },
+          memoization: { time: "O(N * M)", space: "O(N * M)" },
+          tabulation: { time: "O(N * M)", space: "O(N)" }
+        },
+        code: {
+          cpp: {
+            recursive: `int solve(int amount, vector<int>& coins, int idx) {\n  if (amount == 0) return 1;\n  if (amount < 0 || idx >= coins.size()) return 0;\n  return solve(amount - coins[idx], coins, idx) + solve(amount, coins, idx + 1);\n}`,
+            memoization: `int solve(int amount, vector<int>& coins, int idx, vector<vector<int>>& dp) {\n  if (amount == 0) return 1;\n  if (amount < 0 || idx >= coins.size()) return 0;\n  if (dp[idx][amount] != -1) return dp[idx][amount];\n  return dp[idx][amount] = solve(amount - coins[idx], coins, idx, dp) + solve(amount, coins, idx + 1, dp);\n}`,
+            tabulation: `int solve(int amount, vector<int>& coins) {\n  vector<int> dp(amount + 1, 0);\n  dp[0] = 1;\n  for (int coin : coins) {\n    for (int i = coin; i <= amount; i++) {\n      dp[i] += dp[i - coin];\n    }\n  }\n  return dp[amount];\n}`
+          }
+        }
+      },
+      { 
+        id: "minimum-coins", 
+        name: "Minimum Coins", 
+        difficulty: "Medium", 
+        formula: "dp[i] = min(dp[i], 1 + dp[i - coin])",
+        complexities: {
+          recursive: { time: "O(S^N)", space: "O(N)" },
+          memoization: { time: "O(N * M)", space: "O(N)" },
+          tabulation: { time: "O(N * M)", space: "O(N)" }
+        },
+        code: {
+          cpp: {
+            recursive: `int solve(int amount, vector<int>& coins) {\n  if (amount == 0) return 0;\n  if (amount < 0) return 1e9;\n  int res = 1e9;\n  for (int coin : coins) {\n    res = min(res, 1 + solve(amount - coin, coins));\n  }\n  return res;\n}`,
+            memoization: `int solve(int amount, vector<int>& coins, vector<int>& dp) {\n  if (amount == 0) return 0;\n  if (amount < 0) return 1e9;\n  if (dp[amount] != -1) return dp[amount];\n  int res = 1e9;\n  for (int coin : coins) {\n    res = min(res, 1 + solve(amount - coin, coins, dp));\n  }\n  return dp[amount] = res;\n}`,
+            tabulation: `int solve(int amount, vector<int>& coins) {\n  vector<int> dp(amount + 1, 1e9);\n  dp[0] = 0;\n  for (int i = 1; i <= amount; i++) {\n    for (int coin : coins) {\n      if (i >= coin) dp[i] = min(dp[i], 1 + dp[i - coin]);\n    }\n  }\n  return dp[amount] == 1e9 ? -1 : dp[amount];\n}`
+          }
+        }
+      },
       { id: "perfect-squares", name: "Perfect Squares", difficulty: "Medium", formula: "dp[i] = min(dp[i - j*j]) + 1" },
       { id: "integer-break", name: "Integer Break", difficulty: "Medium", formula: "dp[i] = max(j*(i-j), j*dp[i-j])" },
       { id: "frog-jump", name: "Frog Jump", difficulty: "Hard", formula: "dp[i] = dp[j] && (k-1 <= dist <= k+1)" }
