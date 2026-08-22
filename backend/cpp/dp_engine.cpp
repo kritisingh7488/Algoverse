@@ -210,12 +210,16 @@ DPResult run_fibonacci(int n, string approach) {
     }
 
     int final_val = 0;
-    if (approach == "space-optimized") {
-        if (n == 0) final_val = 0;
-        else if (n == 1) final_val = 1;
-        else final_val = res.events.back().prev;
-    } else {
-        final_val = table[n];
+    if (!res.events.empty()) {
+        if (approach == "space-optimized") {
+            if (n == 0) final_val = 0;
+            else if (n == 1) final_val = 1;
+            else final_val = res.events.back().prev;
+        } else if (approach == "recursive") {
+            final_val = res.events.back().val;
+        } else {
+            final_val = table[n];
+        }
     }
 
     Event ev_final;
@@ -350,12 +354,16 @@ DPResult run_climbing_stairs(int n, string approach) {
     }
 
     int final_val = 0;
-    if (approach == "space-optimized") {
-        if (n == 0) final_val = 1;
-        else if (n == 1) final_val = 1;
-        else final_val = res.events.back().prev;
-    } else {
-        final_val = table[n];
+    if (!res.events.empty()) {
+        if (approach == "space-optimized") {
+            if (n == 0) final_val = 1;
+            else if (n == 1) final_val = 1;
+            else final_val = res.events.back().prev;
+        } else if (approach == "recursive") {
+            final_val = res.events.back().val;
+        } else {
+            final_val = table[n];
+        }
     }
 
     Event ev_final;
@@ -716,74 +724,128 @@ DPResult run_coin_change(const vector<int>& coins, int amount, string approach, 
     vector<int> callStack;
 
     if (approach == "recursive") {
-        auto run_rec = [&](auto self, int rem) -> int {
-            if (rem == 0) return findMin ? 0 : 1;
-            if (rem < 0) return findMin ? 1e9 : 0;
-            callStack.push_back(rem);
-            Event ev1;
-            ev1.type = "call"; ev1.active = rem; ev1.line = 1; ev1.stack = callStack;
-            ev1.desc = "Solving subproblem for remainder amount " + to_string(rem);
-            res.events.push_back(ev1);
+        if (findMin) {
+            auto run_rec = [&](auto self, int rem) -> int {
+                if (rem == 0) return 0;
+                if (rem < 0) return 1e9;
+                callStack.push_back(rem);
+                Event ev1;
+                ev1.type = "call"; ev1.active = rem; ev1.line = 1; ev1.stack = callStack;
+                ev1.desc = "Solving minimum coins for remainder " + to_string(rem);
+                res.events.push_back(ev1);
 
-            int val = findMin ? 1e9 : 0;
-            for (int coin : coins) {
-                int sub = self(self, rem - coin);
-                if (findMin) {
+                int val = 1e9;
+                for (int coin : coins) {
+                    int sub = self(self, rem - coin);
                     if (sub != 1e9) val = min(val, 1 + sub);
-                } else {
-                    val += sub;
                 }
-            }
-            callStack.pop_back();
+                callStack.pop_back();
 
-            Event ev2;
-            ev2.type = "return"; ev2.active = rem; ev2.line = 3; ev2.val = val; ev2.stack = callStack;
-            ev2.desc = "Resolved amount " + to_string(rem) + " -> value " + to_string(val);
-            res.events.push_back(ev2);
-            return val;
-        };
-        run_rec(run_rec, amount);
+                Event ev2;
+                ev2.type = "return"; ev2.active = rem; ev2.line = 3; ev2.val = val; ev2.stack = callStack;
+                ev2.desc = "Min coins for remainder " + to_string(rem) + " -> " + to_string(val);
+                res.events.push_back(ev2);
+                return val;
+            };
+            run_rec(run_rec, amount);
+        } else {
+            auto run_rec_comb = [&](auto self, int rem, int idx) -> int {
+                if (rem == 0) return 1;
+                if (rem < 0 || idx >= coins.size()) return 0;
+                callStack.push_back(rem);
+                Event ev1;
+                ev1.type = "call"; ev1.active = rem; ev1.line = 1; ev1.stack = callStack;
+                ev1.desc = "Combinations for remainder " + to_string(rem) + " using coin index " + to_string(idx);
+                res.events.push_back(ev1);
+
+                int take = self(self, rem - coins[idx], idx);
+                int skip = self(self, rem, idx + 1);
+                int val = take + skip;
+                callStack.pop_back();
+
+                Event ev2;
+                ev2.type = "return"; ev2.active = rem; ev2.line = 3; ev2.val = val; ev2.stack = callStack;
+                ev2.desc = "Combinations for remainder " + to_string(rem) + " using coin index " + to_string(idx) + " -> " + to_string(val);
+                res.events.push_back(ev2);
+                return val;
+            };
+            run_rec_comb(run_rec_comb, amount, 0);
+        }
     } 
     else if (approach == "memoization") {
-        table[0] = findMin ? 0 : 1;
-        auto run_memo = [&](auto self, int rem) -> int {
-            if (rem == 0) return findMin ? 0 : 1;
-            if (rem < 0) return findMin ? 1e9 : 0;
-            callStack.push_back(rem);
-            Event ev1;
-            ev1.type = "memo_lookup"; ev1.active = rem; ev1.line = 1; ev1.stack = callStack;
-            ev1.desc = "Memo lookup for remainder amount " + to_string(rem);
-            res.events.push_back(ev1);
+        if (findMin) {
+            table[0] = 0;
+            auto run_memo = [&](auto self, int rem) -> int {
+                if (rem == 0) return 0;
+                if (rem < 0) return 1e9;
+                callStack.push_back(rem);
+                Event ev1;
+                ev1.type = "memo_lookup"; ev1.active = rem; ev1.line = 1; ev1.stack = callStack;
+                ev1.desc = "Checking cache for remainder " + to_string(rem);
+                res.events.push_back(ev1);
 
-            if (table[rem] != (findMin ? 1e9 : 0) && table[rem] != -1) {
-                Event ev2;
-                ev2.type = "memo_hit"; ev2.active = rem; ev2.line = 2; ev2.val = table[rem]; ev2.table = table; ev2.stack = callStack;
-                ev2.desc = "Cache hit for amount " + to_string(rem) + " -> " + to_string(table[rem]);
-                res.events.push_back(ev2);
-                callStack.pop_back();
-                return table[rem];
-            }
-
-            int val = findMin ? 1e9 : 0;
-            for (int coin : coins) {
-                int sub = self(self, rem - coin);
-                if (findMin) {
-                    if (sub != 1e9) val = min(val, 1 + sub);
-                } else {
-                    val += sub;
+                if (table[rem] != 1e9 && table[rem] != -1) {
+                    Event ev2;
+                    ev2.type = "memo_hit"; ev2.active = rem; ev2.line = 2; ev2.val = table[rem]; ev2.table = table; ev2.stack = callStack;
+                    ev2.desc = "Cache hit! Min coins = " + to_string(table[rem]);
+                    res.events.push_back(ev2);
+                    callStack.pop_back();
+                    return table[rem];
                 }
-            }
-            table[rem] = val;
-            res.updates++;
-            callStack.pop_back();
 
-            Event ev3;
-            ev3.type = "memo_store"; ev3.active = rem; ev3.line = 4; ev3.val = val; ev3.table = table; ev3.stack = callStack;
-            ev3.desc = "Stored memo[" + to_string(rem) + "] = " + to_string(val);
-            res.events.push_back(ev3);
-            return val;
-        };
-        run_memo(run_memo, amount);
+                int val = 1e9;
+                for (int coin : coins) {
+                    int sub = self(self, rem - coin);
+                    if (sub != 1e9) val = min(val, 1 + sub);
+                }
+                table[rem] = val;
+                res.updates++;
+                callStack.pop_back();
+
+                Event ev3;
+                ev3.type = "memo_store"; ev3.active = rem; ev3.line = 4; ev3.val = val; ev3.table = table; ev3.stack = callStack;
+                ev3.desc = "Stored memo[" + to_string(rem) + "] = " + to_string(val);
+                res.events.push_back(ev3);
+                return val;
+            };
+            run_memo(run_memo, amount);
+        } else {
+            vector<vector<int>> memo(coins.size(), vector<int>(amount + 1, -1));
+            table.assign(amount + 1, 0);
+            table[0] = 1;
+
+            auto run_memo_comb = [&](auto self, int rem, int idx) -> int {
+                if (rem == 0) return 1;
+                if (rem < 0 || idx >= coins.size()) return 0;
+                callStack.push_back(rem);
+                Event ev1;
+                ev1.type = "memo_lookup"; ev1.active = rem; ev1.line = 1; ev1.stack = callStack;
+                ev1.desc = "Checking cache for remainder " + to_string(rem) + " using coin index " + to_string(idx);
+                res.events.push_back(ev1);
+
+                if (memo[idx][rem] != -1) {
+                    Event ev2;
+                    ev2.type = "memo_hit"; ev2.active = rem; ev2.line = 2; ev2.val = memo[idx][rem]; ev2.table = table; ev2.stack = callStack;
+                    ev2.desc = "Cache hit! Combinations = " + to_string(memo[idx][rem]);
+                    res.events.push_back(ev2);
+                    callStack.pop_back();
+                    return memo[idx][rem];
+                }
+
+                int val = self(self, rem - coins[idx], idx) + self(self, rem, idx + 1);
+                memo[idx][rem] = val;
+                table[rem] = val;
+                res.updates++;
+                callStack.pop_back();
+
+                Event ev3;
+                ev3.type = "memo_store"; ev3.active = rem; ev3.line = 4; ev3.val = val; ev3.table = table; ev3.stack = callStack;
+                ev3.desc = "Stored memo[" + to_string(idx) + "][" + to_string(rem) + "] = " + to_string(val);
+                res.events.push_back(ev3);
+                return val;
+            };
+            run_memo_comb(run_memo_comb, amount, 0);
+        }
     } 
     else if (approach == "tabulation") {
         table.assign(amount + 1, findMin ? 1e9 : 0);
@@ -830,6 +892,25 @@ DPResult run_coin_change(const vector<int>& coins, int amount, string approach, 
         res.events.push_back(ev);
     }
 
+    if (approach != "space-optimized") {
+        int final_val = 0;
+        if (!res.events.empty()) {
+            if (approach == "recursive") {
+                final_val = res.events.back().val;
+            } else {
+                final_val = table[amount];
+            }
+        }
+        if (findMin && final_val >= 1e8) {
+            final_val = -1;
+        }
+        Event ev_final;
+        ev_final.type = "solution_complete";
+        ev_final.val = final_val;
+        ev_final.desc = "Calculation complete. Final result: " + to_string(final_val);
+        res.events.push_back(ev_final);
+    }
+
     return res;
 }
 
@@ -845,7 +926,13 @@ DPResult run_perfect_squares(int n, string approach) {
 
     if (approach == "recursive") {
         auto run_rec = [&](auto self, int rem) -> int {
-            if (rem == 0) return 0;
+            if (rem == 0) {
+                Event ev;
+                ev.type = "return"; ev.active = 0; ev.val = 0;
+                ev.desc = "Base case: 0 squares needed for sum 0";
+                res.events.push_back(ev);
+                return 0;
+            }
             callStack.push_back(rem);
             Event ev1;
             ev1.type = "call"; ev1.active = rem; ev1.line = 1; ev1.stack = callStack;
@@ -869,7 +956,13 @@ DPResult run_perfect_squares(int n, string approach) {
     else if (approach == "memoization") {
         table[0] = 0;
         auto run_memo = [&](auto self, int rem) -> int {
-            if (rem == 0) return 0;
+            if (rem == 0) {
+                Event ev;
+                ev.type = "return"; ev.active = 0; ev.val = 0;
+                ev.desc = "Base case: 0 squares needed for sum 0";
+                res.events.push_back(ev);
+                return 0;
+            }
             callStack.push_back(rem);
             Event ev1;
             ev1.type = "memo_lookup"; ev1.active = rem; ev1.line = 1; ev1.stack = callStack;
@@ -927,6 +1020,22 @@ DPResult run_perfect_squares(int n, string approach) {
         res.events.push_back(ev);
     }
 
+    if (approach != "space-optimized") {
+        int final_val = 0;
+        if (!res.events.empty()) {
+            if (approach == "recursive") {
+                final_val = res.events.back().val;
+            } else {
+                final_val = table[n];
+            }
+        }
+        Event ev_final;
+        ev_final.type = "solution_complete";
+        ev_final.val = final_val;
+        ev_final.desc = "Calculation complete. Minimum perfect squares: " + to_string(final_val);
+        res.events.push_back(ev_final);
+    }
+
     return res;
 }
 
@@ -942,7 +1051,13 @@ DPResult run_integer_break(int n, string approach) {
 
     if (approach == "recursive") {
         auto run_rec = [&](auto self, int rem) -> int {
-            if (rem <= 2) return 1;
+            if (rem <= 2) {
+                Event ev;
+                ev.type = "return"; ev.active = rem; ev.val = 1;
+                ev.desc = "Base case split product for " + to_string(rem) + " is 1";
+                res.events.push_back(ev);
+                return 1;
+            }
             callStack.push_back(rem);
             Event ev1;
             ev1.type = "call"; ev1.active = rem; ev1.line = 1; ev1.stack = callStack;
@@ -965,8 +1080,15 @@ DPResult run_integer_break(int n, string approach) {
     } 
     else if (approach == "memoization") {
         table[1] = 1;
+        if (n >= 2) table[2] = 1;
         auto run_memo = [&](auto self, int rem) -> int {
-            if (rem <= 2) return 1;
+            if (rem <= 2) {
+                Event ev;
+                ev.type = "return"; ev.active = rem; ev.val = 1;
+                ev.desc = "Base case split product for " + to_string(rem) + " is 1";
+                res.events.push_back(ev);
+                return 1;
+            }
             callStack.push_back(rem);
             Event ev1;
             ev1.type = "memo_lookup"; ev1.active = rem; ev1.line = 1; ev1.stack = callStack;
@@ -1024,6 +1146,22 @@ DPResult run_integer_break(int n, string approach) {
         res.events.push_back(ev);
     }
 
+    if (approach != "space-optimized") {
+        int final_val = 0;
+        if (!res.events.empty()) {
+            if (approach == "recursive") {
+                final_val = res.events.back().val;
+            } else {
+                final_val = table[n];
+            }
+        }
+        Event ev_final;
+        ev_final.type = "solution_complete";
+        ev_final.val = final_val;
+        ev_final.desc = "Calculation complete. Maximum product: " + to_string(final_val);
+        res.events.push_back(ev_final);
+    }
+
     return res;
 }
 
@@ -1035,6 +1173,16 @@ DPResult run_frog_jump(const vector<int>& heights, string approach) {
     DPResult res;
     res.algorithm = "frog-jump";
     res.approach = approach;
+
+    if (n <= 1) {
+        Event ev;
+        ev.type = "solution_complete";
+        ev.val = 0;
+        ev.desc = "Calculation complete. Minimum energy cost: 0";
+        res.events.push_back(ev);
+        return res;
+    }
+
     vector<int> table(n, -1);
     vector<int> callStack;
 

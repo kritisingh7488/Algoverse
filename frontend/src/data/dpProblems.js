@@ -95,9 +95,40 @@ export const dpCategories = [
           }
         }
       },
-      { id: "perfect-squares", name: "Perfect Squares", difficulty: "Medium", formula: "dp[i] = min(dp[i - j*j]) + 1" },
-      { id: "integer-break", name: "Integer Break", difficulty: "Medium", formula: "dp[i] = max(j*(i-j), j*dp[i-j])" },
-      { id: "frog-jump", name: "Frog Jump", difficulty: "Hard", formula: "dp[i] = dp[j] && (k-1 <= dist <= k+1)" }
+      { 
+        id: "perfect-squares", 
+        name: "Perfect Squares", 
+        difficulty: "Medium", 
+        formula: "dp[i] = min(dp[i - j*j]) + 1",
+        complexities: {
+          recursive: { time: "O(N^(sqrt(N)))", space: "O(N)" },
+          memoization: { time: "O(N * sqrt(N))", space: "O(N)" },
+          tabulation: { time: "O(N * sqrt(N))", space: "O(N)" }
+        }
+      },
+      { 
+        id: "integer-break", 
+        name: "Integer Break", 
+        difficulty: "Medium", 
+        formula: "dp[i] = max(j * (i - j), j * dp[i - j])",
+        complexities: {
+          recursive: { time: "O(2^N)", space: "O(N)" },
+          memoization: { time: "O(N^2)", space: "O(N)" },
+          tabulation: { time: "O(N^2)", space: "O(N)" }
+        }
+      },
+      { 
+        id: "frog-jump", 
+        name: "Frog Jump", 
+        difficulty: "Medium", 
+        formula: "dp[i] = min(dp[i-1] + abs(h[i]-h[i-1]), dp[i-2] + abs(h[i]-h[i-2]))",
+        complexities: {
+          recursive: { time: "O(2^N)", space: "O(N)" },
+          memoization: { time: "O(N)", space: "O(N)" },
+          tabulation: { time: "O(N)", space: "O(N)" },
+          spaceOptimized: { time: "O(N)", space: "O(1)" }
+        }
+      }
     ]
   },
   {
