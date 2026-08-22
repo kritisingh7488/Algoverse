@@ -481,6 +481,20 @@ DPResult run_house_robber_i(const vector<int>& nums, string approach) {
         }
     }
 
+    int final_val = 0;
+    if (!res.events.empty()) {
+        if (approach == "space-optimized") {
+            final_val = res.events.back().prev;
+        } else {
+            final_val = res.events.back().val;
+        }
+    }
+    Event ev_final;
+    ev_final.type = "solution_complete";
+    ev_final.val = final_val;
+    ev_final.desc = "Calculation complete. Maximum money: " + to_string(final_val);
+    res.events.push_back(ev_final);
+
     return res;
 }
 
@@ -673,6 +687,20 @@ DPResult run_decode_ways(string s, string approach) {
             res.events.push_back(ev);
         }
     }
+
+    int final_val = 0;
+    if (!res.events.empty()) {
+        if (approach == "space-optimized") {
+            final_val = res.events.back().prev;
+        } else {
+            final_val = res.events.back().val;
+        }
+    }
+    Event ev_final;
+    ev_final.type = "solution_complete";
+    ev_final.val = final_val;
+    ev_final.desc = "Calculation complete. Total decode ways: " + to_string(final_val);
+    res.events.push_back(ev_final);
 
     return res;
 }
@@ -1119,6 +1147,20 @@ DPResult run_frog_jump(const vector<int>& heights, string approach) {
             res.events.push_back(ev);
         }
     }
+
+    int final_val = 0;
+    if (!res.events.empty()) {
+        if (approach == "space-optimized") {
+            final_val = res.events.back().prev;
+        } else {
+            final_val = res.events.back().val;
+        }
+    }
+    Event ev_final;
+    ev_final.type = "solution_complete";
+    ev_final.val = final_val;
+    ev_final.desc = "Calculation complete. Minimum energy cost: " + to_string(final_val);
+    res.events.push_back(ev_final);
 
     return res;
 }
