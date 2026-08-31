@@ -119,34 +119,24 @@
 
 ### Phase 12: Community & Contests
 - [x] **Community Phase 1 — UI + Foundation COMPLETE**
-- [x] **Community Phase 2 — Backend + Database Foundation COMPLETE**
-  - **CURRENT (Phase 1 & Phase 2 Implemented):**
-    - [x] Community Mongoose/MongoDB model (`backend/models/Community.js`) with validation, slug generator, member synchronization, and indexing
-    - [x] Community CRUD REST APIs (`/api/v1/communities`):
-      - `GET /api/v1/communities` (Search, Category filtering, Sorting by trending/popular/new, Pagination, Optional auth for `isJoined`)
-      - `GET /api/v1/communities/my` (Authenticated user's joined/created communities via `protect` middleware)
-      - `GET /api/v1/communities/trending` (Top 5 trending communities)
-      - `GET /api/v1/communities/:idOrSlug` (Single community by ID/slug with private access enforcement & populated creator/members)
-      - `POST /api/v1/communities` (Authenticated community creation with creator auto-joined)
-      - `POST /api/v1/communities/:id/join` (Persistent join membership toggle)
-      - `POST /api/v1/communities/:id/leave` (Persistent leave membership toggle with creator protection)
-      - `PUT /api/v1/communities/:id` (Community updates with owner/admin authorization)
-      - `DELETE /api/v1/communities/:id` (Community deletion with owner/admin authorization)
-    - [x] Auth middleware integration (`protect` for mutations, `optionalProtect` for public views with member detection)
-    - [x] Frontend API service layer (`frontend/src/api/communityService.js`) with resilient offline seed fallback
-    - [x] Community discovery hub (`/community`) with live API integration, loading skeletons, and empty state handlers
-    - [x] Community detail view (`/community/:communityId`) with API loading, 403 private access screen, and 404 handler
-    - [x] Create Community modal with live API submission and state updates
-  - **FUTURE (Roadmap for Phase 3+):**
-    - [ ] Community post feed & post creation with Markdown support
-    - [ ] Comments and nested reply threads
-    - [ ] Post reactions (Like, Love, Insightful, Helpful, Celebrate)
-    - [ ] Real-time Global Chat powered by WebSockets / Socket.io
-    - [ ] Real-time Community Chat rooms
-    - [ ] Notifications system (mentions, replies, invites)
-    - [ ] Moderation, reporting & admin controls
-    - [ ] Community reputation, badges & member leaderboards
-    - [ ] Study group events, shared resources & coding challenges
+- [x] **Community Phase 2 — Backend + Database Foundation VERIFIED**
+  - **Integration Verification: 34/34 tests passed (100% pass rate on live MongoDB Atlas)**
+  - **Verified Scope:**
+    - [x] MongoDB CRUD and persistence (Create, fetch by slug & ID, update, and permanent delete)
+    - [x] Authentication (401 for missing/invalid/expired tokens, 200 for valid JWT)
+    - [x] Authorization (403 for unauthorized user update/delete, 200 for owner and admin)
+    - [x] Private community access rules (403 for guests and non-members, 200 for members/creator/admin)
+    - [x] Join/Leave data invariants (atomic `$addToSet`/`$pull`, `membersCount === members.length`, no duplicate members, creator cannot leave)
+    - [x] Optional authentication & `isJoined` detection computed directly from token
+    - [x] Search, category filtering, and sorting (`trending`, `popular`, `new`)
+    - [x] Pagination boundaries and out-of-bounds handling
+    - [x] Slug generation with special character sanitization and collision suffix deduplication
+    - [x] Direct database cleanup after test executions
+    - [x] Frontend service layer (`communityService.js`) with resilient fallback
+  - **Remaining Community Roadmap (Future Phases):**
+    - **Phase 3 Remains:** Posts, Markdown discussions, comments/replies, and reactions/voting
+    - **Phase 4 Remains:** Real-time Global Chat and Community Chat rooms via WebSockets
+    - **Phase 5 Remains:** Notifications, moderation, reputation, badges, and leaderboards
 - [ ] Weekly Algorithm Contests (`Contests.jsx`) — Placeholder (Full contest engine planned for future phase)
 
 ### Phase 13: Profile & Settings
