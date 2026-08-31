@@ -11,10 +11,14 @@ export const MarkdownRenderer = ({ content = '', className = '' }) => {
 
   if (!content || typeof content !== 'string') return null;
 
-  // Sanitize against dangerous raw script tags
+  // Sanitize against dangerous raw script, iframe, object, embed, style, and event-handler HTML tags
   const sanitized = content
     .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
-    .replace(/<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi, '');
+    .replace(/<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi, '')
+    .replace(/<object\b[^<]*(?:(?!<\/object>)<[^<]*)*<\/object>/gi, '')
+    .replace(/<embed\b[^<]*(?:(?!<\/embed>)<[^<]*)*<\/embed>/gi, '')
+    .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '')
+    .replace(/on\w+\s*=\s*(["'][^"']*["']|[^\s>]+)/gi, '');
 
   const copyToClipboard = (text, idx) => {
     navigator.clipboard.writeText(text);
@@ -98,11 +102,16 @@ export const MarkdownRenderer = ({ content = '', className = '' }) => {
       // 6. Links: [label](url)
       const linkMatch = remaining.match(/^\[([^\]]+)\]\(([^)]+)\)/);
       if (linkMatch) {
-        const isExternal = linkMatch[2].startsWith('http');
+        const rawUrl = linkMatch[2].trim();
+        const lowerUrl = rawUrl.toLowerCase();
+        const isDangerous = lowerUrl.startsWith('javascript:') || lowerUrl.startsWith('data:') || lowerUrl.startsWith('vbscript:');
+        const safeUrl = isDangerous ? '#' : rawUrl;
+        const isExternal = safeUrl.startsWith('http');
+
         tokens.push(
           <a
             key={`link-${keyCounter++}`}
-            href={linkMatch[2]}
+            href={safeUrl}
             target={isExternal ? '_blank' : '_self'}
             rel={isExternal ? 'noopener noreferrer' : ''}
             className="text-primary hover:underline font-semibold inline-flex items-center gap-0.5"
