@@ -75,14 +75,15 @@ exports.getCommunities = async (req, res) => {
             sortOption = { createdAt: -1 };
         }
 
-        const skip = (parseInt(page, 10) - 1) * parseInt(limit, 10);
-        const take = parseInt(limit, 10);
+        const pageNum = Math.max(1, parseInt(page, 10) || 1);
+        const limitNum = Math.max(1, Math.min(100, parseInt(limit, 10) || 50));
+        const skip = (pageNum - 1) * limitNum;
 
         const [communities, total] = await Promise.all([
             Community.find(query)
                 .sort(sortOption)
                 .skip(skip)
-                .limit(take)
+                .limit(limitNum)
                 .populate('creator', 'fullName username avatar xp role')
                 .populate('members', 'fullName username avatar xp role'),
             Community.countDocuments(query)
@@ -94,8 +95,8 @@ exports.getCommunities = async (req, res) => {
             success: true,
             count: formatted.length,
             total,
-            page: parseInt(page, 10),
-            pages: Math.ceil(total / take),
+            page: pageNum,
+            pages: Math.ceil(total / limitNum) || 1,
             data: formatted
         });
     } catch (error) {
@@ -204,8 +205,13 @@ exports.getCommunityByIdOrSlug = async (req, res) => {
 
         // Check private community access rules
         if (community.isPrivate) {
-            const isMember = currentUserId && community.members.some(m => m._id.toString() === currentUserId.toString());
-            const isCreator = currentUserId && community.creator && community.creator._id.toString() === currentUserId.toString();
+            const isMember = currentUserId && community.members.some(m => {
+                const memberId = m._id ? m._id.toString() : m.toString();
+                return memberId === currentUserId.toString();
+            });
+            const isCreator = currentUserId && community.creator && (
+                (community.creator._id ? community.creator._id.toString() : community.creator.toString()) === currentUserId.toString()
+            );
             const isAdmin = req.user && req.user.role === 'admin';
 
             if (!isMember && !isCreator && !isAdmin) {
@@ -253,7 +259,7 @@ exports.createCommunity = async (req, res) => {
         } = req.body;
 
         // Validation
-        if (!name || name.trim().length < 3) {
+        if (!name || typeof name !== 'string' || name.trim().length < 3) {
             return res.status(400).json({
                 success: false,
                 message: 'Community name must be at least 3 characters'
@@ -267,7 +273,7 @@ exports.createCommunity = async (req, res) => {
             });
         }
 
-        if (!description || description.trim().length < 10) {
+        if (!description || typeof description !== 'string' || description.trim().length < 10) {
             return res.status(400).json({
                 success: false,
                 message: 'Description must be at least 10 characters'
@@ -295,7 +301,7 @@ exports.createCommunity = async (req, res) => {
             isPrivate: !!isPrivate,
             isTrending: false,
             isVerified: false,
-            tags: Array.isArray(tags) ? tags : [category],
+            tags: Array.isArray(tags) && tags.length > 0 ? tags : [category],
             about: about.trim() || description.trim(),
             rules: Array.isArray(rules) && rules.length > 0 ? rules : [
                 'Be welcoming and respectful to all learners.',
@@ -355,21 +361,29 @@ exports.joinCommunity = async (req, res) => {
         // Check if already a member
         const alreadyMember = community.members.some(m => m.toString() === userId.toString());
         if (alreadyMember) {
+            const populated = await Community.findById(community._id)
+                .populate('creator', 'fullName username avatar xp role')
+                .populate('members', 'fullName username avatar xp role');
+
             return res.status(200).json({
                 success: true,
                 message: 'Already a member of this community',
-                data: formatCommunityResponse(community, userId)
+                data: formatCommunityResponse(populated, userId)
             });
         }
 
-        // Add member
-        community.members.push(userId);
-        community.membersCount = community.members.length;
-        await community.save();
+        // Atomically add member
+        await Community.findByIdAndUpdate(community._id, {
+            $addToSet: { members: userId }
+        });
 
+        // Ensure synchronization of membersCount
         const updated = await Community.findById(community._id)
             .populate('creator', 'fullName username avatar xp role')
             .populate('members', 'fullName username avatar xp role');
+
+        updated.membersCount = updated.members.length;
+        await updated.save();
 
         return res.status(200).json({
             success: true,
@@ -416,14 +430,31 @@ exports.leaveCommunity = async (req, res) => {
             });
         }
 
-        // Remove member
-        community.members = community.members.filter(m => m.toString() !== userId.toString());
-        community.membersCount = community.members.length;
-        await community.save();
+        // Check if user is actually a member
+        const isMember = community.members.some(m => m.toString() === userId.toString());
+        if (!isMember) {
+            const populated = await Community.findById(community._id)
+                .populate('creator', 'fullName username avatar xp role')
+                .populate('members', 'fullName username avatar xp role');
+
+            return res.status(200).json({
+                success: true,
+                message: 'Not a member of this community',
+                data: formatCommunityResponse(populated, userId)
+            });
+        }
+
+        // Atomically pull member
+        await Community.findByIdAndUpdate(community._id, {
+            $pull: { members: userId }
+        });
 
         const updated = await Community.findById(community._id)
             .populate('creator', 'fullName username avatar xp role')
             .populate('members', 'fullName username avatar xp role');
+
+        updated.membersCount = updated.members.length;
+        await updated.save();
 
         return res.status(200).json({
             success: true,
@@ -463,8 +494,9 @@ exports.updateCommunity = async (req, res) => {
             });
         }
 
-        // Authorization check
-        if (community.creator.toString() !== userId.toString() && !isAdmin) {
+        // Authorization check: Only creator or admin can update
+        const isCreator = community.creator.toString() === userId.toString();
+        if (!isCreator && !isAdmin) {
             return res.status(403).json({
                 success: false,
                 message: 'Not authorized to edit this community'
@@ -473,13 +505,17 @@ exports.updateCommunity = async (req, res) => {
 
         const { name, description, category, icon, isPrivate, tags, about, rules } = req.body;
 
-        if (name) community.name = name.trim();
-        if (description) community.description = description.trim();
+        if (name && typeof name === 'string' && name.trim().length >= 3 && name.trim().length <= 40) {
+            community.name = name.trim();
+        }
+        if (description && typeof description === 'string' && description.trim().length >= 10 && description.trim().length <= 250) {
+            community.description = description.trim();
+        }
         if (category) community.category = category;
         if (icon) community.icon = icon;
         if (typeof isPrivate === 'boolean') community.isPrivate = isPrivate;
         if (Array.isArray(tags)) community.tags = tags;
-        if (about) community.about = about.trim();
+        if (about && typeof about === 'string') community.about = about.trim();
         if (Array.isArray(rules)) community.rules = rules;
 
         await community.save();
@@ -526,8 +562,9 @@ exports.deleteCommunity = async (req, res) => {
             });
         }
 
-        // Authorization check
-        if (community.creator.toString() !== userId.toString() && !isAdmin) {
+        // Authorization check: Only creator or admin can delete
+        const isCreator = community.creator.toString() === userId.toString();
+        if (!isCreator && !isAdmin) {
             return res.status(403).json({
                 success: false,
                 message: 'Not authorized to delete this community'
