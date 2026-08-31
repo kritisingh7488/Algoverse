@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Globe, Lock, Sparkles, CheckCircle2, AlertCircle, Eye } from 'lucide-react';
 import { COMMUNITY_CATEGORIES, EMOJI_PRESETS, saveCreatedCommunity } from '../../data/communityData';
+import useAuthStore from '../../store/authStore';
 import Button from '../common/Button';
 import Badge from '../common/Badge';
 
@@ -109,7 +110,13 @@ export const CreateCommunityModal = ({ isOpen, onClose, onCommunityCreated }) =>
       ],
       createdDate: 'Just now',
       membersPreview: [
-        { id: 'creator', name: 'You (Creator)', role: 'Founder & Moderator', avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120&auto=format&fit=crop&q=80', xp: 100 }
+        { 
+          id: 'creator', 
+          name: useAuthStore.getState().user?.fullName ? `${useAuthStore.getState().user.fullName} (Creator)` : 'You (Creator)', 
+          role: 'Founder & Moderator', 
+          avatar: useAuthStore.getState().user?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120&auto=format&fit=crop&q=80', 
+          xp: useAuthStore.getState().user?.xp || 100 
+        }
       ]
     };
 

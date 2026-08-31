@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Users, 
@@ -11,7 +11,9 @@ import {
   ShieldCheck, 
   HelpCircle,
   FolderSearch,
-  RotateCcw
+  RotateCcw,
+  X,
+  LogIn
 } from 'lucide-react';
 import AppLayout from '../layouts/AppLayout';
 import useAuthStore from '../store/authStore';
@@ -44,6 +46,7 @@ const Community = () => {
   const [sortBy, setSortBy] = useState('trending');
   const [activeTab, setActiveTab] = useState('discover'); // 'discover' | 'my-communities'
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
   // Initialize data from local state / seed
@@ -55,8 +58,21 @@ const Community = () => {
     setIsLoading(false);
   }, []);
 
+  // Guarded Create Click
+  const handleCreateClick = () => {
+    if (!isAuthenticated) {
+      setIsAuthModalOpen(true);
+      return;
+    }
+    setIsCreateModalOpen(true);
+  };
+
   // Handle Join Toggle
   const handleToggleJoin = (communityId) => {
+    if (!isAuthenticated) {
+      setIsAuthModalOpen(true);
+      return;
+    }
     const updated = toggleJoinCommunity(communityId);
     setJoinedIds(updated);
 
@@ -128,7 +144,7 @@ const Community = () => {
         <CommunityHeader
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
-          onCreateClick={() => setIsCreateModalOpen(true)}
+          onCreateClick={handleCreateClick}
           totalCommunities={communities.length}
           totalMembers="18.5k"
         />
@@ -299,6 +315,58 @@ const Community = () => {
           onClose={() => setIsCreateModalOpen(false)}
           onCommunityCreated={handleCommunityCreated}
         />
+
+        {/* Unauthenticated Login Prompt Modal */}
+        <AnimatePresence>
+          {isAuthModalOpen && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setIsAuthModalOpen(false)}
+                className="fixed inset-0 bg-black/50 backdrop-blur-sm"
+              />
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 16 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 16 }}
+                className="relative w-full max-w-md bg-card rounded-dialog border-[1.5px] border-borderTheme p-6 shadow-large z-10 text-center space-y-4 font-body"
+              >
+                <button
+                  onClick={() => setIsAuthModalOpen(false)}
+                  className="absolute right-4 top-4 p-1.5 rounded-lg text-textSecondary hover:text-textPrimary hover:bg-surface transition-colors"
+                  aria-label="Close"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+                <div className="w-12 h-12 rounded-2xl bg-primary/15 border border-primary/30 flex items-center justify-center text-primary text-xl mx-auto shadow-xs">
+                  👋
+                </div>
+                <div className="space-y-1.5">
+                  <h3 className="text-lg font-heading font-bold text-textPrimary">
+                    Join the AlgoVerse Community
+                  </h3>
+                  <p className="text-xs sm:text-sm text-textSecondary leading-relaxed">
+                    Create an account or log in to join study guilds, track your daily problem streak, and create your own communities.
+                  </p>
+                </div>
+                <div className="flex flex-col sm:flex-row gap-2.5 pt-2">
+                  <Link to="/login" className="flex-1">
+                    <Button variant="outline" size="md" className="w-full">
+                      Log In
+                    </Button>
+                  </Link>
+                  <Link to="/signup" className="flex-1">
+                    <Button variant="primary" size="md" className="w-full">
+                      Sign Up Free
+                    </Button>
+                  </Link>
+                </div>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
       </div>
     </AppLayout>
   );
