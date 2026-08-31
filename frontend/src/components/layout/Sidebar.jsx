@@ -44,7 +44,7 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse }) => {
       items: [
         { name: 'Benchmark Center', path: '/benchmarks', icon: Award },
         { name: 'Code Playground', path: '/code-playground', icon: Code },
-        { name: 'Community & Quizzes', path: '/community', icon: Users },
+        { name: 'Community Hub', path: '/community', icon: Users },
       ]
     }
   ];
@@ -103,19 +103,20 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse }) => {
                         if (window.innerWidth < 1024) onClose();
                       }}
                       title={isCollapsed ? item.name : ''}
-                      className={({ isActive }) =>
-                        `relative flex items-center ${isCollapsed ? 'justify-center px-0' : 'justify-between px-2.5'} py-2 rounded-xl text-sm font-heading font-semibold transition-all duration-200 group ${
-                          isActive
+                      className={({ isActive }) => {
+                        const isCurrent = isActive || (item.path !== '/dashboard' && location.pathname.startsWith(item.path));
+                        return `relative flex items-center ${isCollapsed ? 'justify-center px-0' : 'justify-between px-2.5'} py-2 rounded-xl text-sm font-heading font-semibold transition-all duration-200 group ${
+                          isCurrent
                             ? 'text-primary font-bold bg-primary/15 border border-primary/20 shadow-xs'
                             : 'text-textSecondary hover:text-textPrimary hover:bg-surface'
-                        }`
-                      }
+                        }`;
+                      }}
                     >
                       <div className="flex items-center gap-2.5">
                         <Icon className="w-4 h-4 shrink-0 transition-colors" />
                         {!isCollapsed && <span className="truncate">{item.name}</span>}
                       </div>
-                      {!isCollapsed && location.pathname === item.path && (
+                      {!isCollapsed && (location.pathname === item.path || (item.path !== '/dashboard' && location.pathname.startsWith(item.path))) && (
                         <ChevronRight className="w-3.5 h-3.5 text-primary shrink-0" />
                       )}
                     </NavLink>

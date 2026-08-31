@@ -12,6 +12,8 @@ import Playground from './pages/Playground';
 import BenchmarkCenter from './pages/BenchmarkCenter';
 import CodePlayground from './pages/CodePlayground';
 import Community from './pages/Community';
+import CommunityDetail from './pages/CommunityDetail';
+import CommunityChatPlaceholder from './pages/CommunityChatPlaceholder';
 import Contests from './pages/Contests';
 import Profile from './pages/Profile';
 import Settings from './pages/Settings';
@@ -116,11 +118,15 @@ function App() {
           />
           <Route 
             path="/community" 
-            element={
-              <ProtectedRoute>
-                <Community />
-              </ProtectedRoute>
-            } 
+            element={<Community />} 
+          />
+          <Route 
+            path="/community/:communityId" 
+            element={<CommunityDetail />} 
+          />
+          <Route 
+            path="/community/chat" 
+            element={<CommunityChatPlaceholder />} 
           />
           <Route 
             path="/contests" 

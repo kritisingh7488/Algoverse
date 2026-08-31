@@ -10,6 +10,7 @@ import {
   Compass, 
   BarChart3, 
   Trophy, 
+  Users,
   ChevronDown 
 } from 'lucide-react';
 import useAuthStore from '../../store/authStore';
@@ -27,6 +28,7 @@ const Navbar = ({ onToggleSidebar, isSidebarOpen }) => {
     { name: 'Playground', path: '/playground', icon: Code2 },
     { name: 'Benchmarks', path: '/benchmarks', icon: BarChart3 },
     { name: 'Contests', path: '/contests', icon: Trophy },
+    { name: 'Community', path: '/community', icon: Users },
   ];
 
   const handleLogout = () => {
@@ -56,7 +58,7 @@ const Navbar = ({ onToggleSidebar, isSidebarOpen }) => {
           <nav className="hidden md:flex items-center gap-0.5">
             {navLinks.map((link) => {
               const Icon = link.icon;
-              const isActive = location.pathname === link.path;
+              const isActive = location.pathname === link.path || (link.path === '/community' && location.pathname.startsWith('/community'));
               return (
                 <Link
                   key={link.path}
