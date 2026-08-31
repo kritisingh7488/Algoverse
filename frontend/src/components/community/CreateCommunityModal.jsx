@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Globe, Lock, Sparkles, CheckCircle2, AlertCircle, Eye } from 'lucide-react';
 import { COMMUNITY_CATEGORIES, EMOJI_PRESETS, saveCreatedCommunity } from '../../data/communityData';
 import useAuthStore from '../../store/authStore';
+import communityService from '../../api/communityService';
 import Button from '../common/Button';
 import Badge from '../common/Badge';
 
@@ -74,63 +75,51 @@ export const CreateCommunityModal = ({ isOpen, onClose, onCommunityCreated }) =>
     return Object.keys(errs).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateForm()) return;
 
     setIsSubmitting(true);
-
-    const slug = name.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-    const uniqueId = `custom-${slug}-${Date.now().toString().slice(-4)}`;
 
     const parsedRules = rulesText
       .split('\n')
       .map(r => r.trim())
       .filter(r => r.length > 0);
 
-    const newCommunity = {
-      id: uniqueId,
+    const payload = {
       name: name.trim(),
-      slug: slug || uniqueId,
       description: description.trim(),
       category: category,
-      icon: icon || '💬',
+      icon: icon || '⚡',
       gradient: 'from-primary/20 to-secondary/20',
       accentColor: '#FF8A80',
-      membersCount: 1, // Creator is first member
       isPrivate: isPrivate,
-      isTrending: false,
-      isVerified: false,
       tags: [category, 'New Guild', 'Community'],
       about: description.trim(),
       rules: parsedRules.length > 0 ? parsedRules : [
         'Be respectful and helpful to all members.',
         'Format code snippets properly.',
         'Share knowledge and learn together.'
-      ],
-      createdDate: 'Just now',
-      membersPreview: [
-        { 
-          id: 'creator', 
-          name: useAuthStore.getState().user?.fullName ? `${useAuthStore.getState().user.fullName} (Creator)` : 'You (Creator)', 
-          role: 'Founder & Moderator', 
-          avatar: useAuthStore.getState().user?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120&auto=format&fit=crop&q=80', 
-          xp: useAuthStore.getState().user?.xp || 100 
-        }
       ]
     };
 
-    // Save in local storage session
-    saveCreatedCommunity(newCommunity);
+    try {
+      const res = await communityService.createCommunity(payload);
+      const created = res.data;
 
-    setShowSuccessToast(true);
+      setShowSuccessToast(true);
 
-    setTimeout(() => {
-      if (onCommunityCreated) {
-        onCommunityCreated(newCommunity);
-      }
-      onClose();
-    }, 600);
+      setTimeout(() => {
+        if (onCommunityCreated) {
+          onCommunityCreated(created);
+        }
+        onClose();
+      }, 600);
+    } catch (err) {
+      console.error('Error creating community:', err);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (

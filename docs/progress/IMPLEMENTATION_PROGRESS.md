@@ -119,23 +119,25 @@
 
 ### Phase 12: Community & Contests
 - [x] **Community Phase 1 — UI + Foundation COMPLETE**
-  - **CURRENT (Phase 1 Implemented):**
-    - [x] Community discovery hub (`/community`) with responsive layout, header metrics, and search input
-    - [x] Search filtering across community names, descriptions, tags, and categories with zero-results empty state
-    - [x] Category filtering (11 categories: All, DSA, CP, C++, Java, Python, Web Dev, Algorithms, Interview Prep, Beginners, Other)
-    - [x] Sorting selector (Trending, Most Popular, Newest)
-    - [x] Trending This Week widget with ranked visual badges (#1 Gold, #2 Silver, #3 Bronze)
-    - [x] Interactive community cards with tags, member counts, verified indicators, and public/private badges
-    - [x] My Communities tab with session-joined communities, empty state, and login prompts for guests
-    - [x] Interactive Join/Leave toggle with session persistence
-    - [x] Create Community modal with field validation (name/desc), emoji icon presets, privacy toggle, rules input, and live card preview
-    - [x] Community detail preview page (`/community/:communityId`) with Overview & Rules, Discussions roadmap placeholder, Live Chat roadmap placeholder, and Members roster
-    - [x] Global Chat placeholder page (`/community/chat`) with channel preview and WebSocket roadmap notice
-    - [x] Full navigation integration (Navbar, Sidebar, AppLayout) and Light/Dark mode compatibility
-  - **FUTURE (Roadmap for Phase 2+):**
-    - [ ] Real community MongoDB database schemas & models
-    - [ ] Community CRUD REST APIs (`/api/v1/communities`)
-    - [ ] Database-persisted Join/Leave and user membership tracking
+- [x] **Community Phase 2 — Backend + Database Foundation COMPLETE**
+  - **CURRENT (Phase 1 & Phase 2 Implemented):**
+    - [x] Community Mongoose/MongoDB model (`backend/models/Community.js`) with validation, slug generator, member synchronization, and indexing
+    - [x] Community CRUD REST APIs (`/api/v1/communities`):
+      - `GET /api/v1/communities` (Search, Category filtering, Sorting by trending/popular/new, Pagination, Optional auth for `isJoined`)
+      - `GET /api/v1/communities/my` (Authenticated user's joined/created communities via `protect` middleware)
+      - `GET /api/v1/communities/trending` (Top 5 trending communities)
+      - `GET /api/v1/communities/:idOrSlug` (Single community by ID/slug with private access enforcement & populated creator/members)
+      - `POST /api/v1/communities` (Authenticated community creation with creator auto-joined)
+      - `POST /api/v1/communities/:id/join` (Persistent join membership toggle)
+      - `POST /api/v1/communities/:id/leave` (Persistent leave membership toggle with creator protection)
+      - `PUT /api/v1/communities/:id` (Community updates with owner/admin authorization)
+      - `DELETE /api/v1/communities/:id` (Community deletion with owner/admin authorization)
+    - [x] Auth middleware integration (`protect` for mutations, `optionalProtect` for public views with member detection)
+    - [x] Frontend API service layer (`frontend/src/api/communityService.js`) with resilient offline seed fallback
+    - [x] Community discovery hub (`/community`) with live API integration, loading skeletons, and empty state handlers
+    - [x] Community detail view (`/community/:communityId`) with API loading, 403 private access screen, and 404 handler
+    - [x] Create Community modal with live API submission and state updates
+  - **FUTURE (Roadmap for Phase 3+):**
     - [ ] Community post feed & post creation with Markdown support
     - [ ] Comments and nested reply threads
     - [ ] Post reactions (Like, Love, Insightful, Helpful, Celebrate)

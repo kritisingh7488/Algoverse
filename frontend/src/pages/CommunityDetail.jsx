@@ -23,6 +23,8 @@ import Card from '../components/common/Card';
 import Button from '../components/common/Button';
 import Badge from '../components/common/Badge';
 
+import useAuthStore from '../store/authStore';
+import communityService from '../api/communityService';
 import { 
   getAllCommunities, 
   getJoinedCommunityIds, 
@@ -32,33 +34,66 @@ import {
 export const CommunityDetail = () => {
   const { communityId } = useParams();
   const navigate = useNavigate();
+  const { isAuthenticated } = useAuthStore();
 
   const [community, setCommunity] = useState(null);
   const [isJoined, setIsJoined] = useState(false);
   const [activeTab, setActiveTab] = useState('about'); // 'about' | 'discussions' | 'chat' | 'members'
   const [copied, setCopied] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [errorStatus, setErrorStatus] = useState(null); // null | 403 | 404
 
   useEffect(() => {
-    const all = getAllCommunities();
-    const found = all.find(c => c.id === communityId || c.slug === communityId);
-    setCommunity(found || null);
+    let isMounted = true;
+    const fetchDetail = async () => {
+      setIsLoading(true);
+      setErrorStatus(null);
+      try {
+        const res = await communityService.getCommunityByIdOrSlug(communityId);
+        if (!isMounted) return;
 
-    const joined = getJoinedCommunityIds();
-    if (found) {
-      setIsJoined(joined.includes(found.id));
+        if (res.success && res.data) {
+          setCommunity(res.data);
+          setIsJoined(!!res.data.isJoined);
+        } else {
+          setErrorStatus(res.status || 404);
+        }
+      } catch (err) {
+        if (isMounted) setErrorStatus(err.response?.status || 404);
+      } finally {
+        if (isMounted) setIsLoading(false);
+      }
+    };
+
+    fetchDetail();
+    return () => { isMounted = false; };
+  }, [communityId, isAuthenticated]);
+
+  const handleToggleJoin = async () => {
+    if (!isAuthenticated) {
+      navigate('/login');
+      return;
     }
-  }, [communityId]);
-
-  const handleToggleJoin = () => {
     if (!community) return;
-    const updated = toggleJoinCommunity(community.id);
-    const nowJoined = updated.includes(community.id);
+
+    const commIdentifier = community.id || community._id || community.slug;
+    const nowJoined = !isJoined;
     setIsJoined(nowJoined);
 
     setCommunity(prev => ({
       ...prev,
-      membersCount: nowJoined ? prev.membersCount + 1 : Math.max(1, prev.membersCount - 1)
+      membersCount: nowJoined ? (prev.membersCount || 1) + 1 : Math.max(1, (prev.membersCount || 2) - 1)
     }));
+
+    try {
+      if (nowJoined) {
+        await communityService.joinCommunity(commIdentifier);
+      } else {
+        await communityService.leaveCommunity(commIdentifier);
+      }
+    } catch (err) {
+      console.error('Error toggling community join:', err);
+    }
   };
 
   const handleShare = () => {
@@ -66,6 +101,43 @@ export const CommunityDetail = () => {
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
+
+  if (isLoading) {
+    return (
+      <AppLayout>
+        <div className="py-16 max-w-lg mx-auto text-center space-y-4 font-body">
+          <div className="w-10 h-10 border-3 border-primary/20 border-t-primary rounded-full animate-spin mx-auto" />
+          <p className="text-xs text-textSecondary">Loading community...</p>
+        </div>
+      </AppLayout>
+    );
+  }
+
+  if (errorStatus === 403) {
+    return (
+      <AppLayout>
+        <div className="py-12 max-w-lg mx-auto text-center space-y-4 font-body">
+          <div className="w-14 h-14 rounded-3xl bg-warning/15 border border-warning/25 flex items-center justify-center text-warning mx-auto text-2xl shadow-xs">
+            🔒
+          </div>
+          <h2 className="text-xl font-heading font-bold text-textPrimary">
+            Private Community
+          </h2>
+          <p className="text-xs sm:text-sm text-textSecondary leading-relaxed">
+            This study group is private. You must be an approved member to view details and discussions.
+          </p>
+          <div className="flex justify-center gap-2 pt-2">
+            <Link to="/community">
+              <Button variant="outline" size="md" className="gap-1.5">
+                <ArrowLeft className="w-4 h-4" />
+                <span>Back to Communities</span>
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </AppLayout>
+    );
+  }
 
   if (!community) {
     return (

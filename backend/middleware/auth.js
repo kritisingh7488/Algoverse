@@ -26,6 +26,29 @@ const protect = async (req, res, next) => {
     }
 };
 
+const optionalProtect = async (req, res, next) => {
+    try {
+        let token;
+        if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+            token = req.headers.authorization.split(' ')[1];
+        }
+
+        if (token) {
+            const decoded = verifyToken(token);
+            if (decoded && decoded.id) {
+                const user = await User.findById(decoded.id).select('-password');
+                if (user) {
+                    req.user = user;
+                }
+            }
+        }
+        next();
+    } catch (error) {
+        // If token is expired or invalid, proceed as guest without error
+        next();
+    }
+};
+
 const admin = (req, res, next) => {
     if (req.user && req.user.role === 'admin') {
         next();
@@ -34,4 +57,4 @@ const admin = (req, res, next) => {
     }
 };
 
-module.exports = { protect, admin };
+module.exports = { protect, optionalProtect, admin };

@@ -28,7 +28,7 @@ import CommunityCard from '../components/community/CommunityCard';
 import TrendingCommunities from '../components/community/TrendingCommunities';
 import MyCommunities from '../components/community/MyCommunities';
 import CreateCommunityModal from '../components/community/CreateCommunityModal';
-
+import communityService from '../api/communityService';
 import { 
   getAllCommunities, 
   getJoinedCommunityIds, 
@@ -49,14 +49,28 @@ const Community = () => {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Initialize data from local state / seed
+  // Initialize data from API (with fallback)
   useEffect(() => {
-    const loaded = getAllCommunities();
-    const joined = getJoinedCommunityIds();
-    setCommunities(loaded);
-    setJoinedIds(joined);
-    setIsLoading(false);
-  }, []);
+    let isMounted = true;
+    const loadCommunityData = async () => {
+      setIsLoading(true);
+      try {
+        const result = await communityService.getCommunities();
+        if (isMounted && result.data) {
+          setCommunities(result.data);
+          const joined = result.data.filter(c => c.isJoined).map(c => c.id || c._id);
+          setJoinedIds(joined);
+        }
+      } catch (err) {
+        console.error('Failed to load communities:', err);
+      } finally {
+        if (isMounted) setIsLoading(false);
+      }
+    };
+
+    loadCommunityData();
+    return () => { isMounted = false; };
+  }, [isAuthenticated]);
 
   // Guarded Create Click
   const handleCreateClick = () => {
@@ -68,31 +82,44 @@ const Community = () => {
   };
 
   // Handle Join Toggle
-  const handleToggleJoin = (communityId) => {
+  const handleToggleJoin = async (communityId) => {
     if (!isAuthenticated) {
       setIsAuthModalOpen(true);
       return;
     }
-    const updated = toggleJoinCommunity(communityId);
-    setJoinedIds(updated);
 
-    // Increment/Decrement member count in local state
+    const wasJoined = joinedIds.includes(communityId);
+
+    // Optimistic UI update
+    setJoinedIds(prev => wasJoined ? prev.filter(id => id !== communityId) : [...prev, communityId]);
     setCommunities(prev => prev.map(c => {
-      if (c.id === communityId) {
-        const wasJoined = joinedIds.includes(communityId);
+      const match = (c.id === communityId || c._id === communityId || c.slug === communityId);
+      if (match) {
         return {
           ...c,
+          isJoined: !wasJoined,
           membersCount: wasJoined ? Math.max(1, c.membersCount - 1) : c.membersCount + 1
         };
       }
       return c;
     }));
+
+    // Trigger API call
+    try {
+      if (wasJoined) {
+        await communityService.leaveCommunity(communityId);
+      } else {
+        await communityService.joinCommunity(communityId);
+      }
+    } catch (err) {
+      console.error('Error toggling join status:', err);
+    }
   };
 
   // Handle newly created community
   const handleCommunityCreated = (newCommunity) => {
     setCommunities(prev => [newCommunity, ...prev]);
-    setJoinedIds(prev => [...prev, newCommunity.id]);
+    setJoinedIds(prev => [...prev, newCommunity.id || newCommunity._id]);
     setSelectedCategory('All');
     setSearchQuery('');
     setActiveTab('my-communities');

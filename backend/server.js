@@ -15,6 +15,7 @@ const backtrackingRoutes = require('./routes/backtrackingRoutes');
 const dpRoutes = require('./routes/dpRoutes');
 const userRoutes = require('./routes/userRoutes');
 const executeRoutes = require('./routes/executeRoutes');
+const communityRoutes = require('./routes/communityRoutes');
 
 dotenv.config();
 
@@ -67,6 +68,7 @@ app.use('/api/v1/backtracking', backtrackingRoutes);
 app.use('/api/v1/dp', dpRoutes);
 app.use('/api/v1/user', userRoutes);
 app.use('/api/v1/execute', executeRoutes);
+app.use('/api/v1/communities', communityRoutes);
 
 
 // Database Connection & Server Listener

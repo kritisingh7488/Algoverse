@@ -390,19 +390,19 @@ Every AI session MUST update it.
 
 ## Current Phase
 
-Community Phase 1 — UI + Foundation COMPLETE
+Community Phase 2 — Backend + Database Foundation COMPLETE
 
 ---
 
 ## Current Module
 
-Community Hub (Discovery, Search, Category Filters, Trending Demo, My Communities Demo, Create Community Modal, Detail Preview & Global Chat Placeholder)
+Community Backend API & Service Layer (`/api/v1/communities`, `Community.js`, `communityController.js`, `communityRoutes.js`, `communityService.js`)
 
 ---
 
 ## Current Feature
 
-Community UI, Isolated Seed Data, Navigation Integration, Light/Dark Mode, Detail Page, and Session Demo Helpers
+Community MongoDB Model, Full CRUD REST Endpoints, Auth/OptionalAuth Middleware Integration, Membership & Access Rules, Service Layer with Offline Fallback
 
 ---
 
@@ -545,6 +545,10 @@ frontend/src/components/community/MyCommunities.jsx
 frontend/src/components/community/CreateCommunityModal.jsx
 frontend/src/pages/CommunityDetail.jsx
 frontend/src/pages/CommunityChatPlaceholder.jsx
+backend/models/Community.js
+backend/controllers/communityController.js
+backend/routes/communityRoutes.js
+frontend/src/api/communityService.js
 frontend/src/pages/Contests.jsx
 frontend/src/pages/Profile.jsx
 frontend/src/pages/Settings.jsx
@@ -564,10 +568,15 @@ frontend/src/App.jsx
 
 ## Files Modified This Session
 
+- `backend/models/Community.js` (NEW)
+- `backend/controllers/communityController.js` (NEW)
+- `backend/routes/communityRoutes.js` (NEW)
+- `frontend/src/api/communityService.js` (NEW)
+- `backend/middleware/auth.js`
+- `backend/server.js`
 - `frontend/src/pages/Community.jsx`
-- `frontend/src/App.jsx`
-- `frontend/src/components/layout/Navbar.jsx`
-- `frontend/src/components/layout/Sidebar.jsx`
+- `frontend/src/pages/CommunityDetail.jsx`
+- `frontend/src/components/community/CreateCommunityModal.jsx`
 - `docs/progress/IMPLEMENTATION_PROGRESS.md`
 - `docs/00_PROJECT_STATE.md`
 
