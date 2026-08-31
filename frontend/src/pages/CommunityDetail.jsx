@@ -16,7 +16,11 @@ import {
   Calendar,
   AlertCircle,
   HelpCircle,
-  Hash
+  Hash,
+  Search,
+  SlidersHorizontal,
+  Loader2,
+  Edit3
 } from 'lucide-react';
 import AppLayout from '../layouts/AppLayout';
 import Card from '../components/common/Card';
@@ -25,6 +29,9 @@ import Badge from '../components/common/Badge';
 
 import useAuthStore from '../store/authStore';
 import communityService from '../api/communityService';
+import PostCard from '../components/community/PostCard';
+import CreatePostModal from '../components/community/CreatePostModal';
+import { POST_TYPES } from '../components/community/PostTypeBadge';
 import { 
   getAllCommunities, 
   getJoinedCommunityIds, 
@@ -42,6 +49,14 @@ export const CommunityDetail = () => {
   const [copied, setCopied] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [errorStatus, setErrorStatus] = useState(null); // null | 403 | 404
+
+  // Discussions feed state
+  const [posts, setPosts] = useState([]);
+  const [postsLoading, setPostsLoading] = useState(false);
+  const [postTypeFilter, setPostTypeFilter] = useState('All');
+  const [postSearch, setPostSearch] = useState('');
+  const [postSort, setPostSort] = useState('newest');
+  const [isCreatePostOpen, setIsCreatePostOpen] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -68,6 +83,36 @@ export const CommunityDetail = () => {
     fetchDetail();
     return () => { isMounted = false; };
   }, [communityId, isAuthenticated]);
+
+  // Fetch discussions when switching to discussions tab or changing filters
+  useEffect(() => {
+    if (activeTab !== 'discussions' || !community) return;
+
+    let isMounted = true;
+    const fetchCommunityPosts = async () => {
+      setPostsLoading(true);
+      try {
+        const commIdentifier = community.slug || community.id || community._id;
+        const res = await communityService.getPosts({
+          communityId: commIdentifier,
+          postType: postTypeFilter,
+          search: postSearch,
+          sort: postSort
+        });
+
+        if (isMounted && res.success && Array.isArray(res.data)) {
+          setPosts(res.data);
+        }
+      } catch (err) {
+        console.error('Error fetching discussions:', err);
+      } finally {
+        if (isMounted) setPostsLoading(false);
+      }
+    };
+
+    fetchCommunityPosts();
+    return () => { isMounted = false; };
+  }, [activeTab, community, postTypeFilter, postSearch, postSort]);
 
   const handleToggleJoin = async () => {
     if (!isAuthenticated) {
@@ -102,12 +147,17 @@ export const CommunityDetail = () => {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const handlePostCreated = (newPost) => {
+    setPosts(prev => [newPost, ...prev]);
+    setActiveTab('discussions');
+  };
+
   if (isLoading) {
     return (
       <AppLayout>
-        <div className="py-16 max-w-lg mx-auto text-center space-y-4 font-body">
-          <div className="w-10 h-10 border-3 border-primary/20 border-t-primary rounded-full animate-spin mx-auto" />
-          <p className="text-xs text-textSecondary">Loading community...</p>
+        <div className="py-20 flex flex-col items-center justify-center gap-3 text-textSecondary font-body">
+          <div className="w-8 h-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+          <p className="text-xs sm:text-sm font-heading font-semibold">Loading guild details...</p>
         </div>
       </AppLayout>
     );
@@ -116,7 +166,7 @@ export const CommunityDetail = () => {
   if (errorStatus === 403) {
     return (
       <AppLayout>
-        <div className="py-12 max-w-lg mx-auto text-center space-y-4 font-body">
+        <div className="py-16 max-w-lg mx-auto text-center space-y-4 font-body">
           <div className="w-14 h-14 rounded-3xl bg-warning/15 border border-warning/25 flex items-center justify-center text-warning mx-auto text-2xl shadow-xs">
             🔒
           </div>
@@ -142,7 +192,7 @@ export const CommunityDetail = () => {
   if (!community) {
     return (
       <AppLayout>
-        <div className="py-12 max-w-lg mx-auto text-center space-y-4">
+        <div className="py-12 max-w-lg mx-auto text-center space-y-4 font-body">
           <div className="w-14 h-14 rounded-3xl bg-danger/15 border border-danger/25 flex items-center justify-center text-danger mx-auto text-2xl shadow-xs">
             ⚠️
           </div>
@@ -165,110 +215,110 @@ export const CommunityDetail = () => {
 
   return (
     <AppLayout>
-      <div className="space-y-5 py-2 max-w-5xl mx-auto">
-        
-        {/* Breadcrumb Navigation */}
-        <div className="flex items-center gap-2 text-xs font-heading font-semibold text-textSecondary">
-          <Link to="/community" className="hover:text-primary transition-colors flex items-center gap-1">
-            <ArrowLeft className="w-3.5 h-3.5" />
-            <span>Community Hub</span>
+      <div className="space-y-6 max-w-6xl mx-auto font-body pb-12">
+        {/* Back Link */}
+        <div className="flex items-center justify-between">
+          <Link
+            to="/community"
+            className="inline-flex items-center gap-1.5 text-xs font-heading font-semibold text-textSecondary hover:text-primary transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            <span>Back to Communities</span>
           </Link>
-          <span>/</span>
-          <span className="text-textPrimary truncate">{community.name}</span>
         </div>
 
-        {/* Community Banner Header Card */}
-        <Card className="relative overflow-hidden bg-card border-[1.5px] border-borderTheme p-5 sm:p-7 shadow-medium">
-          {/* Top Decorative Gradient */}
-          <div className={`absolute top-0 left-0 right-0 h-24 bg-gradient-to-r ${community.gradient || 'from-primary/20 to-secondary/20'} border-b border-borderTheme/50`} />
+        {/* Community Hero Card */}
+        <Card className="bg-card border-[1.5px] border-borderTheme p-6 sm:p-8 shadow-soft relative overflow-hidden">
+          <div
+            className={`absolute top-0 right-0 w-72 h-72 rounded-full bg-gradient-to-br ${community.gradient} blur-3xl opacity-20 pointer-events-none -mr-20 -mt-20`}
+          />
 
-          <div className="relative pt-12 flex flex-col sm:flex-row sm:items-end justify-between gap-5">
-            {/* Left: Icon, Name, Category, Badges */}
-            <div className="flex items-end gap-4">
-              <div className="w-20 h-20 rounded-3xl bg-card border-2 border-borderTheme flex items-center justify-center text-4xl shadow-medium shrink-0">
-                {community.icon || '💬'}
+          <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div className="flex items-start sm:items-center gap-4">
+              <div
+                className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl flex items-center justify-center text-3xl sm:text-4xl shadow-xs border border-borderTheme shrink-0 bg-surface"
+                style={{ backgroundColor: `${community.accentColor}15` }}
+              >
+                {community.icon || '⚡'}
               </div>
-
-              <div className="space-y-1 pb-0.5">
+              <div className="space-y-1.5 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <h1 className="text-xl sm:text-2xl font-heading font-bold text-textPrimary">
+                  <h1 className="text-xl sm:text-2xl font-heading font-bold text-textPrimary leading-tight">
                     {community.name}
                   </h1>
                   {community.isVerified && (
-                    <ShieldCheck className="w-5 h-5 text-primary shrink-0" title="Verified Community" />
+                    <span className="flex items-center gap-0.5 text-[10px] font-heading font-semibold px-2 py-0.5 rounded-full bg-primary/15 text-primary border border-primary/25">
+                      <ShieldCheck className="w-3 h-3" />
+                      <span>Verified</span>
+                    </span>
+                  )}
+                  {community.isPrivate ? (
+                    <span className="flex items-center gap-0.5 text-[10px] font-heading font-semibold px-2 py-0.5 rounded-full bg-warning/15 text-warning border border-warning/25">
+                      <Lock className="w-3 h-3" />
+                      <span>Private</span>
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-0.5 text-[10px] font-heading font-semibold px-2 py-0.5 rounded-full bg-secondary/15 text-secondary border border-secondary/25">
+                      <Globe className="w-3 h-3" />
+                      <span>Public</span>
+                    </span>
                   )}
                 </div>
-
-                <div className="flex items-center gap-2 text-xs text-textSecondary font-body">
-                  <Badge variant="primary" size="sm">
-                    {community.category}
-                  </Badge>
-                  <span className="flex items-center gap-1 text-[11px]">
-                    {community.isPrivate ? (
-                      <>
-                        <Lock className="w-3 h-3 text-warning" />
-                        <span>Private Guild</span>
-                      </>
-                    ) : (
-                      <>
-                        <Globe className="w-3 h-3 text-success" />
-                        <span>Public Community</span>
-                      </>
-                    )}
-                  </span>
-                  <span>•</span>
+                <p className="text-xs sm:text-sm text-textSecondary font-body max-w-2xl leading-relaxed">
+                  {community.description}
+                </p>
+                <div className="flex items-center gap-4 text-xs font-heading font-semibold text-textSecondary pt-1 flex-wrap">
                   <span className="flex items-center gap-1">
-                    <Users className="w-3 h-3 text-secondary" />
+                    <Users className="w-3.5 h-3.5 text-primary" />
                     <span>{(community.membersCount || 0).toLocaleString()} Members</span>
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <Hash className="w-3.5 h-3.5 text-secondary" />
+                    <span>{community.category}</span>
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <Calendar className="w-3.5 h-3.5 text-accent" />
+                    <span>Est. {community.createdDate || '2025'}</span>
                   </span>
                 </div>
               </div>
             </div>
 
-            {/* Right: Actions (Join & Share) */}
-            <div className="flex items-center gap-2.5 shrink-0 self-start sm:self-auto">
+            {/* Action CTAs */}
+            <div className="flex items-center gap-2.5 shrink-0">
               <Button
                 variant="outline"
-                size="md"
+                size="sm"
                 onClick={handleShare}
                 className="gap-1.5"
-                title="Share link"
               >
-                <Share2 className="w-4 h-4" />
-                <span>{copied ? 'Link Copied!' : 'Share'}</span>
+                {copied ? <Check className="w-3.5 h-3.5 text-success" /> : <Share2 className="w-3.5 h-3.5" />}
+                <span>{copied ? 'Copied' : 'Share'}</span>
               </Button>
-
               <Button
                 variant={isJoined ? 'outline' : 'primary'}
-                size="md"
+                size="sm"
                 onClick={handleToggleJoin}
-                className="gap-1.5 shadow-soft min-w-[110px]"
+                className="gap-1.5"
               >
                 {isJoined ? (
                   <>
-                    <Check className="w-4 h-4 text-success" />
-                    <span>Joined</span>
+                    <Check className="w-3.5 h-3.5 text-success" />
+                    <span>Joined Guild</span>
                   </>
                 ) : (
                   <>
-                    <Plus className="w-4 h-4" />
-                    <span>Join Guild</span>
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Join Community</span>
                   </>
                 )}
               </Button>
             </div>
           </div>
-
-          {/* Description */}
-          <div className="pt-5 mt-5 border-t border-borderTheme/70">
-            <p className="text-xs sm:text-sm text-textSecondary font-body leading-relaxed max-w-3xl">
-              {community.description}
-            </p>
-          </div>
         </Card>
 
         {/* Tab Navigation */}
-        <div className="flex items-center gap-1 p-1 rounded-xl bg-surface border border-borderTheme/80 self-start overflow-x-auto">
+        <div className="flex items-center gap-1 bg-surface p-1 rounded-xl border border-borderTheme w-full sm:w-fit overflow-x-auto">
           <button
             onClick={() => setActiveTab('about')}
             className={`px-4 py-2 rounded-lg text-xs font-heading font-bold transition-all flex items-center gap-1.5 ${
@@ -290,7 +340,11 @@ export const CommunityDetail = () => {
           >
             <MessageSquare className="w-3.5 h-3.5" />
             <span>Discussions</span>
-            <span className="px-1.5 py-0.2 rounded-full bg-primary/15 text-primary text-[9px]">Preview</span>
+            {posts.length > 0 && (
+              <span className="px-1.5 py-0.2 rounded-full bg-primary/15 text-primary text-[10px]">
+                {posts.length}
+              </span>
+            )}
           </button>
           <button
             onClick={() => setActiveTab('chat')}
@@ -320,7 +374,6 @@ export const CommunityDetail = () => {
         {/* Tab 1: About & Rules */}
         {activeTab === 'about' && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-            {/* Left 2 Cols: About & Rules */}
             <div className="md:col-span-2 space-y-5">
               <Card className="bg-card border-[1.5px] border-borderTheme p-5 shadow-soft space-y-3">
                 <h3 className="text-sm font-heading font-bold text-textPrimary">
@@ -343,7 +396,6 @@ export const CommunityDetail = () => {
                 )}
               </Card>
 
-              {/* Rules Card */}
               <Card className="bg-card border-[1.5px] border-borderTheme p-5 shadow-soft space-y-3">
                 <div className="flex items-center gap-2 pb-2 border-b border-borderTheme">
                   <ShieldCheck className="w-4 h-4 text-primary" />
@@ -354,7 +406,8 @@ export const CommunityDetail = () => {
                 <div className="space-y-2.5">
                   {(community.rules || [
                     'Be respectful and constructive with feedback.',
-                    'Keep algorithm discussions friendly for all skill levels.'
+                    'Keep algorithm discussions friendly for all skill levels.',
+                    'Cite time and space complexity when presenting solutions.'
                   ]).map((rule, idx) => (
                     <div key={idx} className="flex items-start gap-2.5 text-xs font-body text-textSecondary">
                       <span className="w-5 h-5 rounded-full bg-primary/15 text-primary font-heading font-bold flex items-center justify-center text-[10px] shrink-0">
@@ -367,7 +420,6 @@ export const CommunityDetail = () => {
               </Card>
             </div>
 
-            {/* Right 1 Col: Quick Info */}
             <div className="space-y-4">
               <Card className="bg-card border-[1.5px] border-borderTheme p-5 shadow-soft space-y-3">
                 <h4 className="text-xs font-heading font-bold text-textPrimary">
@@ -397,34 +449,143 @@ export const CommunityDetail = () => {
                   </div>
                 </div>
               </Card>
+
+              {/* Discussion Shortcut Card */}
+              <Card className="bg-primary/5 border-[1.5px] border-primary/20 p-5 shadow-soft space-y-2 text-center">
+                <h4 className="text-xs font-heading font-bold text-textPrimary">Have an Algorithm Question?</h4>
+                <p className="text-[11px] text-textSecondary">
+                  Start a discussion, share a solution breakdown, or ask for peer review.
+                </p>
+                <Button
+                  size="xs"
+                  variant="primary"
+                  className="w-full gap-1.5 mt-1"
+                  onClick={() => {
+                    setActiveTab('discussions');
+                    setIsCreatePostOpen(true);
+                  }}
+                >
+                  <Edit3 className="w-3 h-3" />
+                  <span>Start Discussion</span>
+                </Button>
+              </Card>
             </div>
           </div>
         )}
 
-        {/* Tab 2: Discussions Placeholder */}
+        {/* Tab 2: Live Community Discussions Feed (PHASE 3) */}
         {activeTab === 'discussions' && (
-          <Card className="text-center py-14 px-6 bg-card border-[1.5px] border-borderTheme shadow-soft space-y-4">
-            <div className="w-14 h-14 rounded-3xl bg-primary/15 border border-primary/25 flex items-center justify-center text-primary mx-auto text-2xl shadow-xs">
-              💬
-            </div>
-            <div className="space-y-1.5 max-w-md mx-auto">
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/15 text-primary text-xs font-heading font-bold">
-                <Sparkles className="w-3.5 h-3.5" />
-                <span>Feature Roadmap</span>
+          <div className="space-y-5">
+            {/* Discussions Controls Header */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-card p-4 rounded-xl border border-borderTheme">
+              {/* Search Bar */}
+              <div className="relative flex-1 max-w-md">
+                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-textSecondary" />
+                <input
+                  type="text"
+                  value={postSearch}
+                  onChange={(e) => setPostSearch(e.target.value)}
+                  placeholder="Search discussions, tags, or topics..."
+                  className="w-full pl-9 pr-3.5 py-1.5 rounded-lg bg-surface border border-borderTheme focus:border-primary focus:outline-hidden text-xs text-textPrimary placeholder:text-textSecondary/60"
+                />
               </div>
-              <h3 className="text-lg font-heading font-bold text-textPrimary">
-                Community Discussions — Coming Next
-              </h3>
-              <p className="text-xs sm:text-sm text-textSecondary font-body leading-relaxed">
-                Post questions, share algorithm solution breakdowns, code reviews, and upvote the most insightful community answers.
-              </p>
+
+              {/* Sort Dropdown & Create Post CTA */}
+              <div className="flex items-center gap-2">
+                <select
+                  value={postSort}
+                  onChange={(e) => setPostSort(e.target.value)}
+                  className="px-3 py-1.5 rounded-lg bg-surface border border-borderTheme text-xs font-heading font-semibold text-textSecondary focus:border-primary focus:outline-hidden"
+                >
+                  <option value="newest">Newest First</option>
+                  <option value="popular">Most Popular</option>
+                  <option value="most_commented">Most Discussed</option>
+                </select>
+
+                <Button
+                  size="sm"
+                  variant="primary"
+                  onClick={() => setIsCreatePostOpen(true)}
+                  className="gap-1.5 shrink-0"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Create Post</span>
+                </Button>
+              </div>
             </div>
-            <div className="pt-2">
-              <Button variant="outline" size="sm" onClick={() => setActiveTab('about')}>
-                Return to Overview
-              </Button>
+
+            {/* Post Type Chips */}
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+              <button
+                onClick={() => setPostTypeFilter('All')}
+                className={`px-3 py-1 rounded-full text-xs font-heading font-semibold transition-all shrink-0 border ${
+                  postTypeFilter === 'All'
+                    ? 'bg-primary text-white border-primary shadow-xs'
+                    : 'bg-surface text-textSecondary hover:text-textPrimary border-borderTheme'
+                }`}
+              >
+                All Posts
+              </button>
+              {POST_TYPES.map(t => (
+                <button
+                  key={t.id}
+                  onClick={() => setPostTypeFilter(t.id)}
+                  className={`px-3 py-1 rounded-full text-xs font-heading font-semibold transition-all shrink-0 border ${
+                    postTypeFilter === t.id
+                      ? 'bg-primary text-white border-primary shadow-xs'
+                      : 'bg-surface text-textSecondary hover:text-textPrimary border-borderTheme'
+                  }`}
+                >
+                  {t.label}
+                </button>
+              ))}
             </div>
-          </Card>
+
+            {/* Discussions List */}
+            {postsLoading ? (
+              <div className="py-16 flex flex-col items-center justify-center gap-2 text-textSecondary">
+                <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                <span className="text-xs font-heading">Loading discussions...</span>
+              </div>
+            ) : posts.length === 0 ? (
+              <Card className="text-center py-14 px-6 bg-card border-[1.5px] border-borderTheme shadow-soft space-y-4">
+                <div className="w-14 h-14 rounded-3xl bg-primary/15 border border-primary/25 flex items-center justify-center text-primary mx-auto text-2xl shadow-xs">
+                  💬
+                </div>
+                <div className="space-y-1.5 max-w-md mx-auto">
+                  <h3 className="text-base font-heading font-bold text-textPrimary">
+                    No discussions found
+                  </h3>
+                  <p className="text-xs text-textSecondary font-body leading-relaxed">
+                    {postSearch || postTypeFilter !== 'All'
+                      ? 'No posts match your current search and type filters. Try adjusting your query.'
+                      : `Be the first to share an algorithm insight or question in ${community.name}!`}
+                  </p>
+                </div>
+                <div className="pt-2">
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={() => setIsCreatePostOpen(true)}
+                    className="gap-1.5"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Create First Post</span>
+                  </Button>
+                </div>
+              </Card>
+            ) : (
+              <div className="space-y-3.5">
+                {posts.map((post) => (
+                  <PostCard
+                    key={post._id || post.id}
+                    post={post}
+                    communityId={community.slug || community.id}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
         )}
 
         {/* Tab 3: Live Chat Placeholder */}
@@ -436,63 +597,63 @@ export const CommunityDetail = () => {
             <div className="space-y-1.5 max-w-md mx-auto">
               <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-secondary/15 text-secondary text-xs font-heading font-bold">
                 <Sparkles className="w-3.5 h-3.5" />
-                <span>Feature Roadmap</span>
+                <span>Feature Roadmap — Phase 4</span>
               </div>
               <h3 className="text-lg font-heading font-bold text-textPrimary">
-                Community Chat — Coming Next
+                Community Live Chat Rooms
               </h3>
               <p className="text-xs sm:text-sm text-textSecondary font-body leading-relaxed">
-                Real-time room channels for <strong>{community.name}</strong> with code syntax highlighting and peer debugging.
+                Real-time WebSocket chat channels for <strong>{community.name}</strong> with syntax highlighting, peer debugging, and live presence.
               </p>
             </div>
             <div className="pt-2">
-              <Button variant="outline" size="sm" onClick={() => setActiveTab('about')}>
-                Return to Overview
+              <Button variant="outline" size="sm" onClick={() => setActiveTab('discussions')}>
+                View Discussions Feed
               </Button>
             </div>
           </Card>
         )}
 
-        {/* Tab 4: Members Preview */}
+        {/* Tab 4: Members List */}
         {activeTab === 'members' && (
-          <Card className="bg-card border-[1.5px] border-borderTheme p-5 shadow-soft space-y-4">
-            <div className="flex items-center justify-between gap-2 pb-2 border-b border-borderTheme">
-              <h3 className="text-sm font-heading font-bold text-textPrimary">
-                Guild Leaders & Members
-              </h3>
-              <span className="text-xs text-textSecondary font-body">
-                {(community.membersPreview || []).length} Shown
-              </span>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {(community.membersPreview || []).map((m) => (
-                <div
-                  key={m.id}
-                  className="p-3 rounded-xl bg-surface/60 hover:bg-surface border border-borderTheme/70 transition-colors flex items-center gap-3"
-                >
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+            {(community.membersPreview || []).map((m) => (
+              <Card
+                key={m.id}
+                className="p-4 bg-card border-[1.5px] border-borderTheme hover:border-primary/40 transition-all shadow-soft flex items-center gap-3.5"
+              >
+                {m.avatar ? (
                   <img
                     src={m.avatar}
                     alt={m.name}
-                    className="w-9 h-9 rounded-full object-cover border border-borderTheme shrink-0"
+                    className="w-10 h-10 rounded-full object-cover border border-borderTheme shrink-0"
                   />
-                  <div className="min-w-0 flex-1">
-                    <h4 className="text-xs font-heading font-bold text-textPrimary truncate">
-                      {m.name}
-                    </h4>
-                    <p className="text-[11px] text-textSecondary font-body truncate">
-                      {m.role}
-                    </p>
+                ) : (
+                  <div className="w-10 h-10 rounded-full bg-primary/15 text-primary flex items-center justify-center font-bold text-sm shrink-0 border border-primary/20">
+                    {m.name[0]?.toUpperCase() || <Users className="w-5 h-5" />}
                   </div>
-                  <Badge variant="primary" size="sm" className="shrink-0 text-[10px]">
+                )}
+                <div className="min-w-0">
+                  <h4 className="text-xs sm:text-sm font-heading font-bold text-textPrimary truncate">
+                    {m.name}
+                  </h4>
+                  <p className="text-[11px] text-textSecondary truncate">{m.role}</p>
+                  <span className="text-[10px] text-primary font-heading font-semibold">
                     {m.xp} XP
-                  </Badge>
+                  </span>
                 </div>
-              ))}
-            </div>
-          </Card>
+              </Card>
+            ))}
+          </div>
         )}
 
+        {/* Create Post Modal */}
+        <CreatePostModal
+          isOpen={isCreatePostOpen}
+          onClose={() => setIsCreatePostOpen(false)}
+          communityId={community.slug || community.id || community._id}
+          onPostCreated={handlePostCreated}
+        />
       </div>
     </AppLayout>
   );

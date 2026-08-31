@@ -13,6 +13,7 @@ import BenchmarkCenter from './pages/BenchmarkCenter';
 import CodePlayground from './pages/CodePlayground';
 import Community from './pages/Community';
 import CommunityDetail from './pages/CommunityDetail';
+import PostDetail from './pages/PostDetail';
 import CommunityChatPlaceholder from './pages/CommunityChatPlaceholder';
 import Contests from './pages/Contests';
 import Profile from './pages/Profile';
@@ -123,6 +124,10 @@ function App() {
           <Route 
             path="/community/:communityId" 
             element={<CommunityDetail />} 
+          />
+          <Route 
+            path="/community/:communityId/post/:postId" 
+            element={<PostDetail />} 
           />
           <Route 
             path="/community/chat" 

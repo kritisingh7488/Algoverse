@@ -119,22 +119,30 @@
 
 ### Phase 12: Community & Contests
 - [x] **Community Phase 1 — UI + Foundation COMPLETE**
-- [x] **Community Phase 2 — Backend + Database Foundation VERIFIED**
-  - **Integration Verification: 34/34 tests passed (100% pass rate on live MongoDB Atlas)**
-  - **Verified Scope:**
-    - [x] MongoDB CRUD and persistence (Create, fetch by slug & ID, update, and permanent delete)
-    - [x] Authentication (401 for missing/invalid/expired tokens, 200 for valid JWT)
-    - [x] Authorization (403 for unauthorized user update/delete, 200 for owner and admin)
-    - [x] Private community access rules (403 for guests and non-members, 200 for members/creator/admin)
-    - [x] Join/Leave data invariants (atomic `$addToSet`/`$pull`, `membersCount === members.length`, no duplicate members, creator cannot leave)
-    - [x] Optional authentication & `isJoined` detection computed directly from token
-    - [x] Search, category filtering, and sorting (`trending`, `popular`, `new`)
-    - [x] Pagination boundaries and out-of-bounds handling
-    - [x] Slug generation with special character sanitization and collision suffix deduplication
-    - [x] Direct database cleanup after test executions
-    - [x] Frontend service layer (`communityService.js`) with resilient fallback
+- [x] **Community Phase 2 — Backend + Database Foundation VERIFIED** (34/34 tests passed)
+- [x] **Community Phase 3 — Posts, Discussions, Comments & Reactions COMPLETE**
+  - **Integration Verification: 18/18 tests passed (52/52 total community tests passing, 100%)**
+  - **Implemented & Verified Scope:**
+    - [x] Post MongoDB/Mongoose model (`backend/models/Post.js`) with validation, tags, postType enum, reactions summary, viewsCount, and bookmarks
+    - [x] Comment MongoDB/Mongoose model (`backend/models/Comment.js`) supporting threaded nested hierarchy (`parentComment`), replyCount, and likes
+    - [x] Post REST APIs (`/api/v1/posts` & `/api/v1/communities/:communityId/posts`):
+      - Create Post with Markdown validation, title constraints & private guild membership verification
+      - Feed retrieval with search, tags, postType filtering (`Discussion`, `Question`, `Help`, `Code`, `Resource`, `Announcement`), sorting (`newest`, `popular`, `most_commented`) & pagination
+      - Single post view with automatic atomic `viewsCount` increment
+      - Post reactions with multi-type toggling (*Like 👍, Love ❤️, Insightful 💡, Helpful 🤝, Celebrate 🎉*), reaction switching & accurate counter summaries
+      - Post bookmarking toggle
+      - Post updates & cascading deletion (removes all associated comments)
+    - [x] Comment REST APIs (`/api/v1/posts/:postId/comments` & `/api/v1/comments`):
+      - Create top-level comments and nested replies
+      - Threaded comment tree generation with hierarchical replies
+      - Like comment toggles & comment editing/deletion
+    - [x] Custom secure Markdown Renderer (`frontend/src/components/common/MarkdownRenderer.jsx`) with syntax-highlighted code blocks, copy code button, blockquotes, lists & tables
+    - [x] Interactive Post Card (`frontend/src/components/community/PostCard.jsx`) & Post Type Badges
+    - [x] Create Post Modal (`frontend/src/components/community/CreatePostModal.jsx`) with dual Write/Preview tabs & formatting tools
+    - [x] Dedicated Post Detail Page (`frontend/src/pages/PostDetail.jsx`) at `/community/:communityId/post/:postId`
+    - [x] Threaded Comments Section (`frontend/src/components/community/CommentsSection.jsx` & `CommentItem.jsx`)
+    - [x] Replaced `Discussions — Coming Next` placeholder in `CommunityDetail.jsx` with the live Discussion Feed
   - **Remaining Community Roadmap (Future Phases):**
-    - **Phase 3 Remains:** Posts, Markdown discussions, comments/replies, and reactions/voting
     - **Phase 4 Remains:** Real-time Global Chat and Community Chat rooms via WebSockets
     - **Phase 5 Remains:** Notifications, moderation, reputation, badges, and leaderboards
 - [ ] Weekly Algorithm Contests (`Contests.jsx`) — Placeholder (Full contest engine planned for future phase)

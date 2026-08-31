@@ -16,6 +16,8 @@ const dpRoutes = require('./routes/dpRoutes');
 const userRoutes = require('./routes/userRoutes');
 const executeRoutes = require('./routes/executeRoutes');
 const communityRoutes = require('./routes/communityRoutes');
+const postRoutes = require('./routes/postRoutes');
+const commentRoutes = require('./routes/commentRoutes');
 
 dotenv.config();
 
@@ -69,6 +71,10 @@ app.use('/api/v1/dp', dpRoutes);
 app.use('/api/v1/user', userRoutes);
 app.use('/api/v1/execute', executeRoutes);
 app.use('/api/v1/communities', communityRoutes);
+app.use('/api/v1/communities/:communityId/posts', postRoutes);
+app.use('/api/v1/posts', postRoutes);
+app.use('/api/v1/posts/:postId/comments', commentRoutes);
+app.use('/api/v1/comments', commentRoutes);
 
 
 // Database Connection & Server Listener
