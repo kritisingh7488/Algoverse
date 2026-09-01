@@ -36,11 +36,11 @@ export const CommunityHeader = ({
           <div className="flex flex-wrap items-center gap-3 pt-1 text-xs font-heading font-semibold text-textSecondary">
             <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-card/60 border border-borderTheme/70">
               <Users className="w-3.5 h-3.5 text-secondary" />
-              <span>{totalMembers}+ Members</span>
+              <span>{totalMembers} {totalMembers === 1 ? 'Member' : 'Members'}</span>
             </div>
             <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-card/60 border border-borderTheme/70">
               <MessageSquare className="w-3.5 h-3.5 text-success" />
-              <span>{totalCommunities} Active Guilds</span>
+              <span>{totalCommunities} {totalCommunities === 1 ? 'Community' : 'Communities'}</span>
             </div>
           </div>
         </div>

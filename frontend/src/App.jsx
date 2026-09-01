@@ -14,7 +14,7 @@ import CodePlayground from './pages/CodePlayground';
 import Community from './pages/Community';
 import CommunityDetail from './pages/CommunityDetail';
 import PostDetail from './pages/PostDetail';
-import CommunityChatPlaceholder from './pages/CommunityChatPlaceholder';
+import GlobalChat from './pages/GlobalChat';
 import Contests from './pages/Contests';
 import Profile from './pages/Profile';
 import Settings from './pages/Settings';
@@ -131,7 +131,7 @@ function App() {
           />
           <Route 
             path="/community/chat" 
-            element={<CommunityChatPlaceholder />} 
+            element={<GlobalChat />} 
           />
           <Route 
             path="/contests" 

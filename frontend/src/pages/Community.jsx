@@ -29,11 +29,6 @@ import TrendingCommunities from '../components/community/TrendingCommunities';
 import MyCommunities from '../components/community/MyCommunities';
 import CreateCommunityModal from '../components/community/CreateCommunityModal';
 import communityService from '../api/communityService';
-import { 
-  getAllCommunities, 
-  getJoinedCommunityIds, 
-  toggleJoinCommunity 
-} from '../data/communityData';
 
 const Community = () => {
   const navigate = useNavigate();
@@ -164,6 +159,10 @@ const Community = () => {
     setSortBy('trending');
   };
 
+  const totalMembersCount = useMemo(() => {
+    return communities.reduce((sum, c) => sum + (c.membersCount || (c.members?.length || 0)), 0);
+  }, [communities]);
+
   return (
     <AppLayout>
       <div className="space-y-5 py-2">
@@ -173,7 +172,7 @@ const Community = () => {
           onSearchChange={setSearchQuery}
           onCreateClick={handleCreateClick}
           totalCommunities={communities.length}
-          totalMembers="18.5k"
+          totalMembers={totalMembersCount}
         />
 
         {/* Main Grid: Left Discovery/MyCommunities Column + Right Sidebar */}

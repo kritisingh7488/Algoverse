@@ -1,13 +1,20 @@
 const fs = require('fs');
 const path = require('path');
+const jwt = require('jsonwebtoken');
+const mongoose = require('mongoose');
+const crypto = require('crypto');
+const os = require('os');
+
+const User = require('../models/User');
+const Community = require('../models/Community');
+const Message = require('../models/Message');
+
 let pty;
 try {
   pty = require('node-pty');
 } catch (e) {
   console.warn("node-pty module not found or failed to load. Will fallback to child_process.spawn.");
 }
-const crypto = require('crypto');
-const os = require('os');
 
 const isWindows = os.platform() === 'win32';
 const tempDir = path.join(__dirname, '../temp');
@@ -16,14 +23,174 @@ if (!fs.existsSync(tempDir)) {
   fs.mkdirSync(tempDir);
 }
 
+// Track connected users for real-time presence (userId -> { user, socketIds: Set })
+const onlineUsers = new Map();
+
 module.exports = (io) => {
+  // Socket.IO Authentication Middleware (Optional - allows guests to view public chat)
+  io.use(async (socket, next) => {
+    try {
+      const token = socket.handshake.auth?.token || 
+                    (socket.handshake.headers.authorization && socket.handshake.headers.authorization.split(' ')[1]);
+
+      if (token) {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret');
+        if (decoded && decoded.id) {
+          const user = await User.findById(decoded.id).select('fullName username avatar role xp');
+          if (user) {
+            socket.user = user;
+          }
+        }
+      }
+    } catch (err) {
+      // Invalid/expired token: socket connects as guest (socket.user = null)
+      socket.user = null;
+    }
+    next();
+  });
+
   io.on('connection', (socket) => {
-    console.log('Socket connected:', socket.id);
+    const user = socket.user;
+    const userId = user ? user._id.toString() : null;
+
+    // 1. Online Presence Tracking
+    if (userId) {
+      if (!onlineUsers.has(userId)) {
+        onlineUsers.set(userId, {
+          user: {
+            _id: user._id,
+            fullName: user.fullName,
+            username: user.username,
+            avatar: user.avatar,
+            role: user.role
+          },
+          socketIds: new Set([socket.id])
+        });
+      } else {
+        onlineUsers.get(userId).socketIds.add(socket.id);
+      }
+    }
+
+    // Broadcast current online count to all connected sockets
+    const broadcastOnlinePresence = () => {
+      const usersList = Array.from(onlineUsers.values()).map(v => v.user);
+      io.emit('online_presence', {
+        count: Math.max(1, onlineUsers.size),
+        users: usersList
+      });
+    };
+
+    broadcastOnlinePresence();
+
+    // 2. Chat Room Management
+    socket.on('join_room', async ({ room }) => {
+      if (!room) return;
+
+      // If room is a private community room (e.g. "community:650..."), check membership
+      if (room.startsWith('community:')) {
+        const communityIdentifier = room.replace('community:', '');
+        const isObjectId = mongoose.Types.ObjectId.isValid(communityIdentifier);
+        const queryComm = isObjectId ? { $or: [{ _id: communityIdentifier }, { slug: communityIdentifier }] } : { slug: communityIdentifier };
+
+        try {
+          const comm = await Community.findOne(queryComm);
+          if (comm && comm.isPrivate) {
+            if (!user) {
+              socket.emit('chat_error', { message: 'Authentication required for private community' });
+              return;
+            }
+            const isMember = comm.members.some(m => m.toString() === user._id.toString());
+            const isCreator = comm.creator.toString() === user._id.toString();
+            const isAdmin = user.role === 'admin';
+
+            if (!isMember && !isCreator && !isAdmin) {
+              socket.emit('chat_error', { message: 'Access denied: You are not a member of this private community' });
+              return;
+            }
+          }
+        } catch (e) {
+          console.error('Error verifying community room:', e);
+        }
+      }
+
+      socket.join(room);
+      socket.emit('room_joined', { room });
+    });
+
+    socket.on('leave_room', ({ room }) => {
+      if (room) {
+        socket.leave(room);
+      }
+    });
+
+    // 3. Real-time Message Sending & MongoDB Persistence
+    socket.on('send_message', async ({ roomType = 'global', channel = 'general', communityId = null, content, codeSnippet }) => {
+      if (!user) {
+        socket.emit('chat_error', { message: 'You must be logged in to send messages.' });
+        return;
+      }
+
+      if (!content || !content.trim()) {
+        socket.emit('chat_error', { message: 'Message content cannot be empty.' });
+        return;
+      }
+
+      const room = roomType === 'global' ? `global:${channel}` : `community:${communityId}`;
+
+      try {
+        let commDoc = null;
+        if (roomType === 'community' && communityId) {
+          const isObjectId = mongoose.Types.ObjectId.isValid(communityId);
+          const queryComm = isObjectId ? { $or: [{ _id: communityId }, { slug: communityId }] } : { slug: communityId };
+          commDoc = await Community.findOne(queryComm);
+
+          if (!commDoc) {
+            socket.emit('chat_error', { message: 'Community not found.' });
+            return;
+          }
+
+          if (commDoc.isPrivate) {
+            const isMember = commDoc.members.some(m => m.toString() === user._id.toString());
+            const isCreator = commDoc.creator.toString() === user._id.toString();
+            const isAdmin = user.role === 'admin';
+
+            if (!isMember && !isCreator && !isAdmin) {
+              socket.emit('chat_error', { message: 'Access restricted to members.' });
+              return;
+            }
+          }
+        }
+
+        // Save to MongoDB Atlas
+        const messageDoc = await Message.create({
+          sender: user._id,
+          content: content.trim(),
+          roomType,
+          channel: roomType === 'global' ? channel : '',
+          community: commDoc ? commDoc._id : null,
+          codeSnippet: codeSnippet || { language: '', code: '' }
+        });
+
+        const populated = await Message.findById(messageDoc._id)
+          .populate('sender', 'fullName username avatar role xp');
+
+        // Broadcast to all sockets in this room
+        io.to(room).emit('new_message', {
+          room,
+          message: populated
+        });
+
+      } catch (err) {
+        console.error('Error saving real-time chat message:', err);
+        socket.emit('chat_error', { message: 'Failed to send message.' });
+      }
+    });
+
+    // 4. Code Execution Terminal (Playground)
     let ptyProcess = null;
     let filePaths = [];
 
     socket.on('run_code', ({ language, code }) => {
-      // Clean up previous process if any
       if (ptyProcess) {
         ptyProcess.kill();
         ptyProcess = null;
@@ -55,7 +222,6 @@ module.exports = (io) => {
           
           socket.emit('terminal_data', '\x1b[33mCompiling...\x1b[0m\r\n');
           
-          // Async compile so we don't block the Node event loop!
           const { exec } = require('child_process');
           exec(`g++ "${cppPath}" -o "${outPath}"`, (error, stdout, stderr) => {
             if (error) {
@@ -66,7 +232,7 @@ module.exports = (io) => {
             socket.emit('terminal_data', '\x1b[32mCompilation successful! Running...\x1b[0m\r\n');
             spawnPty(outPath, []);
           });
-          return; // Return early, spawnPty is called inside the callback
+          return;
         } else {
           socket.emit('terminal_data', '\x1b[31mLanguage not supported for interactive execution.\x1b[0m\r\n');
           socket.emit('process_exit', 1);
@@ -78,7 +244,6 @@ module.exports = (io) => {
         function spawnPty(executable, spawnArgs) {
           try {
             if (!pty) throw new Error("node-pty not available");
-            // Try to spawn PTY
             ptyProcess = pty.spawn(executable, spawnArgs, {
               name: 'xterm-color',
               cols: 80,
@@ -96,7 +261,6 @@ module.exports = (io) => {
               socket.emit('terminal_data', `\r\n\x1b[90m[Process exited with code ${exitCode}]\x1b[0m\r\n`);
               socket.emit('process_exit', exitCode);
               
-              // Cleanup
               filePaths.forEach(p => {
                 if (fs.existsSync(p)) {
                   try { fs.unlinkSync(p); } catch (e) {}
@@ -105,11 +269,7 @@ module.exports = (io) => {
               filePaths = [];
             });
           } catch (ptyErr) {
-            console.warn("node-pty failed, falling back to child_process.spawn:", ptyErr.message);
-            // Fallback to standard spawn
             const { spawn } = require('child_process');
-            
-            // For python, use -u to force unbuffered output so it works without PTY
             if (executable === 'python' || executable === 'python3' || executable === 'python.exe') {
                 spawnArgs.unshift('-u');
             }
@@ -119,10 +279,8 @@ module.exports = (io) => {
               env: process.env
             });
             
-            // Add write method shim for socket input
             ptyProcess.write = (data) => {
                 if (ptyProcess.stdin) ptyProcess.stdin.write(data);
-                // Also echo locally since spawn doesn't echo like a PTY
                 socket.emit('terminal_data', data); 
             };
 
@@ -139,7 +297,6 @@ module.exports = (io) => {
               socket.emit('terminal_data', `\r\n\x1b[90m[Process exited with code ${exitCode}]\x1b[0m\r\n`);
               socket.emit('process_exit', exitCode);
               
-              // Cleanup
               filePaths.forEach(p => {
                 if (fs.existsSync(p)) {
                   try { fs.unlinkSync(p); } catch (e) {}
@@ -170,7 +327,17 @@ module.exports = (io) => {
       }
     });
 
+    // 5. Disconnection & Cleanup
     socket.on('disconnect', () => {
+      if (userId && onlineUsers.has(userId)) {
+        const userEntry = onlineUsers.get(userId);
+        userEntry.socketIds.delete(socket.id);
+        if (userEntry.socketIds.size === 0) {
+          onlineUsers.delete(userId);
+        }
+        broadcastOnlinePresence();
+      }
+
       if (ptyProcess) {
         ptyProcess.kill();
       }
@@ -179,7 +346,6 @@ module.exports = (io) => {
           try { fs.unlinkSync(p); } catch (e) {}
         }
       });
-      console.log('Socket disconnected:', socket.id);
     });
   });
 };

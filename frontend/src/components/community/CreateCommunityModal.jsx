@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Globe, Lock, Sparkles, CheckCircle2, AlertCircle, Eye } from 'lucide-react';
-import { COMMUNITY_CATEGORIES, EMOJI_PRESETS, saveCreatedCommunity } from '../../data/communityData';
+import { COMMUNITY_CATEGORIES, EMOJI_PRESETS } from '../../data/communityData';
 import useAuthStore from '../../store/authStore';
 import communityService from '../../api/communityService';
 import Button from '../common/Button';

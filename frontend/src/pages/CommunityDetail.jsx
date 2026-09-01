@@ -31,12 +31,8 @@ import useAuthStore from '../store/authStore';
 import communityService from '../api/communityService';
 import PostCard from '../components/community/PostCard';
 import CreatePostModal from '../components/community/CreatePostModal';
+import CommunityChatRoom from '../components/community/CommunityChatRoom';
 import { POST_TYPES } from '../components/community/PostTypeBadge';
-import { 
-  getAllCommunities, 
-  getJoinedCommunityIds, 
-  toggleJoinCommunity 
-} from '../data/communityData';
 
 export const CommunityDetail = () => {
   const { communityId } = useParams();
@@ -588,62 +584,102 @@ export const CommunityDetail = () => {
           </div>
         )}
 
-        {/* Tab 3: Live Chat Placeholder */}
+        {/* Tab 3: Real Community Live Chat Room */}
         {activeTab === 'chat' && (
-          <Card className="text-center py-14 px-6 bg-card border-[1.5px] border-borderTheme shadow-soft space-y-4">
-            <div className="w-14 h-14 rounded-3xl bg-secondary/15 border border-secondary/25 flex items-center justify-center text-secondary mx-auto text-2xl shadow-xs">
-              ⚡
-            </div>
-            <div className="space-y-1.5 max-w-md mx-auto">
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-secondary/15 text-secondary text-xs font-heading font-bold">
-                <Sparkles className="w-3.5 h-3.5" />
-                <span>Feature Roadmap — Phase 4</span>
-              </div>
-              <h3 className="text-lg font-heading font-bold text-textPrimary">
-                Community Live Chat Rooms
-              </h3>
-              <p className="text-xs sm:text-sm text-textSecondary font-body leading-relaxed">
-                Real-time WebSocket chat channels for <strong>{community.name}</strong> with syntax highlighting, peer debugging, and live presence.
-              </p>
-            </div>
-            <div className="pt-2">
-              <Button variant="outline" size="sm" onClick={() => setActiveTab('discussions')}>
-                View Discussions Feed
-              </Button>
-            </div>
-          </Card>
+          <CommunityChatRoom
+            community={community}
+            isJoined={isJoined}
+            onJoinClick={handleJoinToggle}
+          />
         )}
 
-        {/* Tab 4: Members List */}
+        {/* Tab 4: Real Members List from MongoDB */}
         {activeTab === 'members' && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-            {(community.membersPreview || []).map((m) => (
-              <Card
-                key={m.id}
-                className="p-4 bg-card border-[1.5px] border-borderTheme hover:border-primary/40 transition-all shadow-soft flex items-center gap-3.5"
-              >
-                {m.avatar ? (
-                  <img
-                    src={m.avatar}
-                    alt={m.name}
-                    className="w-10 h-10 rounded-full object-cover border border-borderTheme shrink-0"
-                  />
-                ) : (
-                  <div className="w-10 h-10 rounded-full bg-primary/15 text-primary flex items-center justify-center font-bold text-sm shrink-0 border border-primary/20">
-                    {m.name[0]?.toUpperCase() || <Users className="w-5 h-5" />}
-                  </div>
-                )}
-                <div className="min-w-0">
-                  <h4 className="text-xs sm:text-sm font-heading font-bold text-textPrimary truncate">
-                    {m.name}
-                  </h4>
-                  <p className="text-[11px] text-textSecondary truncate">{m.role}</p>
-                  <span className="text-[10px] text-primary font-heading font-semibold">
-                    {m.xp} XP
-                  </span>
-                </div>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-heading font-bold text-textPrimary">
+                Community Roster ({community.membersCount || (community.members?.length || 0)} members)
+              </h3>
+            </div>
+
+            {(!community.members || community.members.length === 0) ? (
+              <Card className="text-center py-12 px-6 bg-card border-[1.5px] border-borderTheme text-textSecondary space-y-2">
+                <Users className="w-10 h-10 mx-auto text-textSecondary/50" />
+                <p className="text-sm font-heading font-semibold text-textPrimary">
+                  No other members yet
+                </p>
+                <p className="text-xs">
+                  Join this community to become an active contributor!
+                </p>
               </Card>
-            ))}
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                {/* Community Creator */}
+                {community.creator && (
+                  <Card
+                    key={community.creator._id || 'creator'}
+                    className="p-4 bg-card border-[1.5px] border-primary/30 hover:border-primary transition-all shadow-soft flex items-center gap-3.5"
+                  >
+                    {community.creator.avatar ? (
+                      <img
+                        src={community.creator.avatar}
+                        alt={community.creator.fullName || community.creator.username}
+                        className="w-10 h-10 rounded-full object-cover border border-primary/40 shrink-0"
+                      />
+                    ) : (
+                      <div className="w-10 h-10 rounded-full bg-primary/15 text-primary flex items-center justify-center font-bold text-sm shrink-0 border border-primary/30">
+                        {community.creator.fullName?.[0]?.toUpperCase() || community.creator.username?.[0]?.toUpperCase() || 'C'}
+                      </div>
+                    )}
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <h4 className="text-xs sm:text-sm font-heading font-bold text-textPrimary truncate">
+                          {community.creator.fullName || community.creator.username}
+                        </h4>
+                        <span className="px-1.5 py-0.2 rounded bg-primary/15 text-primary text-[9px] font-bold">
+                          Founder
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-textSecondary truncate">@{community.creator.username}</p>
+                      <span className="text-[10px] text-primary font-heading font-semibold">
+                        {community.creator.xp || 0} XP
+                      </span>
+                    </div>
+                  </Card>
+                )}
+
+                {/* Other Members */}
+                {community.members
+                  .filter(m => !community.creator || (m._id !== community.creator._id && m._id !== community.creator))
+                  .map((m) => (
+                    <Card
+                      key={m._id || m.id || Math.random()}
+                      className="p-4 bg-card border-[1.5px] border-borderTheme hover:border-primary/40 transition-all shadow-soft flex items-center gap-3.5"
+                    >
+                      {m.avatar ? (
+                        <img
+                          src={m.avatar}
+                          alt={m.fullName || m.username || 'Member'}
+                          className="w-10 h-10 rounded-full object-cover border border-borderTheme shrink-0"
+                        />
+                      ) : (
+                        <div className="w-10 h-10 rounded-full bg-surface text-textPrimary flex items-center justify-center font-bold text-sm shrink-0 border border-borderTheme">
+                          {m.fullName?.[0]?.toUpperCase() || m.username?.[0]?.toUpperCase() || <Users className="w-4 h-4" />}
+                        </div>
+                      )}
+                      <div className="min-w-0">
+                        <h4 className="text-xs sm:text-sm font-heading font-bold text-textPrimary truncate">
+                          {m.fullName || m.username || 'Learner'}
+                        </h4>
+                        <p className="text-[11px] text-textSecondary truncate">{m.role || 'Member'}</p>
+                        <span className="text-[10px] text-primary font-heading font-semibold">
+                          {m.xp || 0} XP
+                        </span>
+                      </div>
+                    </Card>
+                  ))}
+              </div>
+            )}
           </div>
         )}
 

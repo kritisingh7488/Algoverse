@@ -462,6 +462,54 @@ export const communityService = {
         message: error.response?.data?.message || 'Failed to like comment'
       };
     }
+  },
+
+  // ==========================================
+  // REAL-TIME CHAT API
+  // ==========================================
+
+  /**
+   * Fetch messages for a global channel
+   */
+  async getGlobalMessages(channel = 'general', limit = 50) {
+    try {
+      const response = await api.get(`/chat/global/${channel}/messages`, { params: { limit } });
+      return {
+        success: true,
+        data: response.data.data || [],
+        source: 'api'
+      };
+    } catch (error) {
+      console.error(`Error fetching global messages for #${channel}:`, error.response?.data || error.message);
+      return {
+        success: false,
+        status: error.response?.status || 500,
+        message: error.response?.data?.message || 'Failed to load messages',
+        data: []
+      };
+    }
+  },
+
+  /**
+   * Fetch messages for a community room
+   */
+  async getCommunityMessages(communityId, limit = 50) {
+    try {
+      const response = await api.get(`/chat/community/${communityId}/messages`, { params: { limit } });
+      return {
+        success: true,
+        data: response.data.data || [],
+        source: 'api'
+      };
+    } catch (error) {
+      console.error(`Error fetching community messages for ${communityId}:`, error.response?.data || error.message);
+      return {
+        success: false,
+        status: error.response?.status || 500,
+        message: error.response?.data?.message || 'Failed to load community chat',
+        data: []
+      };
+    }
   }
 };
 
