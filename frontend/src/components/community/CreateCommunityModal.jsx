@@ -105,18 +105,20 @@ export const CreateCommunityModal = ({ isOpen, onClose, onCommunityCreated }) =>
 
     try {
       const res = await communityService.createCommunity(payload);
-      const created = res.data;
-
-      setShowSuccessToast(true);
-
-      setTimeout(() => {
-        if (onCommunityCreated) {
-          onCommunityCreated(created);
-        }
-        onClose();
-      }, 600);
+      if (res.success && res.data) {
+        setShowSuccessToast(true);
+        setTimeout(() => {
+          if (onCommunityCreated) {
+            onCommunityCreated(res.data);
+          }
+          onClose();
+        }, 600);
+      } else {
+        setErrors({ submit: res.message || 'Failed to create community on server.' });
+      }
     } catch (err) {
       console.error('Error creating community:', err);
+      setErrors({ submit: err.response?.data?.message || err.message || 'Server error creating community.' });
     } finally {
       setIsSubmitting(false);
     }
@@ -338,6 +340,13 @@ export const CreateCommunityModal = ({ isOpen, onClose, onCommunityCreated }) =>
                       {category}
                     </Badge>
                   </div>
+                </div>
+              )}
+
+              {errors.submit && (
+                <div className="p-3 rounded-lg bg-danger/10 border border-danger/25 text-danger text-xs flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 shrink-0" />
+                  <span>{errors.submit}</span>
                 </div>
               )}
 

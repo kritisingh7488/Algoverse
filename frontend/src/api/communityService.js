@@ -1,53 +1,15 @@
 import api from './axios';
-import {
-  getAllCommunities,
-  getJoinedCommunityIds,
-  getCreatedCommunities,
-  saveCreatedCommunity,
-  toggleJoinCommunity,
-  INITIAL_COMMUNITIES
-} from '../data/communityData';
-
-// Local storage keys for offline post & comment state
-const LOCAL_POSTS_KEY = 'algoverse_community_posts_v1';
-const LOCAL_COMMENTS_KEY = 'algoverse_community_comments_v1';
-
-const getLocalPosts = () => {
-  try {
-    const raw = localStorage.getItem(LOCAL_POSTS_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch (e) {
-    return [];
-  }
-};
-
-const saveLocalPosts = (posts) => {
-  try {
-    localStorage.setItem(LOCAL_POSTS_KEY, JSON.stringify(posts));
-  } catch (e) {}
-};
-
-const getLocalComments = () => {
-  try {
-    const raw = localStorage.getItem(LOCAL_COMMENTS_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch (e) {
-    return [];
-  }
-};
-
-const saveLocalComments = (comments) => {
-  try {
-    localStorage.setItem(LOCAL_COMMENTS_KEY, JSON.stringify(comments));
-  } catch (e) {}
-};
 
 /**
  * Community API Service
- * Handles live REST API calls to /api/v1/communities, /api/v1/posts, /api/v1/comments
- * with automatic local fallback for offline development.
+ * Handles direct live REST API calls to /api/v1/communities, /api/v1/posts, /api/v1/comments.
+ * Surfaces real API responses and errors without silent mock fallbacks.
  */
 export const communityService = {
+  // ==========================================
+  // COMMUNITIES API
+  // ==========================================
+
   /**
    * Fetch public communities with optional search, category, and sort filters
    */
@@ -61,44 +23,21 @@ export const communityService = {
       if (limit) params.limit = limit;
 
       const response = await api.get('/communities', { params });
-      if (response.data && response.data.success && Array.isArray(response.data.data) && response.data.data.length > 0) {
-        return {
-          success: true,
-          data: response.data.data,
-          total: response.data.total || response.data.data.length,
-          source: 'api'
-        };
-      }
+      return {
+        success: true,
+        data: response.data.data || [],
+        total: response.data.total || (response.data.data ? response.data.data.length : 0),
+        source: 'api'
+      };
     } catch (error) {
-      console.warn('Community API unavailable, using local data fallback:', error.message);
+      console.error('Error fetching communities from API:', error.response?.data || error.message);
+      return {
+        success: false,
+        status: error.response?.status || 500,
+        message: error.response?.data?.message || error.message,
+        data: []
+      };
     }
-
-    // Local fallback
-    const all = getAllCommunities();
-    const joinedIds = getJoinedCommunityIds();
-
-    const filtered = all.filter(c => {
-      if (category !== 'All' && c.category !== category) return false;
-      if (search && search.trim()) {
-        const q = search.toLowerCase().trim();
-        const matchName = c.name.toLowerCase().includes(q);
-        const matchDesc = c.description.toLowerCase().includes(q);
-        const matchCat = c.category.toLowerCase().includes(q);
-        const matchTags = c.tags && c.tags.some(t => t.toLowerCase().includes(q));
-        if (!matchName && !matchDesc && !matchCat && !matchTags) return false;
-      }
-      return true;
-    }).map(c => ({
-      ...c,
-      isJoined: joinedIds.includes(c.id)
-    }));
-
-    return {
-      success: true,
-      data: filtered,
-      total: filtered.length,
-      source: 'fallback'
-    };
   },
 
   /**
@@ -107,28 +46,20 @@ export const communityService = {
   async getMyCommunities() {
     try {
       const response = await api.get('/communities/my');
-      if (response.data && response.data.success && Array.isArray(response.data.data)) {
-        return {
-          success: true,
-          data: response.data.data,
-          source: 'api'
-        };
-      }
+      return {
+        success: true,
+        data: response.data.data || [],
+        source: 'api'
+      };
     } catch (error) {
-      console.warn('My Communities API unavailable, using local data fallback:', error.message);
+      console.error('Error fetching my communities:', error.response?.data || error.message);
+      return {
+        success: false,
+        status: error.response?.status || 500,
+        message: error.response?.data?.message || error.message,
+        data: []
+      };
     }
-
-    const all = getAllCommunities();
-    const joinedIds = getJoinedCommunityIds();
-    const myCommunities = all
-      .filter(c => joinedIds.includes(c.id))
-      .map(c => ({ ...c, isJoined: true }));
-
-    return {
-      success: true,
-      data: myCommunities,
-      source: 'fallback'
-    };
   },
 
   /**
@@ -137,76 +68,42 @@ export const communityService = {
   async getTrendingCommunities() {
     try {
       const response = await api.get('/communities/trending');
-      if (response.data && response.data.success && Array.isArray(response.data.data) && response.data.data.length > 0) {
-        return {
-          success: true,
-          data: response.data.data,
-          source: 'api'
-        };
-      }
+      return {
+        success: true,
+        data: response.data.data || [],
+        source: 'api'
+      };
     } catch (error) {
-      console.warn('Trending Communities API unavailable, using local data fallback:', error.message);
+      console.error('Error fetching trending communities:', error.response?.data || error.message);
+      return {
+        success: false,
+        status: error.response?.status || 500,
+        message: error.response?.data?.message || error.message,
+        data: []
+      };
     }
-
-    const all = getAllCommunities();
-    const joinedIds = getJoinedCommunityIds();
-    const trending = all
-      .filter(c => c.isTrending || c.trendingRank)
-      .sort((a, b) => (a.trendingRank || 99) - (b.trendingRank || 99))
-      .slice(0, 5)
-      .map(c => ({ ...c, isJoined: joinedIds.includes(c.id) }));
-
-    return {
-      success: true,
-      data: trending,
-      source: 'fallback'
-    };
   },
 
   /**
-   * Fetch single community details by ID or Slug
+   * Fetch single community by slug or MongoDB ID
    */
   async getCommunityByIdOrSlug(idOrSlug) {
     try {
       const response = await api.get(`/communities/${idOrSlug}`);
-      if (response.data && response.data.success && response.data.data) {
-        return {
-          success: true,
-          data: response.data.data,
-          source: 'api'
-        };
-      }
+      return {
+        success: true,
+        data: response.data.data,
+        source: 'api'
+      };
     } catch (error) {
-      if (error.response && error.response.status === 403) {
-        return {
-          success: false,
-          status: 403,
-          message: error.response.data?.message || 'Access restricted to private community members'
-        };
-      }
-      console.warn('Community details API unavailable, using local data fallback:', error.message);
-    }
-
-    const all = getAllCommunities();
-    const joinedIds = getJoinedCommunityIds();
-    const found = all.find(c => c.id === idOrSlug || c.slug === idOrSlug);
-
-    if (!found) {
+      console.error(`Error fetching community ${idOrSlug}:`, error.response?.data || error.message);
       return {
         success: false,
-        status: 404,
-        message: 'Community not found'
+        status: error.response?.status || 404,
+        message: error.response?.data?.message || 'Community not found',
+        data: null
       };
     }
-
-    return {
-      success: true,
-      data: {
-        ...found,
-        isJoined: joinedIds.includes(found.id)
-      },
-      source: 'fallback'
-    };
   },
 
   /**
@@ -215,114 +112,72 @@ export const communityService = {
   async createCommunity(communityData) {
     try {
       const response = await api.post('/communities', communityData);
-      if (response.data && response.data.success && response.data.data) {
-        saveCreatedCommunity(response.data.data);
-        return {
-          success: true,
-          data: response.data.data,
-          message: response.data.message || 'Community created successfully',
-          source: 'api'
-        };
-      }
+      return {
+        success: true,
+        data: response.data.data,
+        message: response.data.message || 'Community created successfully',
+        source: 'api'
+      };
     } catch (error) {
-      console.warn('Create Community API failed, saving locally in session:', error.message);
+      console.error('Error creating community:', error.response?.data || error.message);
+      return {
+        success: false,
+        status: error.response?.status || 400,
+        message: error.response?.data?.message || 'Failed to create community'
+      };
     }
-
-    const slug = (communityData.name || '').trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-    const newCommunity = {
-      id: `custom-${slug}-${Date.now().toString().slice(-4)}`,
-      name: communityData.name.trim(),
-      slug: slug || `guild-${Date.now()}`,
-      description: communityData.description.trim(),
-      category: communityData.category || 'DSA',
-      icon: communityData.icon || '⚡',
-      gradient: communityData.gradient || 'from-primary/20 to-secondary/20',
-      accentColor: communityData.accentColor || '#FF8A80',
-      membersCount: 1,
-      isPrivate: !!communityData.isPrivate,
-      isTrending: false,
-      isVerified: false,
-      tags: Array.isArray(communityData.tags) ? communityData.tags : [communityData.category || 'DSA'],
-      about: communityData.about || communityData.description,
-      rules: Array.isArray(communityData.rules) && communityData.rules.length > 0 ? communityData.rules : [
-        'Be welcoming and respectful to all learners.',
-        'Format all code snippets properly with comments.',
-        'Explain intuition and time/space complexity when sharing solutions.'
-      ],
-      createdDate: 'Just now',
-      isJoined: true
-    };
-
-    saveCreatedCommunity(newCommunity);
-
-    return {
-      success: true,
-      data: newCommunity,
-      message: 'Community created (session mode)',
-      source: 'fallback'
-    };
   },
 
   /**
    * Join a community
    */
-  async joinCommunity(idOrSlug) {
+  async joinCommunity(communityIdOrSlug) {
     try {
-      const response = await api.post(`/communities/${idOrSlug}/join`);
-      if (response.data && response.data.success) {
-        toggleJoinCommunity(idOrSlug);
-        return {
-          success: true,
-          data: response.data.data,
-          message: response.data.message || 'Joined community successfully',
-          source: 'api'
-        };
-      }
+      const response = await api.post(`/communities/${communityIdOrSlug}/join`);
+      return {
+        success: true,
+        data: response.data.data,
+        message: response.data.message || 'Joined successfully',
+        source: 'api'
+      };
     } catch (error) {
-      console.warn('Join Community API offline or failed, updating local state:', error.message);
+      console.error(`Error joining community ${communityIdOrSlug}:`, error.response?.data || error.message);
+      return {
+        success: false,
+        status: error.response?.status || 400,
+        message: error.response?.data?.message || 'Failed to join community'
+      };
     }
-
-    const updatedJoined = toggleJoinCommunity(idOrSlug);
-    return {
-      success: true,
-      isJoined: updatedJoined.includes(idOrSlug),
-      source: 'fallback'
-    };
   },
 
   /**
    * Leave a community
    */
-  async leaveCommunity(idOrSlug) {
+  async leaveCommunity(communityIdOrSlug) {
     try {
-      const response = await api.post(`/communities/${idOrSlug}/leave`);
-      if (response.data && response.data.success) {
-        toggleJoinCommunity(idOrSlug);
-        return {
-          success: true,
-          data: response.data.data,
-          message: response.data.message || 'Left community successfully',
-          source: 'api'
-        };
-      }
+      const response = await api.post(`/communities/${communityIdOrSlug}/leave`);
+      return {
+        success: true,
+        data: response.data.data,
+        message: response.data.message || 'Left successfully',
+        source: 'api'
+      };
     } catch (error) {
-      console.warn('Leave Community API offline or failed, updating local state:', error.message);
+      console.error(`Error leaving community ${communityIdOrSlug}:`, error.response?.data || error.message);
+      return {
+        success: false,
+        status: error.response?.status || 400,
+        message: error.response?.data?.message || 'Failed to leave community'
+      };
     }
-
-    const updatedJoined = toggleJoinCommunity(idOrSlug);
-    return {
-      success: true,
-      isJoined: updatedJoined.includes(idOrSlug),
-      source: 'fallback'
-    };
   },
 
   // ==========================================
-  // POSTS APIS (PHASE 3)
+  // POSTS & DISCUSSIONS API
   // ==========================================
 
   /**
-   * Fetch posts for a community
+   * Fetch discussions / posts for a specific community with filters
    */
   async getPosts({ communityId, postType = 'All', tag = '', search = '', sort = 'newest', page = 1, limit = 20 } = {}) {
     try {
@@ -337,184 +192,96 @@ export const communityService = {
       const endpoint = communityId ? `/communities/${communityId}/posts` : '/posts/feed';
       const response = await api.get(endpoint, { params });
 
-      if (response.data && response.data.success) {
-        return {
-          success: true,
-          data: response.data.data || [],
-          total: response.data.total || 0,
-          page: response.data.page || 1,
-          pages: response.data.pages || 1,
-          source: 'api'
-        };
-      }
+      return {
+        success: true,
+        data: response.data.data || [],
+        total: response.data.total || (response.data.data ? response.data.data.length : 0),
+        page: response.data.page || page,
+        pages: response.data.pages || 1,
+        source: 'api'
+      };
     } catch (error) {
-      if (error.response && error.response.status === 403) {
-        return {
-          success: false,
-          status: 403,
-          message: error.response.data?.message || 'Private community discussions are restricted to members'
-        };
-      }
-      console.warn('Posts API unavailable, using local post cache:', error.message);
+      console.error('Error fetching posts:', error.response?.data || error.message);
+      return {
+        success: false,
+        status: error.response?.status || 500,
+        message: error.response?.data?.message || error.message,
+        data: []
+      };
     }
-
-    // Local fallback
-    const local = getLocalPosts();
-    let filtered = communityId ? local.filter(p => p.communityId === communityId || p.community?.slug === communityId) : local;
-    if (postType && postType !== 'All') filtered = filtered.filter(p => p.postType === postType);
-    if (search) {
-      const q = search.toLowerCase();
-      filtered = filtered.filter(p => p.title.toLowerCase().includes(q) || p.content.toLowerCase().includes(q));
-    }
-
-    return {
-      success: true,
-      data: filtered,
-      total: filtered.length,
-      source: 'fallback'
-    };
   },
 
   /**
-   * Get single post by ID
+   * Fetch global feed of all public posts
+   */
+  async getGlobalFeed({ postType = 'All', tag = '', search = '', sort = 'newest', page = 1, limit = 20 } = {}) {
+    return this.getPosts({ postType, tag, search, sort, page, limit });
+  },
+
+  /**
+   * Fetch single post by ID (increments views automatically on server)
    */
   async getPostById(postId) {
     try {
       const response = await api.get(`/posts/${postId}`);
-      if (response.data && response.data.success && response.data.data) {
-        return {
-          success: true,
-          data: response.data.data,
-          source: 'api'
-        };
-      }
+      return {
+        success: true,
+        data: response.data.data,
+        source: 'api'
+      };
     } catch (error) {
-      if (error.response && error.response.status === 403) {
-        return {
-          success: false,
-          status: 403,
-          message: error.response.data?.message || 'Access restricted to private community members'
-        };
-      }
-      console.warn('Get Post API unavailable, searching local posts:', error.message);
+      console.error(`Error fetching post ${postId}:`, error.response?.data || error.message);
+      return {
+        success: false,
+        status: error.response?.status || 404,
+        message: error.response?.data?.message || 'Post not found',
+        data: null
+      };
     }
-
-    const local = getLocalPosts();
-    const found = local.find(p => p._id === postId || p.id === postId);
-    if (!found) {
-      return { success: false, status: 404, message: 'Post not found' };
-    }
-    return { success: true, data: found, source: 'fallback' };
   },
 
   /**
    * Create a new post in a community
    */
-  async createPost(communityId, postData) {
+  async createPost(communityIdOrSlug, postData) {
     try {
-      const response = await api.post(`/communities/${communityId}/posts`, postData);
-      if (response.data && response.data.success && response.data.data) {
-        const posts = getLocalPosts();
-        posts.unshift(response.data.data);
-        saveLocalPosts(posts);
-        return {
-          success: true,
-          data: response.data.data,
-          message: response.data.message || 'Post published successfully',
-          source: 'api'
-        };
-      }
+      const response = await api.post(`/communities/${communityIdOrSlug}/posts`, postData);
+      return {
+        success: true,
+        data: response.data.data,
+        message: response.data.message || 'Post published successfully',
+        source: 'api'
+      };
     } catch (error) {
-      if (error.response) {
-        return {
-          success: false,
-          status: error.response.status,
-          message: error.response.data?.message || 'Failed to create post'
-        };
-      }
-      console.warn('Create post API offline, saving locally:', error.message);
+      console.error('Error creating post:', error.response?.data || error.message);
+      return {
+        success: false,
+        status: error.response?.status || 400,
+        message: error.response?.data?.message || 'Failed to create post'
+      };
     }
-
-    // Local fallback
-    const fallbackPost = {
-      _id: `post-${Date.now()}`,
-      title: postData.title,
-      content: postData.content,
-      postType: postData.postType || 'Discussion',
-      tags: postData.tags || [],
-      communityId,
-      author: {
-        fullName: 'You',
-        username: 'coder',
-        avatar: '',
-        role: 'Learner',
-        xp: 150
-      },
-      reactionsCount: 0,
-      reactionsSummary: { like: 0, love: 0, insightful: 0, helpful: 0, celebrate: 0 },
-      commentsCount: 0,
-      viewsCount: 1,
-      createdAt: new Date().toISOString()
-    };
-
-    const posts = getLocalPosts();
-    posts.unshift(fallbackPost);
-    saveLocalPosts(posts);
-
-    return {
-      success: true,
-      data: fallbackPost,
-      message: 'Post created (session mode)',
-      source: 'fallback'
-    };
   },
 
   /**
-   * React to a post
+   * Update an existing post
    */
-  async reactToPost(postId, reactionType = 'like') {
+  async updatePost(postId, postData) {
     try {
-      const response = await api.post(`/posts/${postId}/react`, { type: reactionType });
-      if (response.data && response.data.success && response.data.data) {
-        return {
-          success: true,
-          data: response.data.data,
-          source: 'api'
-        };
-      }
+      const response = await api.put(`/posts/${postId}`, postData);
+      return {
+        success: true,
+        data: response.data.data,
+        message: response.data.message || 'Post updated successfully',
+        source: 'api'
+      };
     } catch (error) {
-      console.warn('React API offline, returning simulated response:', error.message);
+      console.error(`Error updating post ${postId}:`, error.response?.data || error.message);
+      return {
+        success: false,
+        status: error.response?.status || 400,
+        message: error.response?.data?.message || 'Failed to update post'
+      };
     }
-
-    return {
-      success: true,
-      source: 'fallback'
-    };
-  },
-
-  /**
-   * Bookmark a post
-   */
-  async bookmarkPost(postId) {
-    try {
-      const response = await api.post(`/posts/${postId}/bookmark`);
-      if (response.data && response.data.success) {
-        return {
-          success: true,
-          isBookmarked: response.data.isBookmarked,
-          data: response.data.data,
-          source: 'api'
-        };
-      }
-    } catch (error) {
-      console.warn('Bookmark API offline:', error.message);
-    }
-
-    return {
-      success: true,
-      isBookmarked: true,
-      source: 'fallback'
-    };
   },
 
   /**
@@ -523,144 +290,178 @@ export const communityService = {
   async deletePost(postId) {
     try {
       const response = await api.delete(`/posts/${postId}`);
-      if (response.data && response.data.success) {
-        const posts = getLocalPosts().filter(p => (p._id || p.id) !== postId);
-        saveLocalPosts(posts);
-        return {
-          success: true,
-          message: response.data.message || 'Post deleted'
-        };
-      }
+      return {
+        success: true,
+        message: response.data.message || 'Post deleted successfully',
+        source: 'api'
+      };
     } catch (error) {
-      console.warn('Delete post API error:', error.message);
+      console.error(`Error deleting post ${postId}:`, error.response?.data || error.message);
+      return {
+        success: false,
+        status: error.response?.status || 400,
+        message: error.response?.data?.message || 'Failed to delete post'
+      };
     }
+  },
 
-    const posts = getLocalPosts().filter(p => (p._id || p.id) !== postId);
-    saveLocalPosts(posts);
-    return { success: true, source: 'fallback' };
+  /**
+   * React to a post (like, love, insightful, helpful, celebrate)
+   */
+  async reactToPost(postId, reactionType = 'like') {
+    try {
+      const response = await api.post(`/posts/${postId}/react`, { type: reactionType });
+      return {
+        success: true,
+        data: response.data.data,
+        source: 'api'
+      };
+    } catch (error) {
+      console.error(`Error reacting to post ${postId}:`, error.response?.data || error.message);
+      return {
+        success: false,
+        status: error.response?.status || 400,
+        message: error.response?.data?.message || 'Failed to update reaction'
+      };
+    }
+  },
+
+  /**
+   * Bookmark / unbookmark a post
+   */
+  async bookmarkPost(postId) {
+    try {
+      const response = await api.post(`/posts/${postId}/bookmark`);
+      return {
+        success: true,
+        isBookmarked: response.data.isBookmarked,
+        message: response.data.message,
+        source: 'api'
+      };
+    } catch (error) {
+      console.error(`Error bookmarking post ${postId}:`, error.response?.data || error.message);
+      return {
+        success: false,
+        status: error.response?.status || 400,
+        message: error.response?.data?.message || 'Failed to update bookmark'
+      };
+    }
   },
 
   // ==========================================
-  // COMMENTS APIS (PHASE 3)
+  // COMMENTS & REPLIES API
   // ==========================================
 
   /**
-   * Fetch threaded comments for a post
+   * Fetch threaded comment tree for a post
    */
   async getComments(postId) {
     try {
       const response = await api.get(`/posts/${postId}/comments`);
-      if (response.data && response.data.success) {
-        return {
-          success: true,
-          data: response.data.data || [],
-          count: response.data.count || 0,
-          source: 'api'
-        };
-      }
+      return {
+        success: true,
+        data: response.data.data || [],
+        source: 'api'
+      };
     } catch (error) {
-      console.warn('Comments API offline, using local cache:', error.message);
+      console.error(`Error fetching comments for post ${postId}:`, error.response?.data || error.message);
+      return {
+        success: false,
+        status: error.response?.status || 500,
+        message: error.response?.data?.message || 'Failed to load comments',
+        data: []
+      };
     }
-
-    const local = getLocalComments().filter(c => c.postId === postId);
-    return {
-      success: true,
-      data: local,
-      count: local.length,
-      source: 'fallback'
-    };
   },
 
   /**
-   * Add a comment or reply
+   * Add a top-level comment or nested reply to a post
    */
-  async createComment(postId, { content, parentCommentId = null } = {}) {
+  async addComment(postId, { content, parentCommentId = null }) {
     try {
-      const response = await api.post(`/posts/${postId}/comments`, { content, parentCommentId });
-      if (response.data && response.data.success && response.data.data) {
-        return {
-          success: true,
-          data: response.data.data,
-          source: 'api'
-        };
-      }
+      const response = await api.post(`/posts/${postId}/comments`, {
+        content,
+        parentCommentId
+      });
+      return {
+        success: true,
+        data: response.data.data,
+        message: response.data.message || 'Comment posted successfully',
+        source: 'api'
+      };
     } catch (error) {
-      if (error.response) {
-        return {
-          success: false,
-          status: error.response.status,
-          message: error.response.data?.message || 'Failed to post comment'
-        };
-      }
-      console.warn('Create comment API offline:', error.message);
+      console.error(`Error adding comment to post ${postId}:`, error.response?.data || error.message);
+      return {
+        success: false,
+        status: error.response?.status || 400,
+        message: error.response?.data?.message || 'Failed to post comment'
+      };
     }
-
-    const fallbackComment = {
-      _id: `comment-${Date.now()}`,
-      postId,
-      content,
-      parentComment: parentCommentId,
-      author: {
-        fullName: 'You',
-        username: 'coder',
-        avatar: '',
-        role: 'Learner',
-        xp: 150
-      },
-      likesCount: 0,
-      isLiked: false,
-      replies: [],
-      createdAt: new Date().toISOString()
-    };
-
-    const comments = getLocalComments();
-    comments.push(fallbackComment);
-    saveLocalComments(comments);
-
-    return {
-      success: true,
-      data: fallbackComment,
-      source: 'fallback'
-    };
   },
 
   /**
-   * Toggle like on comment
+   * Update an existing comment
    */
-  async likeComment(commentId) {
+  async updateComment(commentId, content) {
     try {
-      const response = await api.post(`/comments/${commentId}/like`);
-      if (response.data && response.data.success && response.data.data) {
-        return {
-          success: true,
-          data: response.data.data,
-          source: 'api'
-        };
-      }
+      const response = await api.put(`/comments/${commentId}`, { content });
+      return {
+        success: true,
+        data: response.data.data,
+        message: response.data.message || 'Comment updated successfully',
+        source: 'api'
+      };
     } catch (error) {
-      console.warn('Comment like API offline:', error.message);
+      console.error(`Error updating comment ${commentId}:`, error.response?.data || error.message);
+      return {
+        success: false,
+        status: error.response?.status || 400,
+        message: error.response?.data?.message || 'Failed to update comment'
+      };
     }
-
-    return {
-      success: true,
-      source: 'fallback'
-    };
   },
 
   /**
-   * Delete comment
+   * Delete a comment
    */
   async deleteComment(commentId) {
     try {
       const response = await api.delete(`/comments/${commentId}`);
-      if (response.data && response.data.success) {
-        return { success: true };
-      }
+      return {
+        success: true,
+        message: response.data.message || 'Comment deleted successfully',
+        source: 'api'
+      };
     } catch (error) {
-      console.warn('Delete comment API error:', error.message);
+      console.error(`Error deleting comment ${commentId}:`, error.response?.data || error.message);
+      return {
+        success: false,
+        status: error.response?.status || 400,
+        message: error.response?.data?.message || 'Failed to delete comment'
+      };
     }
+  },
 
-    return { success: true, source: 'fallback' };
+  /**
+   * Like / unlike a comment
+   */
+  async likeComment(commentId) {
+    try {
+      const response = await api.post(`/comments/${commentId}/like`);
+      return {
+        success: true,
+        data: response.data.data,
+        isLiked: response.data.isLiked,
+        source: 'api'
+      };
+    } catch (error) {
+      console.error(`Error liking comment ${commentId}:`, error.response?.data || error.message);
+      return {
+        success: false,
+        status: error.response?.status || 400,
+        message: error.response?.data?.message || 'Failed to like comment'
+      };
+    }
   }
 };
 

@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const postRoutes = require('./postRoutes');
 const {
     getCommunities,
     getMyCommunities,
@@ -20,6 +21,9 @@ router.get('/trending', optionalProtect, getTrendingCommunities);
 // Protected authenticated routes (Must precede /:idOrSlug to prevent route shadowing)
 router.get('/my', protect, getMyCommunities);
 router.post('/', protect, createCommunity);
+
+// Mount nested post routes for community
+router.use('/:communityId/posts', postRoutes);
 
 // Specific Community routes
 router.get('/:idOrSlug', optionalProtect, getCommunityByIdOrSlug);

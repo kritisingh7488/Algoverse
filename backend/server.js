@@ -25,10 +25,16 @@ const app = express();
 const server = http.createServer(app);
 
 // Setup Socket.IO
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://127.0.0.1:5173',
+  process.env.FRONTEND_URL
+].filter(Boolean);
+
 const io = new Server(server, {
   cors: {
-    origin: process.env.FRONTEND_URL || 'http://localhost:5173',
-    methods: ['GET', 'POST'],
+    origin: (origin, callback) => callback(null, true),
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
     credentials: true,
   }
 });
@@ -38,7 +44,7 @@ require('./controllers/socketController')(io);
 
 // Middleware
 app.use(cors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+    origin: (origin, callback) => callback(null, true),
     credentials: true,
 }));
 app.use(express.json());
@@ -71,9 +77,7 @@ app.use('/api/v1/dp', dpRoutes);
 app.use('/api/v1/user', userRoutes);
 app.use('/api/v1/execute', executeRoutes);
 app.use('/api/v1/communities', communityRoutes);
-app.use('/api/v1/communities/:communityId/posts', postRoutes);
 app.use('/api/v1/posts', postRoutes);
-app.use('/api/v1/posts/:postId/comments', commentRoutes);
 app.use('/api/v1/comments', commentRoutes);
 
 
@@ -82,8 +86,8 @@ const PORT = process.env.PORT || 5000;
 const MONGODB_URI = process.env.MONGODB_URI;
 
 const startServer = () => {
-    server.listen(PORT, () => {
-        console.log(`Server running on port ${PORT}`);
+    server.listen(PORT, '0.0.0.0', () => {
+        console.log(`Server running on port ${PORT} (0.0.0.0)`);
     });
 };
 
