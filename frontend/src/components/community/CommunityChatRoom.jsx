@@ -25,8 +25,8 @@ export const CommunityChatRoom = ({ community, isJoined, onJoinClick }) => {
   const [codeLanguage, setCodeLanguage] = useState('');
   const messagesEndRef = useRef(null);
 
-  const commIdentifier = community?._id || community?.id;
-  const room = `community:${commIdentifier}`;
+  const commIdentifier = community?._id || community?.id || community?.slug;
+  const room = commIdentifier ? `community:${commIdentifier}` : null;
 
   const {
     messages,
@@ -85,8 +85,20 @@ export const CommunityChatRoom = ({ community, isJoined, onJoinClick }) => {
     }
   };
 
+  // Safe Member / Creator authorization calculation
+  const myUserId = user?._id ? user._id.toString() : (user?.id ? user.id.toString() : null);
+  const creatorId = community?.creator?._id 
+    ? community.creator._id.toString() 
+    : (community?.creator ? community.creator.toString() : null);
+  const isCreator = !!(myUserId && creatorId && myUserId === creatorId);
+  const isMemberInList = community?.members && Array.isArray(community.members) && community.members.some(m => {
+    const memberId = m._id ? m._id.toString() : m.toString();
+    return memberId === myUserId;
+  });
+  const isAuthorizedMember = isJoined || isCreator || isMemberInList || user?.role === 'admin';
+
   // If private community and user is not a member
-  if (community?.isPrivate && !isJoined && user?.role !== 'admin' && community?.creator?._id !== user?._id) {
+  if (community?.isPrivate && !isAuthorizedMember) {
     return (
       <Card className="text-center py-14 px-6 bg-card border-[1.5px] border-borderTheme shadow-soft space-y-4">
         <div className="w-14 h-14 rounded-3xl bg-warning/15 border border-warning/25 flex items-center justify-center text-warning mx-auto text-2xl shadow-xs">

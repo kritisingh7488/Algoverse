@@ -84,23 +84,31 @@ module.exports = (io) => {
 
     // 2. Chat Room Management
     socket.on('join_room', async ({ room }) => {
-      if (!room) return;
+      if (!room || room.includes('undefined') || room.includes('null')) return;
 
-      // If room is a private community room (e.g. "community:650..."), check membership
+      // If room is a private community room (e.g. "community:650..." or "community:slug"), check membership
       if (room.startsWith('community:')) {
         const communityIdentifier = room.replace('community:', '');
+        if (!communityIdentifier) return;
+
         const isObjectId = mongoose.Types.ObjectId.isValid(communityIdentifier);
         const queryComm = isObjectId ? { $or: [{ _id: communityIdentifier }, { slug: communityIdentifier }] } : { slug: communityIdentifier };
 
         try {
           const comm = await Community.findOne(queryComm);
-          if (comm && comm.isPrivate) {
+          if (!comm) {
+            socket.emit('chat_error', { message: 'Community not found' });
+            return;
+          }
+
+          if (comm.isPrivate) {
             if (!user) {
               socket.emit('chat_error', { message: 'Authentication required for private community' });
               return;
             }
-            const isMember = comm.members.some(m => m.toString() === user._id.toString());
-            const isCreator = comm.creator.toString() === user._id.toString();
+            const myId = user._id.toString();
+            const isMember = comm.members && comm.members.some(m => (m._id ? m._id.toString() : m.toString()) === myId);
+            const isCreator = comm.creator && (comm.creator._id ? comm.creator._id.toString() : comm.creator.toString()) === myId;
             const isAdmin = user.role === 'admin';
 
             if (!isMember && !isCreator && !isAdmin) {
@@ -108,8 +116,18 @@ module.exports = (io) => {
               return;
             }
           }
+
+          // Join both ID and slug based rooms for seamless dual-lookup
+          socket.join(`community:${comm._id.toString()}`);
+          if (comm.slug) {
+            socket.join(`community:${comm.slug}`);
+          }
+          socket.emit('room_joined', { room: `community:${comm._id.toString()}` });
+          return;
         } catch (e) {
           console.error('Error verifying community room:', e);
+          socket.emit('chat_error', { message: 'Error joining community room' });
+          return;
         }
       }
 
@@ -118,7 +136,7 @@ module.exports = (io) => {
     });
 
     socket.on('leave_room', ({ room }) => {
-      if (room) {
+      if (room && !room.includes('undefined')) {
         socket.leave(room);
       }
     });
@@ -135,8 +153,6 @@ module.exports = (io) => {
         return;
       }
 
-      const room = roomType === 'global' ? `global:${channel}` : `community:${communityId}`;
-
       try {
         let commDoc = null;
         if (roomType === 'community' && communityId) {
@@ -150,8 +166,9 @@ module.exports = (io) => {
           }
 
           if (commDoc.isPrivate) {
-            const isMember = commDoc.members.some(m => m.toString() === user._id.toString());
-            const isCreator = commDoc.creator.toString() === user._id.toString();
+            const myId = user._id.toString();
+            const isMember = commDoc.members && commDoc.members.some(m => (m._id ? m._id.toString() : m.toString()) === myId);
+            const isCreator = commDoc.creator && (commDoc.creator._id ? commDoc.creator._id.toString() : commDoc.creator.toString()) === myId;
             const isAdmin = user.role === 'admin';
 
             if (!isMember && !isCreator && !isAdmin) {
@@ -174,11 +191,29 @@ module.exports = (io) => {
         const populated = await Message.findById(messageDoc._id)
           .populate('sender', 'fullName username avatar role xp');
 
-        // Broadcast to all sockets in this room
-        io.to(room).emit('new_message', {
-          room,
-          message: populated
-        });
+        // Broadcast to relevant rooms
+        if (roomType === 'global') {
+          const room = `global:${channel}`;
+          io.to(room).emit('new_message', {
+            room,
+            message: populated
+          });
+        } else if (commDoc) {
+          const idRoom = `community:${commDoc._id.toString()}`;
+          const slugRoom = `community:${commDoc.slug}`;
+
+          io.to(idRoom).emit('new_message', {
+            room: idRoom,
+            message: populated
+          });
+
+          if (commDoc.slug && slugRoom !== idRoom) {
+            io.to(slugRoom).emit('new_message', {
+              room: slugRoom,
+              message: populated
+            });
+          }
+        }
 
       } catch (err) {
         console.error('Error saving real-time chat message:', err);

@@ -27,7 +27,7 @@ export const useChatSocket = (room) => {
     socket.on('connect', () => {
       setIsConnected(true);
       setError(null);
-      if (room) {
+      if (room && !room.includes('undefined') && !room.includes('null')) {
         socket.emit('join_room', { room });
       }
     });
@@ -45,19 +45,19 @@ export const useChatSocket = (room) => {
     socket.on('new_message', (payload) => {
       if (payload && payload.message) {
         setMessages((prev) => {
-          // Avoid duplicate messages if already present
-          if (prev.some((m) => m._id === payload.message._id)) return prev;
+          if (prev.some((m) => (m._id || m.id) === (payload.message._id || payload.message.id))) return prev;
           return [...prev, payload.message];
         });
       }
     });
 
     socket.on('chat_error', (err) => {
-      setError(err.message || 'Chat error');
+      console.warn('Socket chat_error received:', err);
+      setError(err?.message || 'Chat connection error');
     });
 
     return () => {
-      if (room) {
+      if (room && !room.includes('undefined') && !room.includes('null')) {
         socket.emit('leave_room', { room });
       }
       socket.disconnect();
