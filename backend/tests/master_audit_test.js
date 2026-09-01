@@ -298,20 +298,24 @@ async function runMasterAudit() {
     let socketsConnected = false;
     let liveOnlinePresence = 0;
 
+    socketA.on('online_presence', (d) => {
+        if (d && typeof d.count === 'number') liveOnlinePresence = Math.max(liveOnlinePresence, d.count);
+    });
+    socketB.on('online_presence', (d) => {
+        if (d && typeof d.count === 'number') liveOnlinePresence = Math.max(liveOnlinePresence, d.count);
+    });
+
     await new Promise((resolve) => {
         let connectedCount = 0;
         const checkBoth = () => {
             connectedCount++;
             if (connectedCount >= 2) {
                 socketsConnected = true;
-                resolve();
+                setTimeout(resolve, 800);
             }
         };
         socketA.on('connect', checkBoth);
         socketB.on('connect', checkBoth);
-        socketB.on('online_presence', (d) => {
-            liveOnlinePresence = d.count;
-        });
         setTimeout(resolve, 4000);
     });
 

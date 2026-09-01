@@ -13,7 +13,12 @@ export const MyCommunities = ({
   onCreateClick,
   isAuthenticated = true
 }) => {
-  const myJoinedList = communities.filter(c => joinedIds.includes(c.id));
+  const myJoinedList = communities.filter(c => 
+    c.isJoined || 
+    joinedIds.includes(c.id) || 
+    joinedIds.includes(c._id) || 
+    joinedIds.includes(c.slug)
+  );
 
   // If not logged in
   if (!isAuthenticated) {

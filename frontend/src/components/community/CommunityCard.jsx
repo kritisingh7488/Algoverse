@@ -12,16 +12,20 @@ export const CommunityCard = ({
 }) => {
   const navigate = useNavigate();
 
+  const commTarget = community?.slug || community?._id || community?.id;
+
   const handleCardClick = (e) => {
     // If clicking on the Join button, do not navigate
     if (e.target.closest('.join-action-button')) return;
-    navigate(`/community/${community.id || community.slug}`);
+    if (commTarget) {
+      navigate(`/community/${commTarget}`);
+    }
   };
 
   const handleJoinClick = (e) => {
     e.stopPropagation();
-    if (onToggleJoin) {
-      onToggleJoin(community.id);
+    if (onToggleJoin && commTarget) {
+      onToggleJoin(commTarget);
     }
   };
 

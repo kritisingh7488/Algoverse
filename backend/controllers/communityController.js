@@ -7,6 +7,7 @@ const User = require('../models/User');
  */
 const formatCommunityResponse = (comm, currentUserId) => {
     const obj = comm.toObject ? comm.toObject() : { ...comm };
+    obj.id = obj._id ? obj._id.toString() : (obj.id ? obj.id.toString() : undefined);
     
     // Check if current user is a member
     if (currentUserId && obj.members) {
@@ -37,31 +38,51 @@ const formatCommunityResponse = (comm, currentUserId) => {
 
 /**
  * @route   GET /api/v1/communities
- * @desc    Get all public communities with search, category filtering & sorting
- * @access  Public (optional auth for isJoined status)
+ * @desc    Get all public communities (plus member/creator private communities for authenticated user)
+ * @access  Public (optional auth for isJoined status and private membership)
  */
 exports.getCommunities = async (req, res) => {
     try {
         const { search, category, sort = 'trending', page = 1, limit = 50 } = req.query;
         const currentUserId = req.user ? req.user._id : null;
 
-        const query = { isPrivate: false };
+        // Visibility condition:
+        // Authenticated user sees all public communities PLUS private communities they belong to or created
+        // Unauthenticated guest sees only public communities
+        let visibilityCondition;
+        if (currentUserId) {
+            visibilityCondition = {
+                $or: [
+                    { isPrivate: false },
+                    { isPrivate: true, members: currentUserId },
+                    { isPrivate: true, creator: currentUserId }
+                ]
+            };
+        } else {
+            visibilityCondition = { isPrivate: false };
+        }
+
+        const andConditions = [visibilityCondition];
 
         // Category filter
         if (category && category !== 'All') {
-            query.category = category;
+            andConditions.push({ category });
         }
 
         // Search query
         if (search && search.trim()) {
             const searchRegex = new RegExp(search.trim(), 'i');
-            query.$or = [
-                { name: searchRegex },
-                { description: searchRegex },
-                { tags: searchRegex },
-                { category: searchRegex }
-            ];
+            andConditions.push({
+                $or: [
+                    { name: searchRegex },
+                    { description: searchRegex },
+                    { tags: searchRegex },
+                    { category: searchRegex }
+                ]
+            });
         }
+
+        const query = andConditions.length === 1 ? andConditions[0] : { $and: andConditions };
 
         // Sorting options
         let sortOption = {};

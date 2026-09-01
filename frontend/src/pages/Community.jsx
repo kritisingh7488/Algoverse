@@ -53,7 +53,9 @@ const Community = () => {
         const result = await communityService.getCommunities();
         if (isMounted && result.data) {
           setCommunities(result.data);
-          const joined = result.data.filter(c => c.isJoined).map(c => c.id || c._id);
+          const joined = result.data
+            .filter(c => c.isJoined)
+            .map(c => c._id || c.id || c.slug);
           setJoinedIds(joined);
         }
       } catch (err) {
@@ -111,13 +113,27 @@ const Community = () => {
     }
   };
 
-  // Handle newly created community
-  const handleCommunityCreated = (newCommunity) => {
-    setCommunities(prev => [newCommunity, ...prev]);
-    setJoinedIds(prev => [...prev, newCommunity.id || newCommunity._id]);
+  // Handle newly created community with instant UI update and background API sync
+  const handleCommunityCreated = async (newCommunity) => {
+    const commKey = newCommunity._id || newCommunity.id || newCommunity.slug;
+    setCommunities(prev => [newCommunity, ...prev.filter(c => (c._id || c.id || c.slug) !== commKey)]);
+    setJoinedIds(prev => [...prev, commKey]);
     setSelectedCategory('All');
     setSearchQuery('');
     setActiveTab('my-communities');
+
+    try {
+      const result = await communityService.getCommunities();
+      if (result.data) {
+        setCommunities(result.data);
+        const joined = result.data
+          .filter(c => c.isJoined)
+          .map(c => c._id || c.id || c.slug);
+        setJoinedIds(joined);
+      }
+    } catch (e) {
+      console.warn('Background sync after creation completed with optimistic cache:', e);
+    }
   };
 
   // Filtered & Sorted Discover List

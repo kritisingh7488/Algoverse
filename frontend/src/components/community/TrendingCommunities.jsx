@@ -51,13 +51,14 @@ export const TrendingCommunities = ({
 
       <div className="space-y-2">
         {trendingList.map((comm, idx) => {
-          const isJoined = joinedIds.includes(comm.id);
+          const commKey = comm._id || comm.id || comm.slug;
+          const isJoined = comm.isJoined || joinedIds.includes(comm.id) || joinedIds.includes(comm._id) || joinedIds.includes(comm.slug);
           const rank = idx + 1;
 
           return (
             <div
-              key={comm.id}
-              onClick={() => navigate(`/community/${comm.id || comm.slug}`)}
+              key={commKey}
+              onClick={() => navigate(`/community/${comm.slug || commKey}`)}
               className="group p-2.5 rounded-xl bg-surface/60 hover:bg-surface border border-borderTheme/70 hover:border-primary/40 transition-all flex items-center justify-between gap-2.5 cursor-pointer"
             >
               {/* Rank + Icon + Info */}
@@ -87,7 +88,7 @@ export const TrendingCommunities = ({
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  if (onToggleJoin) onToggleJoin(comm.id);
+                  if (onToggleJoin) onToggleJoin(commKey);
                 }}
                 className={`p-1.5 rounded-lg border text-xs font-heading font-bold transition-all shrink-0 ${
                   isJoined

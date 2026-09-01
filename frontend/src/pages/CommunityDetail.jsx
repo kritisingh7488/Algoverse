@@ -589,7 +589,7 @@ export const CommunityDetail = () => {
           <CommunityChatRoom
             community={community}
             isJoined={isJoined}
-            onJoinClick={handleJoinToggle}
+            onJoinClick={handleToggleJoin}
           />
         )}
 
