@@ -20,7 +20,12 @@ import {
   Search,
   SlidersHorizontal,
   Loader2,
-  Edit3
+  Edit3,
+  UserCheck,
+  UserPlus,
+  Clock,
+  X,
+  Send
 } from 'lucide-react';
 import AppLayout from '../layouts/AppLayout';
 import Card from '../components/common/Card';
@@ -37,22 +42,37 @@ import { POST_TYPES } from '../components/community/PostTypeBadge';
 export const CommunityDetail = () => {
   const { communityId } = useParams();
   const navigate = useNavigate();
-  const { isAuthenticated } = useAuthStore();
-
+  const { user, isAuthenticated } = useAuthStore();
   const [community, setCommunity] = useState(null);
   const [isJoined, setIsJoined] = useState(false);
-  const [activeTab, setActiveTab] = useState('about'); // 'about' | 'discussions' | 'chat' | 'members'
-  const [copied, setCopied] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [errorStatus, setErrorStatus] = useState(null); // null | 403 | 404
+  const [errorStatus, setErrorStatus] = useState(null);
+  const [activeTab, setActiveTab] = useState('about');
+  const [copied, setCopied] = useState(false);
 
-  // Discussions feed state
+  // Join Requests & Invitations State
+  const [joinRequestStatus, setJoinRequestStatus] = useState('none');
+  const [isRequesting, setIsRequesting] = useState(false);
+  const [joinRequests, setJoinRequests] = useState([]);
+  const [joinRequestsLoading, setJoinRequestsLoading] = useState(false);
+  const [inviteUsername, setInviteUsername] = useState('');
+  const [inviteMessage, setInviteMessage] = useState('');
+  const [isInviting, setIsInviting] = useState(false);
+  const [inviteNotice, setInviteNotice] = useState({ type: '', text: '' });
+
+  // Post feed state
   const [posts, setPosts] = useState([]);
   const [postsLoading, setPostsLoading] = useState(false);
   const [postTypeFilter, setPostTypeFilter] = useState('All');
   const [postSearch, setPostSearch] = useState('');
   const [postSort, setPostSort] = useState('newest');
   const [isCreatePostOpen, setIsCreatePostOpen] = useState(false);
+
+  const myUserId = user?._id ? user._id.toString() : (user?.id ? user.id.toString() : null);
+  const creatorId = community?.creator?._id ? community.creator._id.toString() : (community?.creator ? community.creator.toString() : null);
+  const isCreator = !!(myUserId && creatorId && myUserId === creatorId);
+  const isAdmin = user?.role === 'admin';
+  const canManageCommunity = isCreator || isAdmin;
 
   useEffect(() => {
     let isMounted = true;
@@ -79,6 +99,48 @@ export const CommunityDetail = () => {
     fetchDetail();
     return () => { isMounted = false; };
   }, [communityId, isAuthenticated]);
+
+  // Check user's join request status if not a member or 403
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    let isMounted = true;
+    const checkReqStatus = async () => {
+      try {
+        const res = await communityService.getMyRequestStatus(communityId);
+        if (isMounted && res.success) {
+          setJoinRequestStatus(res.status || 'none');
+        }
+      } catch (err) {
+        // ignore
+      }
+    };
+    checkReqStatus();
+    return () => { isMounted = false; };
+  }, [communityId, isAuthenticated]);
+
+  // Fetch pending join requests if creator/admin
+  useEffect(() => {
+    if (!canManageCommunity || !community || activeTab !== 'requests') return;
+
+    let isMounted = true;
+    const fetchRequests = async () => {
+      setJoinRequestsLoading(true);
+      try {
+        const commTarget = community.slug || community._id || community.id;
+        const res = await communityService.getJoinRequests(commTarget);
+        if (isMounted && res.success && Array.isArray(res.data)) {
+          setJoinRequests(res.data);
+        }
+      } catch (err) {
+        console.error('Error fetching join requests:', err);
+      } finally {
+        if (isMounted) setJoinRequestsLoading(false);
+      }
+    };
+
+    fetchRequests();
+    return () => { isMounted = false; };
+  }, [activeTab, canManageCommunity, community]);
 
   // Fetch discussions when switching to discussions tab or changing filters
   useEffect(() => {
@@ -118,6 +180,13 @@ export const CommunityDetail = () => {
     if (!community) return;
 
     const commIdentifier = community.id || community._id || community.slug;
+
+    // If private community and not joined, request to join
+    if (community.isPrivate && !isJoined) {
+      await handleRequestToJoin();
+      return;
+    }
+
     const nowJoined = !isJoined;
     setIsJoined(nowJoined);
 
@@ -134,6 +203,90 @@ export const CommunityDetail = () => {
       }
     } catch (err) {
       console.error('Error toggling community join:', err);
+    }
+  };
+
+  const handleRequestToJoin = async () => {
+    if (!isAuthenticated) {
+      navigate('/login');
+      return;
+    }
+    setIsRequesting(true);
+    try {
+      const res = await communityService.sendJoinRequest(communityId);
+      if (res.success) {
+        setJoinRequestStatus('pending');
+      }
+    } catch (err) {
+      console.error('Error requesting to join:', err);
+    } finally {
+      setIsRequesting(false);
+    }
+  };
+
+  const handleCancelRequest = async () => {
+    setIsRequesting(true);
+    try {
+      const res = await communityService.cancelJoinRequest(communityId);
+      if (res.success) {
+        setJoinRequestStatus('none');
+      }
+    } catch (err) {
+      console.error('Error cancelling join request:', err);
+    } finally {
+      setIsRequesting(false);
+    }
+  };
+
+  const handleApproveRequest = async (requestId) => {
+    const commTarget = community?.slug || community?._id || community?.id;
+    try {
+      const res = await communityService.approveJoinRequest(commTarget, requestId);
+      if (res.success) {
+        setJoinRequests(prev => prev.filter(r => r._id !== requestId));
+        if (res.data?.membersCount) {
+          setCommunity(prev => ({ ...prev, membersCount: res.data.membersCount }));
+        }
+      }
+    } catch (err) {
+      console.error('Error approving request:', err);
+    }
+  };
+
+  const handleRejectRequest = async (requestId) => {
+    const commTarget = community?.slug || community?._id || community?.id;
+    try {
+      const res = await communityService.rejectJoinRequest(commTarget, requestId);
+      if (res.success) {
+        setJoinRequests(prev => prev.filter(r => r._id !== requestId));
+      }
+    } catch (err) {
+      console.error('Error rejecting request:', err);
+    }
+  };
+
+  const handleSendInvite = async (e) => {
+    e.preventDefault();
+    if (!inviteUsername.trim()) return;
+    setIsInviting(true);
+    setInviteNotice({ type: '', text: '' });
+    try {
+      const commTarget = community?.slug || community?._id || community?.id;
+      const res = await communityService.sendInvitation(commTarget, {
+        username: inviteUsername.trim(),
+        message: inviteMessage.trim()
+      });
+      if (res.success) {
+        setInviteNotice({ type: 'success', text: `Invitation sent to ${inviteUsername}!` });
+        setInviteUsername('');
+        setInviteMessage('');
+      } else {
+        setInviteNotice({ type: 'error', text: res.message || 'Failed to send invitation' });
+      }
+    } catch (err) {
+      setInviteNotice({ type: 'error', text: err.message || 'Failed to send invitation' });
+    } finally {
+      setIsInviting(false);
     }
   };
 
@@ -172,7 +325,30 @@ export const CommunityDetail = () => {
           <p className="text-xs sm:text-sm text-textSecondary leading-relaxed">
             This study group is private. You must be an approved member to view details and discussions.
           </p>
-          <div className="flex justify-center gap-2 pt-2">
+          <div className="flex flex-wrap justify-center items-center gap-2.5 pt-2">
+            {joinRequestStatus === 'pending' ? (
+              <Button
+                variant="outline"
+                size="md"
+                onClick={handleCancelRequest}
+                disabled={isRequesting}
+                className="gap-1.5 border-warning/40 text-warning hover:bg-danger/10 hover:text-danger hover:border-danger/30"
+              >
+                <Clock className="w-4 h-4 text-warning" />
+                <span>Request Pending (Cancel)</span>
+              </Button>
+            ) : (
+              <Button
+                variant="primary"
+                size="md"
+                onClick={handleRequestToJoin}
+                disabled={isRequesting}
+                className="gap-1.5 bg-warning text-black hover:bg-warning/90 shadow-soft"
+              >
+                <Lock className="w-4 h-4" />
+                <span>Request to Join</span>
+              </Button>
+            )}
             <Link to="/community">
               <Button variant="outline" size="md" className="gap-1.5">
                 <ArrowLeft className="w-4 h-4" />
@@ -363,8 +539,27 @@ export const CommunityDetail = () => {
             }`}
           >
             <Users className="w-3.5 h-3.5" />
-            <span>Members ({(community.membersPreview || []).length})</span>
+            <span>Members ({(community.members || []).length})</span>
           </button>
+
+          {canManageCommunity && (
+            <button
+              onClick={() => setActiveTab('requests')}
+              className={`px-4 py-2 rounded-lg text-xs font-heading font-bold transition-all flex items-center gap-1.5 ${
+                activeTab === 'requests'
+                  ? 'bg-card text-primary shadow-xs border border-borderTheme'
+                  : 'text-textSecondary hover:text-textPrimary'
+              }`}
+            >
+              <UserCheck className="w-3.5 h-3.5 text-warning" />
+              <span>Requests & Invites</span>
+              {joinRequests.length > 0 && (
+                <span className="px-1.5 py-0.2 rounded-full bg-warning/20 text-warning text-[10px] font-bold">
+                  {joinRequests.length}
+                </span>
+              )}
+            </button>
+          )}
         </div>
 
         {/* Tab 1: About & Rules */}
@@ -680,6 +875,160 @@ export const CommunityDetail = () => {
                   ))}
               </div>
             )}
+          </div>
+        )}
+
+        {/* Tab 5: Requests & Invites (Creator/Admin only) */}
+        {activeTab === 'requests' && canManageCommunity && (
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {/* Left Column: Pending Join Requests */}
+              <div className="md:col-span-2 space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-heading font-bold text-textPrimary flex items-center gap-2">
+                    <UserCheck className="w-4 h-4 text-warning" />
+                    <span>Pending Join Requests ({joinRequests.length})</span>
+                  </h3>
+                </div>
+
+                {joinRequestsLoading ? (
+                  <div className="py-12 text-center text-textSecondary font-body">
+                    <Loader2 className="w-6 h-6 animate-spin mx-auto text-primary" />
+                    <p className="text-xs mt-2">Loading join requests...</p>
+                  </div>
+                ) : joinRequests.length === 0 ? (
+                  <Card className="text-center py-10 px-6 bg-card border-[1.5px] border-borderTheme text-textSecondary space-y-2">
+                    <Check className="w-8 h-8 mx-auto text-success/60" />
+                    <p className="text-sm font-heading font-semibold text-textPrimary">
+                      All caught up!
+                    </p>
+                    <p className="text-xs">
+                      No pending membership requests for this community.
+                    </p>
+                  </Card>
+                ) : (
+                  <div className="space-y-3">
+                    {joinRequests.map((req) => (
+                      <Card
+                        key={req._id}
+                        className="p-4 bg-card border-[1.5px] border-borderTheme hover:border-primary/40 transition-all shadow-soft flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+                      >
+                        <div className="flex items-start gap-3">
+                          {req.user?.avatar ? (
+                            <img
+                              src={req.user.avatar}
+                              alt={req.user.fullName || req.user.username}
+                              className="w-10 h-10 rounded-full object-cover border border-borderTheme shrink-0"
+                            />
+                          ) : (
+                            <div className="w-10 h-10 rounded-full bg-surface text-textPrimary flex items-center justify-center font-bold text-sm shrink-0 border border-borderTheme">
+                              {req.user?.fullName?.[0]?.toUpperCase() || req.user?.username?.[0]?.toUpperCase() || 'U'}
+                            </div>
+                          )}
+                          <div className="min-w-0 space-y-1">
+                            <div className="flex items-center gap-2">
+                              <h4 className="text-xs sm:text-sm font-heading font-bold text-textPrimary truncate">
+                                {req.user?.fullName || req.user?.username}
+                              </h4>
+                              <span className="text-[10px] text-primary font-heading font-semibold">
+                                {req.user?.xp || 0} XP
+                              </span>
+                            </div>
+                            <p className="text-[11px] text-textSecondary">@{req.user?.username}</p>
+                            {req.message && (
+                              <p className="text-xs text-textPrimary/90 bg-surface/80 p-2 rounded-md border border-borderTheme/50 mt-1 italic">
+                                "{req.message}"
+                              </p>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2 self-end sm:self-center shrink-0">
+                          <Button
+                            variant="primary"
+                            size="sm"
+                            onClick={() => handleApproveRequest(req._id)}
+                            className="gap-1 bg-success hover:bg-success/90 text-white shadow-soft text-xs"
+                          >
+                            <Check className="w-3.5 h-3.5" />
+                            <span>Approve</span>
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleRejectRequest(req._id)}
+                            className="gap-1 border-danger/30 text-danger hover:bg-danger/10 text-xs"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                            <span>Reject</span>
+                          </Button>
+                        </div>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Right Column: Invite Member Card */}
+              <div className="space-y-4">
+                <h3 className="text-sm font-heading font-bold text-textPrimary flex items-center gap-2">
+                  <UserPlus className="w-4 h-4 text-primary" />
+                  <span>Invite Member</span>
+                </h3>
+
+                <Card className="p-4 sm:p-5 bg-card border-[1.5px] border-borderTheme space-y-3 shadow-soft">
+                  <p className="text-xs text-textSecondary leading-relaxed">
+                    Directly invite any learner to join your private community.
+                  </p>
+
+                  <form onSubmit={handleSendInvite} className="space-y-3 pt-1">
+                    <div>
+                      <label className="text-[11px] font-heading font-bold text-textSecondary mb-1 block">
+                        Username
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. priya_algo"
+                        value={inviteUsername}
+                        onChange={(e) => setInviteUsername(e.target.value)}
+                        className="w-full px-3 py-2 text-xs rounded-lg bg-surface border border-borderTheme text-textPrimary placeholder:text-textSecondary/50 focus:outline-hidden focus:border-primary"
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-[11px] font-heading font-bold text-textSecondary mb-1 block">
+                        Custom Note (Optional)
+                      </label>
+                      <textarea
+                        placeholder="Join our private algorithm study group..."
+                        value={inviteMessage}
+                        onChange={(e) => setInviteMessage(e.target.value)}
+                        rows={2}
+                        className="w-full px-3 py-2 text-xs rounded-lg bg-surface border border-borderTheme text-textPrimary placeholder:text-textSecondary/50 focus:outline-hidden focus:border-primary resize-none"
+                      />
+                    </div>
+
+                    {inviteNotice.text && (
+                      <div className={`p-2 rounded-md text-xs font-body ${inviteNotice.type === 'success' ? 'bg-success/15 text-success border border-success/30' : 'bg-danger/15 text-danger border border-danger/30'}`}>
+                        {inviteNotice.text}
+                      </div>
+                    )}
+
+                    <Button
+                      type="submit"
+                      variant="primary"
+                      size="sm"
+                      disabled={isInviting || !inviteUsername.trim()}
+                      className="w-full gap-1.5 text-xs font-heading font-bold"
+                    >
+                      {isInviting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
+                      <span>{isInviting ? 'Sending Invite...' : 'Send Invitation'}</span>
+                    </Button>
+                  </form>
+                </Card>
+              </div>
+            </div>
           </div>
         )}
 

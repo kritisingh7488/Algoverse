@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Compass, Sparkles, UserPlus, Users, Plus } from 'lucide-react';
+import { Compass, Sparkles, UserPlus, Users, Plus, Mail, Check, X, Loader2 } from 'lucide-react';
 import CommunityCard from './CommunityCard';
 import Button from '../common/Button';
 import Card from '../common/Card';
+import communityService from '../../api/communityService';
 
 export const MyCommunities = ({
   communities = [],
@@ -13,6 +14,61 @@ export const MyCommunities = ({
   onCreateClick,
   isAuthenticated = true
 }) => {
+  const [invitations, setInvitations] = useState([]);
+  const [invitationsLoading, setInvitationsLoading] = useState(false);
+  const [processingInviteId, setProcessingInviteId] = useState(null);
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    let isMounted = true;
+    const fetchInvites = async () => {
+      setInvitationsLoading(true);
+      try {
+        const res = await communityService.getMyInvitations();
+        if (isMounted && res.success && Array.isArray(res.data)) {
+          setInvitations(res.data);
+        }
+      } catch (err) {
+        console.error('Error fetching invitations:', err);
+      } finally {
+        if (isMounted) setInvitationsLoading(false);
+      }
+    };
+    fetchInvites();
+    return () => { isMounted = false; };
+  }, [isAuthenticated]);
+
+  const handleAcceptInvite = async (invitationId) => {
+    setProcessingInviteId(invitationId);
+    try {
+      const res = await communityService.acceptInvitation(invitationId);
+      if (res.success) {
+        setInvitations(prev => prev.filter(inv => inv._id !== invitationId));
+        if (onToggleJoin && res.data?.slug) {
+          onToggleJoin(res.data.slug);
+        }
+      }
+    } catch (err) {
+      console.error('Error accepting invitation:', err);
+    } finally {
+      setProcessingInviteId(null);
+    }
+  };
+
+  const handleDeclineInvite = async (invitationId) => {
+    setProcessingInviteId(invitationId);
+    try {
+      const res = await communityService.declineInvitation(invitationId);
+      if (res.success) {
+        setInvitations(prev => prev.filter(inv => inv._id !== invitationId));
+      }
+    } catch (err) {
+      console.error('Error declining invitation:', err);
+    } finally {
+      setProcessingInviteId(null);
+    }
+  };
+
   const myJoinedList = communities.filter(c => 
     c.isJoined || 
     joinedIds.includes(c.id) || 
@@ -80,7 +136,65 @@ export const MyCommunities = ({
 
   // Logged in with joined communities
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
+      {/* Pending Invitations Section */}
+      {invitations.length > 0 && (
+        <Card className="p-4 bg-primary/5 border-[1.5px] border-primary/25 shadow-soft space-y-3">
+          <div className="flex items-center gap-2">
+            <Mail className="w-4 h-4 text-primary" />
+            <h4 className="text-xs sm:text-sm font-heading font-bold text-textPrimary">
+              Guild Invitations ({invitations.length})
+            </h4>
+          </div>
+          <div className="space-y-2">
+            {invitations.map((inv) => (
+              <div
+                key={inv._id}
+                className="p-3 rounded-xl bg-card border border-borderTheme flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-surface border border-borderTheme flex items-center justify-center text-lg shrink-0">
+                    {inv.community?.icon || '💬'}
+                  </div>
+                  <div>
+                    <h5 className="text-xs sm:text-sm font-heading font-bold text-textPrimary">
+                      {inv.community?.name}
+                    </h5>
+                    <p className="text-[11px] text-textSecondary">
+                      Invited by <span className="text-textPrimary font-semibold">@{inv.inviter?.username || 'Founder'}</span>
+                      {inv.message ? ` — "${inv.message}"` : ''}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 self-end sm:self-center shrink-0">
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    disabled={processingInviteId === inv._id}
+                    onClick={() => handleAcceptInvite(inv._id)}
+                    className="gap-1 bg-success hover:bg-success/90 text-white text-xs h-7 px-2.5"
+                  >
+                    <Check className="w-3.5 h-3.5" />
+                    <span>Accept</span>
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={processingInviteId === inv._id}
+                    onClick={() => handleDeclineInvite(inv._id)}
+                    className="gap-1 border-borderTheme text-textSecondary hover:text-danger text-xs h-7 px-2.5"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                    <span>Decline</span>
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
+
       <div className="flex items-center justify-between gap-3 px-1">
         <div>
           <h3 className="text-base font-heading font-bold text-textPrimary">

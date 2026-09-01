@@ -1,9 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Users, Globe, Lock, Check, Plus, ShieldCheck, ArrowUpRight } from 'lucide-react';
+import { Users, Globe, Lock, Check, Plus, ShieldCheck, ArrowUpRight, Clock, Send } from 'lucide-react';
 import Card from '../common/Card';
 import Badge from '../common/Badge';
+import communityService from '../../api/communityService';
+import useAuthStore from '../../store/authStore';
 
 export const CommunityCard = ({
   community,
@@ -11,6 +13,9 @@ export const CommunityCard = ({
   onToggleJoin
 }) => {
   const navigate = useNavigate();
+  const { isAuthenticated } = useAuthStore();
+  const [isRequested, setIsRequested] = useState(false);
+  const [isRequesting, setIsRequesting] = useState(false);
 
   const commTarget = community?.slug || community?._id || community?.id;
 
@@ -22,8 +27,43 @@ export const CommunityCard = ({
     }
   };
 
-  const handleJoinClick = (e) => {
+  const handleJoinClick = async (e) => {
     e.stopPropagation();
+    if (!isAuthenticated) {
+      navigate('/login');
+      return;
+    }
+
+    // If private community and not joined, submit Join Request
+    if (community?.isPrivate && !isJoined) {
+      if (isRequested) {
+        // Cancel request
+        setIsRequesting(true);
+        try {
+          await communityService.cancelJoinRequest(commTarget);
+          setIsRequested(false);
+        } catch (err) {
+          console.error('Error cancelling join request:', err);
+        } finally {
+          setIsRequesting(false);
+        }
+        return;
+      }
+
+      setIsRequesting(true);
+      try {
+        const res = await communityService.sendJoinRequest(commTarget);
+        if (res.success) {
+          setIsRequested(true);
+        }
+      } catch (err) {
+        console.error('Error requesting to join:', err);
+      } finally {
+        setIsRequesting(false);
+      }
+      return;
+    }
+
     if (onToggleJoin && commTarget) {
       onToggleJoin(commTarget);
     }
@@ -114,11 +154,22 @@ export const CommunityCard = ({
 
         <button
           onClick={handleJoinClick}
-          aria-label={isJoined ? `Leave ${community.name}` : `Join ${community.name}`}
+          disabled={isRequesting}
+          aria-label={
+            isJoined 
+              ? `Leave ${community.name}` 
+              : community.isPrivate 
+                ? (isRequested ? 'Cancel Request' : `Request to Join ${community.name}`)
+                : `Join ${community.name}`
+          }
           className={`join-action-button px-3.5 py-1.5 rounded-button text-xs font-heading font-bold flex items-center gap-1.5 transition-all shadow-xs ${
             isJoined
               ? 'bg-surface text-textPrimary hover:bg-danger/10 hover:text-danger hover:border-danger/30 border border-borderTheme'
-              : 'bg-primary hover:bg-primary-hover text-white shadow-soft shadow-primary/20'
+              : community.isPrivate
+                ? (isRequested
+                    ? 'bg-warning/15 text-warning border border-warning/30 hover:bg-danger/10 hover:text-danger'
+                    : 'bg-warning/90 hover:bg-warning text-black shadow-soft')
+                : 'bg-primary hover:bg-primary-hover text-white shadow-soft shadow-primary/20'
           }`}
         >
           {isJoined ? (
@@ -126,6 +177,18 @@ export const CommunityCard = ({
               <Check className="w-3.5 h-3.5 text-success" />
               <span>Joined</span>
             </>
+          ) : community.isPrivate ? (
+            isRequested ? (
+              <>
+                <Clock className="w-3.5 h-3.5 text-warning" />
+                <span>Requested</span>
+              </>
+            ) : (
+              <>
+                <Lock className="w-3.5 h-3.5" />
+                <span>Request to Join</span>
+              </>
+            )
           ) : (
             <>
               <Plus className="w-3.5 h-3.5" />

@@ -510,6 +510,229 @@ export const communityService = {
         data: []
       };
     }
+  },
+
+  // ==========================================
+  // JOIN REQUESTS & INVITATIONS API (Phase 5A)
+  // ==========================================
+
+  /**
+   * Submit a join request for a private community
+   */
+  async sendJoinRequest(communityId, message = '') {
+    try {
+      const response = await api.post(`/communities/${communityId}/join-request`, { message });
+      return {
+        success: true,
+        data: response.data.data,
+        message: response.data.message || 'Join request submitted',
+        source: 'api'
+      };
+    } catch (error) {
+      console.error(`Error submitting join request for ${communityId}:`, error.response?.data || error.message);
+      return {
+        success: false,
+        status: error.response?.status || 400,
+        message: error.response?.data?.message || 'Failed to submit join request'
+      };
+    }
+  },
+
+  /**
+   * Cancel own pending join request
+   */
+  async cancelJoinRequest(communityId) {
+    try {
+      const response = await api.delete(`/communities/${communityId}/join-request`);
+      return {
+        success: true,
+        message: response.data.message || 'Join request cancelled',
+        source: 'api'
+      };
+    } catch (error) {
+      console.error(`Error cancelling join request for ${communityId}:`, error.response?.data || error.message);
+      return {
+        success: false,
+        status: error.response?.status || 400,
+        message: error.response?.data?.message || 'Failed to cancel join request'
+      };
+    }
+  },
+
+  /**
+   * Check current user's join request status for a community
+   */
+  async getMyRequestStatus(communityId) {
+    try {
+      const response = await api.get(`/communities/${communityId}/join-request/status`);
+      return {
+        success: true,
+        status: response.data.status || 'none',
+        data: response.data.data || null,
+        source: 'api'
+      };
+    } catch (error) {
+      return {
+        success: false,
+        status: 'none',
+        data: null
+      };
+    }
+  },
+
+  /**
+   * Fetch all pending join requests for a community (Creator/Admin only)
+   */
+  async getJoinRequests(communityId) {
+    try {
+      const response = await api.get(`/communities/${communityId}/join-requests`);
+      return {
+        success: true,
+        data: response.data.data || [],
+        count: response.data.count || 0,
+        source: 'api'
+      };
+    } catch (error) {
+      console.error(`Error fetching join requests for ${communityId}:`, error.response?.data || error.message);
+      return {
+        success: false,
+        status: error.response?.status || 403,
+        message: error.response?.data?.message || 'Failed to fetch join requests',
+        data: []
+      };
+    }
+  },
+
+  /**
+   * Approve a user's join request
+   */
+  async approveJoinRequest(communityId, requestId) {
+    try {
+      const response = await api.post(`/communities/${communityId}/join-requests/${requestId}/approve`);
+      return {
+        success: true,
+        data: response.data.data,
+        message: response.data.message || 'Join request approved',
+        source: 'api'
+      };
+    } catch (error) {
+      console.error(`Error approving join request ${requestId}:`, error.response?.data || error.message);
+      return {
+        success: false,
+        status: error.response?.status || 400,
+        message: error.response?.data?.message || 'Failed to approve join request'
+      };
+    }
+  },
+
+  /**
+   * Reject a user's join request
+   */
+  async rejectJoinRequest(communityId, requestId) {
+    try {
+      const response = await api.post(`/communities/${communityId}/join-requests/${requestId}/reject`);
+      return {
+        success: true,
+        data: response.data.data,
+        message: response.data.message || 'Join request rejected',
+        source: 'api'
+      };
+    } catch (error) {
+      console.error(`Error rejecting join request ${requestId}:`, error.response?.data || error.message);
+      return {
+        success: false,
+        status: error.response?.status || 400,
+        message: error.response?.data?.message || 'Failed to reject join request'
+      };
+    }
+  },
+
+  /**
+   * Send direct invitation to a user by username or userId
+   */
+  async sendInvitation(communityId, { username, userId, message = '' }) {
+    try {
+      const response = await api.post(`/communities/${communityId}/invitations`, { username, userId, message });
+      return {
+        success: true,
+        data: response.data.data,
+        message: response.data.message || 'Invitation sent successfully',
+        source: 'api'
+      };
+    } catch (error) {
+      console.error(`Error sending invitation for ${communityId}:`, error.response?.data || error.message);
+      return {
+        success: false,
+        status: error.response?.status || 400,
+        message: error.response?.data?.message || 'Failed to send invitation'
+      };
+    }
+  },
+
+  /**
+   * Fetch current user's pending community invitations
+   */
+  async getMyInvitations() {
+    try {
+      const response = await api.get('/communities/my/invitations');
+      return {
+        success: true,
+        data: response.data.data || [],
+        count: response.data.count || 0,
+        source: 'api'
+      };
+    } catch (error) {
+      console.error('Error fetching my invitations:', error.response?.data || error.message);
+      return {
+        success: false,
+        status: error.response?.status || 500,
+        message: error.response?.data?.message || 'Failed to load invitations',
+        data: []
+      };
+    }
+  },
+
+  /**
+   * Accept an invitation
+   */
+  async acceptInvitation(invitationId) {
+    try {
+      const response = await api.post(`/communities/invitations/${invitationId}/accept`);
+      return {
+        success: true,
+        data: response.data.data,
+        message: response.data.message || 'Invitation accepted',
+        source: 'api'
+      };
+    } catch (error) {
+      console.error(`Error accepting invitation ${invitationId}:`, error.response?.data || error.message);
+      return {
+        success: false,
+        status: error.response?.status || 400,
+        message: error.response?.data?.message || 'Failed to accept invitation'
+      };
+    }
+  },
+
+  /**
+   * Decline an invitation
+   */
+  async declineInvitation(invitationId) {
+    try {
+      const response = await api.post(`/communities/invitations/${invitationId}/decline`);
+      return {
+        success: true,
+        message: response.data.message || 'Invitation declined',
+        source: 'api'
+      };
+    } catch (error) {
+      console.error(`Error declining invitation ${invitationId}:`, error.response?.data || error.message);
+      return {
+        success: false,
+        status: error.response?.status || 400,
+        message: error.response?.data?.message || 'Failed to decline invitation'
+      };
+    }
   }
 };
 
